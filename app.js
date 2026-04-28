@@ -78,7 +78,7 @@ function initApp(uid) {
                 helperCategories = data.helperCategories;
             }
         }
-        window.updateCountdown();
+        window.updateCountdown(); // Spustí se vždy, i když dokument ještě neexistuje
         window.renderHelperCategoriesUI();
         window.renderHelpersView();
     }));
@@ -105,33 +105,46 @@ function initApp(uid) {
     }));
 }
 
-// --- DASHBOARD & ODPOČET ---
+// --- DASHBOARD A ODPOČET ---
 window.updateDashboardStats = () => {
-    let totals = { guests: 0, confirmed: 0, helpers: 0, pendingHelpers: 0, accGuests: 0, pendingAcc: 0, children: 0 };
+    let totals = { guests: 0, confirmed: 0, declined: 0, helpers: 0, pendingHelpers: 0, accGuests: 0, pendingAcc: 0, child1: 0, child2: 0, child3: 0 };
+    
     allGuestsData.forEach(g => {
         totals.guests++;
-        totals.children += Number(g.numChildren || 0);
         if (g.status === 'Potvrzeno') totals.confirmed++;
+        if (g.status === 'Nezúčastní se') totals.declined++;
         if (g.isHelper) { totals.helpers++; if (g.helperStatus === 'pending') totals.pendingHelpers++; }
         if (g.needsAcc) { totals.accGuests++; if (g.accStatus === 'pending') totals.pendingAcc++; }
+        
+        if (g.childrenAges && g.childrenAges.length > 0) {
+            g.childrenAges.forEach(age => {
+                if(age.includes('0-3')) totals.child1++;
+                else if(age.includes('4-10')) totals.child2++;
+                else if(age.includes('11+')) totals.child3++;
+            });
+        }
     });
     
     if(document.getElementById('dashTotalGuests')) document.getElementById('dashTotalGuests').innerText = totals.guests;
-    if(document.getElementById('dashTotalChildren')) document.getElementById('dashTotalChildren').innerText = totals.children;
     if(document.getElementById('dashConfirmedGuests')) document.getElementById('dashConfirmedGuests').innerText = totals.confirmed;
+    if(document.getElementById('dashDeclinedGuests')) document.getElementById('dashDeclinedGuests').innerText = totals.declined;
+    
+    if(document.getElementById('dashChild1')) document.getElementById('dashChild1').innerText = totals.child1;
+    if(document.getElementById('dashChild2')) document.getElementById('dashChild2').innerText = totals.child2;
+    if(document.getElementById('dashChild3')) document.getElementById('dashChild3').innerText = totals.child3;
+
     if(document.getElementById('dashTotalHelpers')) document.getElementById('dashTotalHelpers').innerText = totals.helpers;
     if(document.getElementById('dashPendingHelpers')) document.getElementById('dashPendingHelpers').innerText = totals.pendingHelpers;
     if(document.getElementById('dashTotalAcc')) document.getElementById('dashTotalAcc').innerText = totals.accGuests;
     if(document.getElementById('dashPendingAcc')) document.getElementById('dashPendingAcc').innerText = totals.pendingAcc;
 };
 
-// Zaručené a okamžité zpracování data
 window.saveWeddingDate = () => {
     const d = document.getElementById('weddingDateInput');
-    if(d && d.value && myUid) {
-        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true }).then(() => {
-            window.updateCountdown();
-        });
+    if(d && myUid) {
+        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true })
+        .then(() => window.updateCountdown())
+        .catch(e => alert("Chyba při ukládání data: " + e.message));
     }
 };
 
@@ -141,7 +154,6 @@ window.updateCountdown = () => {
     if (!wedInput || !disp) return;
     if (!wedInput.value) { disp.innerText = "Nastavte datum svatby"; return; }
     
-    // Přesný výpočet bez ohledu na posun letního času
     const targetDate = new Date(wedInput.value);
     targetDate.setHours(0, 0, 0, 0);
     const today = new Date();
@@ -177,7 +189,6 @@ window.renderTasksView = () => {
         return matchP && matchS;
     });
     
-    // Řazení: Hotovo jde vždy na konec
     filtered.sort((a, b) => {
         if(a.status === 'Hotovo' && b.status !== 'Hotovo') return 1;
         if(a.status !== 'Hotovo' && b.status === 'Hotovo') return -1;
@@ -333,11 +344,12 @@ window.renderGuestsView = () => {
     });
 
     tbody.innerHTML = '';
-    let stats = { total:0, confirmed:0, nevesta:0, zenich:0, spolecny:0, cities:{}, children: { 'Malé (0-3)':0, 'Střední (4-10)':0, 'Velké (11+)':0 } };
+    let stats = { total:0, confirmed:0, declined:0, nevesta:0, zenich:0, spolecny:0, cities:{}, children: { 'Malé (0-3)':0, 'Střední (4-10)':0, 'Velké (11+)':0 } };
 
     filtered.forEach(g => {
         stats.total++;
         if(g.status === 'Potvrzeno') stats.confirmed++;
+        if(g.status === 'Nezúčastní se') stats.declined++;
         if(g.side === 'Nevěsta') stats.nevesta++; else if(g.side === 'Ženich') stats.zenich++; else stats.spolecny++;
         let city = g.city ? g.city.trim() : 'Nezadáno';
         stats.cities[city] = (stats.cities[city] || 0) + 1;
@@ -360,8 +372,11 @@ window.renderGuestsView = () => {
             <div class="stat-box">Nevěsta: <strong>${stats.nevesta}</strong></div>
             <div class="stat-box">Ženich: <strong>${stats.zenich}</strong></div>
             <div class="stat-box">Společní: <strong>${stats.spolecny}</strong></div>
-            <div class="stat-box" style="background:#fff0f5;">Děti celkem: <strong>${stats.children['Malé (0-3)'] + stats.children['Střední (4-10)'] + stats.children['Velké (11+)']}</strong></div>
             <div class="stat-box" style="background:#e8f5e9;">Potvrzeno: <strong style="color:#27ae60;">${stats.confirmed}</strong></div>
+            <div class="stat-box" style="background:#ffebee;">Odmítlo: <strong style="color:#c62828;">${stats.declined}</strong></div>
+            <div class="stat-box" style="background:#fff0f5;">Děti (0-3): <strong>${stats.children['Malé (0-3)']}</strong></div>
+            <div class="stat-box" style="background:#fff0f5;">Děti (4-10): <strong>${stats.children['Střední (4-10)']}</strong></div>
+            <div class="stat-box" style="background:#fff0f5;">Děti (11+): <strong>${stats.children['Velké (11+)']}</strong></div>
         `;
     }
 };
@@ -580,7 +595,6 @@ window.renderAccView = () => {
         aPending.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accRoom || '-'}</td><td><select id="selPlace_${g.id}" style="width:100%; margin-bottom:5px;" onchange="loadRoomsForSelect('${g.id}', this.value)">${selectPlacesHtml}</select><select id="selRoom_${g.id}" style="width:100%; display:none;"><option value="">-- Nejdřív vyberte místo --</option></select></td><td><button class="btn-small" onclick="approveAcc('${g.id}')">Schválit</button></td></tr>`;
     });
 
-    // Úprava tabulky rozřazených - FILTROVÁNÍ A INLINE EDITACE
     const filterSelect = document.getElementById('filterAccAssignedPlace');
     if(filterSelect && filterSelect.options.length <= 1 && accPlacesData.length > 0) {
         let opts = '<option value="">-- Všechna místa --</option>';
