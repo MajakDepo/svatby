@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potvrzení účasti na svatbě</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #fdf2f3; }
+        .form-container { max-width: 600px; margin: 30px auto; padding: 20px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .guest-row { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .help-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .success-msg { text-align: center; color: #27ae60; padding: 40px; }
+    </style>
+</head>
+<body>
+    <div class="form-container" id="formConfig">
+        <h2 style="text-align: center; color: #e5b2b2;">💍 Potvrzení účasti</h2>
+        <p style="text-align: center; margin-bottom: 20px;">Prosíme o vyplnění údajů za celou vaši skupinu.</p>
+
+        <form id="rsvpForm">
+            <div class="input-group">
+                <label>Vaše Jméno a Příjmení:</label>
+                <input type="text" id="mainGuestName" required placeholder="Např. Jan Novák">
+            </div>
+            
+            <div class="input-group">
+                <label>Město, odkud přijedete:</label>
+                <input type="text" id="mainGuestCity" required placeholder="Např. Praha">
+            </div>
+
+            <div id="additionalGuestsContainer">
+                <h3>Další osoby s vámi (partner, děti...)</h3>
+            </div>
+            <button type="button" class="btn-secondary" onclick="addGuestRow()" style="width: 100%; margin-bottom: 20px;">+ Přidat další osobu</button>
+
+            <div class="input-form">
+                <label>Potřebujete ubytování?</label>
+                <select id="needsAcc" onchange="document.getElementById('roomsDiv').style.display = this.value === 'ano' ? 'block' : 'none'">
+                    <option value="ne">Ne, nebudeme přespávat</option>
+                    <option value="ano">Ano, prosíme o ubytování</option>
+                </select>
+                <div id="roomsDiv" style="display: none; margin-top: 10px;">
+                    <label>Kolik pokojů budete potřebovat?</label>
+                    <input type="number" id="numRooms" value="1" min="1">
+                </div>
+            </div>
+
+            <div class="card" style="background: #fafafa; border: 1px solid #eee;">
+                <label><strong>Jste ochotni nám s něčím pomoci?</strong></label>
+                <div class="help-options">
+                    <label><input type="checkbox" name="help" value="Pečení/Dorty"> Pečení / Dorty</label>
+                    <label><input type="checkbox" name="help" value="Výzdoba"> Výzdoba</label>
+                    <label><input type="checkbox" name="help" value="Doprava"> Doprava hostů</label>
+                    <label><input type="checkbox" name="help" value="Koordinace"> Koordinace na místě</label>
+                    <label><input type="checkbox" name="help" value="Hudba/Program"> Hudba / Program</label>
+                    <label><input type="checkbox" name="help" value="Jiná pomoc"> Jiné (domluvíme se)</label>
+                </div>
+            </div>
+
+            <button type="submit" style="width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 20px;">Odeslat potvrzení</button>
+        </form>
+    </div>
+
+    <div id="successArea" class="form-container hidden">
+        <div class="success-msg">
+            <h1>❤️</h1>
+            <h2>Děkujeme!</h2>
+            <p>Vaše údaje byly úspěšně odeslány. Těšíme se na vás!</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDA4wHyLuyz8LN4RVxKoclF3CAXxKPg7xc",
+            authDomain: "svatebniplanovac-f8ede.firebaseapp.com",
+            projectId: "svatebniplanovac-f8ede",
+            storageBucket: "svatebniplanovac-f8ede.firebasestorage.app",
+            messagingSenderId: "1016595614269",
+            appId: "1:1016595614269:web:f1c1dddbf8bd2228e43854"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Získání UID z URL (?uid=...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const ownerUid = urlParams.get('uid');
+
+        window.addGuestRow = () => {
+            const container = document.getElementById('additionalGuestsContainer');
+            const div = document.createElement('div');
+            div.className = 'guest-row';
+            div.innerHTML = `
+                <input type="text" class="add-name" placeholder="Jméno dalšího hosta" style="margin-bottom:5px">
+                <button type="button" class="btn-small btn-secondary" onclick="this.parentElement.remove()">Odebrat</button>
+            `;
+            container.appendChild(div);
+        }
+
+        document.getElementById('rsvpForm').onsubmit = async (e) => {
+            e.preventDefault();
+            if(!ownerUid) { alert("Chyba: Chybí ID svatby v odkazu!"); return; }
+
+            const helpValues = Array.from(document.querySelectorAll('input[name="help"]:checked')).map(cb => cb.value);
+            const mainName = document.getElementById('mainGuestName').value;
+            const city = document.getElementById('mainGuestCity').value;
+            const needsAcc = document.getElementById('needsAcc').value === 'ano';
+            const rooms = document.getElementById('numRooms').value;
+            
+            // Seznam všech jmen (hlavní + přidružení)
+            const allNames = [mainName];
+            document.querySelectorAll('.add-name').forEach(input => { if(input.value) allNames.push(input.value); });
+
+            try {
+                // Uložíme každého hosta jako samostatný řádek do DB
+                for(let name of allNames) {
+                    await addDoc(collection(db, "hoste"), {
+                        name: name,
+                        city: city,
+                        side: 'Společný', // Default pro hosty z formuláře
+                        status: 'Potvrzeno',
+                        isHelper: helpValues.length > 0,
+                        helperTask: helpValues.join(", "),
+                        needsAcc: needsAcc,
+                        accPlace: needsAcc ? 'Z formuláře' : '',
+                        accRoom: needsAcc ? `Pokoje: ${rooms}` : '',
+                        userId: ownerUid,
+                        submittedDate: new Date().toLocaleDateString('cs-CZ') // Datum vyplnění
+                    });
+                }
+                document.getElementById('formConfig').classList.add('hidden');
+                document.getElementById('successArea').classList.remove('hidden');
+            } catch (err) {
+                alert("Chyba při odesílání: " + err.message);
+            }
+        };
+    </script>
+</body>
+</html>
