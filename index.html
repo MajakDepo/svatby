@@ -141,7 +141,7 @@
 
             <section id="helper-section" class="card page-view hidden">
                 <h2>💪 Seznam pomocníků</h2>
-                <div class="stats" id="helperStatsBlock" style="margin-bottom: 15px; flex-wrap: wrap;"></div>
+                <div id="helperStatsBlock" style="margin-bottom: 20px;"></div>
                 
                 <h3 style="margin-top:20px; color:#f39c12;">⏳ Čekající na rozřazení (z formuláře)</h3>
                 <div class="table-container">
@@ -155,7 +155,7 @@
                 <div class="filter-row" style="background:#f1f1f1; padding:10px; border-radius:8px; margin-bottom:10px;">
                     <strong>Filtr:</strong>
                     <input type="text" id="filterHelperName" placeholder="Jméno..." onkeyup="renderHelpersView()">
-                    <input type="text" id="filterHelperTask" placeholder="Úloha/role..." onkeyup="renderHelpersView()">
+                    <input type="text" id="filterHelperTask" placeholder="Úloha/role (např. Výzdoba, Doprava)..." onkeyup="renderHelpersView()">
                 </div>
                 <div class="table-container">
                     <table>
@@ -167,6 +167,8 @@
 
             <section id="accommodation-section" class="card page-view hidden">
                 <h2>🏠 Organizace ubytování</h2>
+                <datalist id="placesList"></datalist>
+
                 <div class="stats-grid" id="accStatsBlock"></div>
 
                 <h3 style="margin-top:20px; color:#f39c12;">⏳ Nové žádosti o ubytování (z formuláře)</h3>
@@ -186,7 +188,7 @@
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Jméno</th><th>Místo (Hotel/Penzion)</th><th>Pokoj</th><th>Akce</th></tr></thead>
+                        <thead><tr><th>Jméno</th><th>Místo (Vyber nebo napiš nové)</th><th>Pokoj</th><th>Akce</th></tr></thead>
                         <tbody id="accAssignedTableBody"></tbody>
                     </table>
                 </div>
