@@ -69,15 +69,22 @@ function initApp(uid) {
 
     unsubs.push(onSnapshot(doc(db, "nastaveni", uid), (ds) => {
         if (ds.exists()) {
-            const wedInput = document.getElementById('weddingDateInput');
-            if(ds.data().weddingDate && wedInput) {
-                wedInput.value = ds.data().weddingDate;
-                window.updateCountdown();
+            const data = ds.data();
+            if(data.weddingDate) {
+                const wedInput = document.getElementById('weddingDateInput');
+                if(wedInput) wedInput.value = data.weddingDate;
             }
-            if(ds.data().helperCategories) helperCategories = ds.data().helperCategories;
+            if(data.helperCategories && data.helperCategories.length > 0) {
+                helperCategories = data.helperCategories;
+            } else {
+                setDoc(doc(db, "nastaveni", uid), {helperCategories}, {merge:true}); // Pojistka zapsání defaultních
+            }
+        } else {
+            setDoc(doc(db, "nastaveni", uid), {helperCategories}, {merge:true});
         }
+        window.updateCountdown();
         window.renderHelperCategoriesUI();
-        window.renderHelpersView(); // Zajistí, že se pomocníci překreslí ihned po načtení kategorií
+        window.renderHelpersView();
     }));
 
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
@@ -137,13 +144,17 @@ window.updateDashboardStats = () => {
 
 window.saveWeddingDate = () => {
     const d = document.getElementById('weddingDateInput');
-    if(d) setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true });
+    if(d) {
+        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true });
+        window.updateCountdown();
+    }
 };
 
 window.updateCountdown = () => {
     const wedInput = document.getElementById('weddingDateInput');
     const disp = document.getElementById('countdownDisplay');
-    if (!wedInput || !disp || !wedInput.value) return;
+    if (!wedInput || !disp) return;
+    if (!wedInput.value) { disp.innerText = "Nastavte datum svatby"; return; }
     const diff = Math.ceil((new Date(wedInput.value) - new Date()) / 86400000);
     disp.innerText = diff >= 0 ? `Už jen ${diff} dní! 🎉` : `Svatba už proběhla! ❤️`;
 };
@@ -308,7 +319,7 @@ window.renderGuestsView = () => {
     }
 };
 
-// OPRAVA 1: Při ručním zadávání hosta ho rovnou pošleme i do čekáren Pomocníků a Ubytování!
+// OPRAVA: Při přidávání i úpravě z adminu jdou hosté správně do čekačky
 const addGuestBtn = document.getElementById('addGuestBtn');
 if(addGuestBtn) {
     addGuestBtn.onclick = () => {
@@ -321,8 +332,8 @@ if(addGuestBtn) {
             addDoc(guestsColl, { 
                 name, city: document.getElementById('guestCity').value, side: document.getElementById('guestSide').value, 
                 isHelper: isH, needsAcc: needsA, status: 'Pozváno', 
-                helperTask: '', helperStatus: isH ? 'pending' : '',  // Hodnota "pending" je pošle do čekačky!
-                accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', // Taktéž do čekačky u ubytování
+                helperTask: '', helperStatus: isH ? 'pending' : '', 
+                accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', 
                 userId: myUid, submittedDate: new Date().toISOString(), numChildren: numChild, childrenAges: []
             });
             document.getElementById('guestName').value = ''; document.getElementById('guestCity').value = ''; document.getElementById('guestChildren').value = '';
@@ -354,7 +365,7 @@ window.saveGuestEdit = () => {
     
     const guest = allGuestsData.find(g => g.id === id);
     let hStatus = guest.helperStatus;
-    if (isH && (!hStatus || hStatus === '')) hStatus = 'pending'; // Přidáno automatické zařazení do čekačky po úpravě!
+    if (isH && (!hStatus || hStatus === '')) hStatus = 'pending'; 
     if (!isH) hStatus = '';
 
     let aStatus = guest.accStatus;
@@ -453,7 +464,6 @@ window.closeHelperModal = () => {
     if(m) m.classList.add('hidden');
 };
 
-// OPRAVA 2: Funkce přidání nyní ihned překreslí komponenty na obrazovce!
 window.addHelperCategory = () => {
     const input = document.getElementById('newCategoryInput');
     if(!input) return;
