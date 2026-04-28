@@ -78,9 +78,9 @@ function initApp(uid) {
                 helperCategories = data.helperCategories;
             }
         }
-        window.updateCountdown(); // Spustí se vždy, i když dokument ještě neexistuje
-        window.renderHelperCategoriesUI();
+        window.updateCountdown();
         window.renderHelpersView();
+        window.renderModalCategoryList(); 
     }));
 
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
@@ -105,7 +105,7 @@ function initApp(uid) {
     }));
 }
 
-// --- DASHBOARD A ODPOČET ---
+// --- DASHBOARD & ODPOČET ---
 window.updateDashboardStats = () => {
     let totals = { guests: 0, confirmed: 0, declined: 0, helpers: 0, pendingHelpers: 0, accGuests: 0, pendingAcc: 0, child1: 0, child2: 0, child3: 0 };
     
@@ -142,9 +142,9 @@ window.updateDashboardStats = () => {
 window.saveWeddingDate = () => {
     const d = document.getElementById('weddingDateInput');
     if(d && myUid) {
-        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true })
+        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value, userId: myUid }, { merge: true })
         .then(() => window.updateCountdown())
-        .catch(e => alert("Chyba při ukládání data: " + e.message));
+        .catch(e => alert("Chyba oprávnění Firebase: Ujistěte se, že máte ve Firebase -> Firestore -> Rules nastaveno 'allow read, write: if request.auth != null;'. Detail: " + e.message));
     }
 };
 
@@ -453,11 +453,48 @@ window.toggleGuest = (id, s) => {
     updateDoc(doc(db, 'hoste', id), { status: n }); 
 };
 
-// --- POMOCNÍCI ---
-window.renderHelperCategoriesUI = () => {
-    const cont = document.getElementById('categoryTagsContainer');
-    if(!cont) return;
-    cont.innerHTML = helperCategories.map(c => `<span class="city-badge">${c} <button class="btn-small btn-secondary" style="margin-left:5px; padding:0 4px;" onclick="removeHelperCategory('${c}')">x</button></span>`).join('');
+// --- POMOCNÍCI (MODÁL NA KATEGORIE) ---
+window.openCategoryEditModal = () => {
+    window.renderModalCategoryList();
+    document.getElementById('categoryEditModal').classList.remove('hidden');
+};
+
+window.closeCategoryEditModal = () => {
+    document.getElementById('categoryEditModal').classList.add('hidden');
+};
+
+window.renderModalCategoryList = () => {
+    const list = document.getElementById('modalCategoryList');
+    if(!list) return;
+    list.innerHTML = helperCategories.map(c => `
+        <div style="display:flex; justify-content:space-between; background:#f9f9f9; padding:8px; border-radius:5px; border:1px solid #eee;">
+            <span>${c}</span>
+            <button class="btn-small btn-secondary" onclick="removeHelperCategory('${c}')">❌</button>
+        </div>
+    `).join('');
+};
+
+window.addHelperCategoryFromModal = () => {
+    const input = document.getElementById('modalNewCatInput');
+    if(!input) return;
+    const v = input.value.trim();
+    if(v && !helperCategories.includes(v)) { 
+        helperCategories.push(v); 
+        setDoc(doc(db, "nastaveni", myUid), {helperCategories}, {merge:true})
+            .then(() => {
+                input.value = '';
+                window.renderModalCategoryList(); 
+            })
+            .catch(e => alert("Chyba při ukládání: " + e.message));
+    }
+};
+
+window.removeHelperCategory = (cat) => {
+    helperCategories = helperCategories.filter(c => c !== cat);
+    setDoc(doc(db, "nastaveni", myUid), { helperCategories }, { merge: true })
+        .then(() => {
+            window.renderModalCategoryList();
+        });
 };
 
 window.toggleHelperFilter = (cat) => {
@@ -525,22 +562,6 @@ window.saveHelperRoles = () => {
 window.closeHelperModal = () => {
     const m = document.getElementById('helperEditModal');
     if(m) m.classList.add('hidden');
-};
-
-window.addHelperCategory = () => {
-    const input = document.getElementById('newCategoryInput');
-    if(!input) return;
-    const v = input.value.trim();
-    if(v && !helperCategories.includes(v)) { 
-        helperCategories.push(v); 
-        setDoc(doc(db, "nastaveni", myUid), {helperCategories}, {merge:true}); 
-        input.value = '';
-    }
-};
-
-window.removeHelperCategory = (cat) => {
-    helperCategories = helperCategories.filter(c => c !== cat);
-    setDoc(doc(db, "nastaveni", myUid), { helperCategories }, { merge: true });
 };
 
 // --- UBYTOVÁNÍ A KAPACITA ---
