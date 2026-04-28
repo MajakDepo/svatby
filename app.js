@@ -77,6 +77,7 @@ function initApp(uid) {
             if(ds.data().helperCategories) helperCategories = ds.data().helperCategories;
         }
         window.renderHelperCategoriesUI();
+        window.renderHelpersView(); // Zajistí, že se pomocníci překreslí ihned po načtení kategorií
     }));
 
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
@@ -307,6 +308,7 @@ window.renderGuestsView = () => {
     }
 };
 
+// OPRAVA 1: Při ručním zadávání hosta ho rovnou pošleme i do čekáren Pomocníků a Ubytování!
 const addGuestBtn = document.getElementById('addGuestBtn');
 if(addGuestBtn) {
     addGuestBtn.onclick = () => {
@@ -319,7 +321,8 @@ if(addGuestBtn) {
             addDoc(guestsColl, { 
                 name, city: document.getElementById('guestCity').value, side: document.getElementById('guestSide').value, 
                 isHelper: isH, needsAcc: needsA, status: 'Pozváno', 
-                helperTask: '', helperStatus: isH ? 'assigned' : '', accPlace: '', accRoom: '', accStatus: needsA ? 'assigned' : '', 
+                helperTask: '', helperStatus: isH ? 'pending' : '',  // Hodnota "pending" je pošle do čekačky!
+                accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', // Taktéž do čekačky u ubytování
                 userId: myUid, submittedDate: new Date().toISOString(), numChildren: numChild, childrenAges: []
             });
             document.getElementById('guestName').value = ''; document.getElementById('guestCity').value = ''; document.getElementById('guestChildren').value = '';
@@ -348,6 +351,15 @@ window.saveGuestEdit = () => {
     const id = document.getElementById('editGuestId').value;
     const isH = document.getElementById('editIsHelper') ? document.getElementById('editIsHelper').checked : false;
     const needsA = document.getElementById('editNeedsAcc') ? document.getElementById('editNeedsAcc').checked : false;
+    
+    const guest = allGuestsData.find(g => g.id === id);
+    let hStatus = guest.helperStatus;
+    if (isH && (!hStatus || hStatus === '')) hStatus = 'pending'; // Přidáno automatické zařazení do čekačky po úpravě!
+    if (!isH) hStatus = '';
+
+    let aStatus = guest.accStatus;
+    if (needsA && (!aStatus || aStatus === '')) aStatus = 'pending';
+    if (!needsA) aStatus = '';
 
     updateDoc(doc(db, 'hoste', id), { 
         name: document.getElementById('editGuestName').value,
@@ -355,7 +367,9 @@ window.saveGuestEdit = () => {
         side: document.getElementById('editGuestSide').value,
         numChildren: Number(document.getElementById('editNumChildren').value),
         isHelper: isH,
-        needsAcc: needsA
+        needsAcc: needsA,
+        helperStatus: hStatus,
+        accStatus: aStatus
     });
     window.closeModal();
 };
@@ -439,20 +453,25 @@ window.closeHelperModal = () => {
     if(m) m.classList.add('hidden');
 };
 
+// OPRAVA 2: Funkce přidání nyní ihned překreslí komponenty na obrazovce!
 window.addHelperCategory = () => {
     const input = document.getElementById('newCategoryInput');
     if(!input) return;
     const v = input.value.trim();
-    if(v) { 
+    if(v && !helperCategories.includes(v)) { 
         helperCategories.push(v); 
         setDoc(doc(db, "nastaveni", myUid), {helperCategories}, {merge:true}); 
         input.value = '';
+        window.renderHelperCategoriesUI();
+        window.renderHelpersView();
     }
 };
 
 window.removeHelperCategory = (cat) => {
     helperCategories = helperCategories.filter(c => c !== cat);
     setDoc(doc(db, "nastaveni", myUid), { helperCategories }, { merge: true });
+    window.renderHelperCategoriesUI();
+    window.renderHelpersView();
 };
 
 // --- UBYTOVÁNÍ ---
