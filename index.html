@@ -14,12 +14,12 @@
     <main>
         <section id="authSection" class="card text-center">
             <h2>Přihlášení / Registrace</h2>
-            <p style="margin-bottom: 15px;">Pro přístup k plánovači se prosím přihlas.</p>
+            <p style="margin-bottom: 15px;">Vítejte! Pro správu své svatby se prosím přihlaste.</p>
             <div class="input-group">
-                <input type="email" id="emailInput" placeholder="Zadej e-mail">
+                <input type="email" id="emailInput" placeholder="E-mail">
             </div>
             <div class="input-group">
-                <input type="password" id="passwordInput" placeholder="Zadej heslo (min. 6 znaků)">
+                <input type="password" id="passwordInput" placeholder="Heslo (min. 6 znaků)">
             </div>
             <div class="button-group">
                 <button id="loginBtn">Přihlásit se</button>
@@ -38,9 +38,9 @@
             </nav>
 
             <section id="todo" class="card">
-                <h2>To-Do List & Úkoly pro pomocníky</h2>
+                <h2>To-Do List</h2>
                 <div class="input-group">
-                    <input type="text" id="taskInput" placeholder="Zadej nový úkol (např. Objednat dort)...">
+                    <input type="text" id="taskInput" placeholder="Co je potřeba udělat?">
                     <button id="addBtn">Přidat</button>
                 </div>
                 <ul id="taskList"></ul>
@@ -48,20 +48,39 @@
 
             <section id="guests" class="card">
                 <h2>Seznam hostů</h2>
-                <p>Zde bude modul pro správu hostů (zatím v přípravě).</p>
+                <div class="guest-form">
+                    <input type="text" id="guestName" placeholder="Jméno hosta">
+                    <select id="guestSide">
+                        <option value="Nevěsta">Strana Nevěsty</option>
+                        <option value="Ženich">Strana Ženicha</option>
+                    </select>
+                    <button id="addGuestBtn">Přidat hosta</button>
+                </div>
+                
                 <div class="stats">
-                    <div class="stat-box">Pozváno: <strong>0</strong></div>
-                    <div class="stat-box">Potvrzeno: <strong>0</strong></div>
+                    <div class="stat-box">Celkem hostů: <strong id="totalGuests">0</strong></div>
+                    <div class="stat-box">Potvrzeno: <strong id="confirmedGuests">0</strong></div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Jméno</th>
+                                <th>Strana</th>
+                                <th>Stav</th>
+                                <th>Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="guestTableBody">
+                            </tbody>
+                    </table>
                 </div>
             </section>
 
             <section id="budget" class="card">
                 <h2>Rozpočet</h2>
-                <p>Zde bude modul pro sledování výdajů (zatím v přípravě).</p>
-                <div class="stats">
-                    <div class="stat-box">Rozpočet: <strong>100 000 Kč</strong></div>
-                    <div class="stat-box">Utraceno: <strong>0 Kč</strong></div>
-                </div>
+                <p>Modul v přípravě...</p>
             </section>
         </div>
     </main>
