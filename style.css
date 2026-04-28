@@ -1,48 +1,48 @@
 /* Základní nastavení */
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-body { background-color: #f9f5f6; color: #333; line-height: 1.6; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+body { background-color: #f9f5f6; color: #333; line-height: 1.6; scroll-behavior: smooth; }
 
-/* Hlavička */
-header { background-color: #e5b2b2; color: white; padding: 1rem 0; text-align: center; }
-
-/* Navigace uvnitř aplikace */
-.app-nav { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-.app-nav ul { list-style: none; display: flex; gap: 15px; }
-.app-nav a { color: #e5b2b2; text-decoration: none; font-weight: bold; }
-.app-nav a:hover { text-decoration: underline; }
-
-/* Hlavní obsah */
-main { max-width: 800px; margin: 20px auto; padding: 0 15px; }
-.card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-.card h2 { color: #e5b2b2; margin-bottom: 15px; border-bottom: 2px solid #f9f5f6; padding-bottom: 5px; }
-
-/* Pomocné třídy */
-.text-center { text-align: center; }
+/* Struktura */
+header { background-color: #e5b2b2; color: white; padding: 1.5rem 0; text-align: center; margin-bottom: 10px; }
+main { max-width: 900px; margin: 0 auto; padding: 20px; }
+.card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 25px; }
+.card h2 { color: #e5b2b2; margin-bottom: 20px; border-bottom: 2px solid #f9f5f6; padding-bottom: 10px; }
 .hidden { display: none !important; }
+.text-center { text-align: center; }
 
-/* Vstupy a Tlačítka */
-.input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-.button-group { display: flex; gap: 10px; justify-content: center; }
-input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 100%; }
+/* Navigace */
+.app-nav { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.app-nav ul { list-style: none; display: flex; gap: 20px; }
+.app-nav a { color: #e5b2b2; text-decoration: none; font-weight: bold; }
 
-button { padding: 10px 20px; background-color: #e5b2b2; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+/* Formuláře a tlačítka */
+.input-group, .guest-form { display: flex; gap: 10px; margin-bottom: 20px; }
+input, select { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+button { padding: 12px 20px; background-color: #e5b2b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
 button:hover { background-color: #d49595; }
-.btn-secondary { background-color: #f1f1f1; color: #333; }
-.btn-secondary:hover { background-color: #e2e2e2; }
-.btn-small { padding: 5px 10px; font-size: 0.9em; }
+.btn-secondary { background-color: #eee; color: #555; }
+.btn-small { padding: 6px 12px; font-size: 0.85rem; }
 
-/* Seznamy */
+/* Seznam úkolů */
 ul#taskList { list-style: none; }
-ul#taskList li { background: #f9f5f6; margin-bottom: 5px; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-ul#taskList li.completed span { text-decoration: line-through; color: #888; }
+ul#taskList li { background: #fff9fa; border: 1px solid #f0e4e4; margin-bottom: 8px; padding: 12px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+ul#taskList li.completed span { text-decoration: line-through; color: #aaa; }
+
+/* Tabulka hostů */
+.table-container { overflow-x: auto; margin-top: 20px; }
+table { width: 100%; border-collapse: collapse; min-width: 500px; }
+th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+th { color: #888; font-size: 0.9rem; text-transform: uppercase; }
+.status-invited { color: #f39c12; font-weight: bold; }
+.status-confirmed { color: #27ae60; font-weight: bold; }
 
 /* Statistiky */
-.stats { display: flex; gap: 15px; margin-top: 15px; }
-.stat-box { background: #f1f1f1; padding: 10px; border-radius: 5px; flex: 1; text-align: center; }
-footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+.stats { display: flex; gap: 20px; margin-bottom: 20px; }
+.stat-box { flex: 1; background: #fdf2f3; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #fbe5e7; }
+.stat-box strong { font-size: 1.4rem; color: #e5b2b2; display: block; }
 
-/* Mobilní responzivita */
-@media (max-width: 600px) {
-    .input-group, .button-group, .stats, .app-nav { flex-direction: column; gap: 10px; }
-    .app-nav ul { flex-direction: column; text-align: center; }
+/* Responzivita */
+@media (max-width: 650px) {
+    .input-group, .guest-form, .app-nav { flex-direction: column; }
+    .app-nav ul { margin-bottom: 15px; justify-content: center; }
 }
