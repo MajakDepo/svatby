@@ -38,29 +38,14 @@ document.getElementById('registerBtn').onclick = () => createUserWithEmailAndPas
 document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
 function initApp(uid) {
-    // 0. VYTVOŘENÍ ODKAZU PRO HOSTY (Zelený box)
-    const guestSection = document.getElementById('guests');
-    // Správné složení URL pro GitHub Pages
-    let currentPath = window.location.pathname.replace('index.html', '');
+    // 0. GENERATOR ODKAZU PRO HOSTY
+    let currentPath = window.location.pathname;
+    if (currentPath.endsWith('index.html')) currentPath = currentPath.replace('index.html', '');
     if (!currentPath.endsWith('/')) currentPath += '/';
     const shareUrl = window.location.origin + currentPath + 'formular.html?uid=' + uid;
     
-    if(!document.getElementById('shareBox')) {
-        const shareBox = document.createElement('div');
-        shareBox.id = 'shareBox';
-        shareBox.className = 'input-form-extended'; // Použijeme existující CSS třídu
-        shareBox.style.background = '#e8f5e9';
-        shareBox.style.borderColor = '#c8e6c9';
-        shareBox.innerHTML = `
-            <p><strong>Odkaz pro vaše hosty:</strong> Pošlete jim tento odkaz pro vyplnění účasti:</p>
-            <div style="display:flex; gap:10px; width:100%;">
-                <input type="text" readonly value="${shareUrl}" style="background:white; flex:1;">
-                <button onclick="navigator.clipboard.writeText('${shareUrl}'); alert('Odkaz zkopírován do schránky!')">Kopírovat</button>
-            </div>
-        `;
-        // Vložíme ho hned pod nadpis sekce hostů
-        guestSection.insertBefore(shareBox, guestSection.children[1]);
-    }
+    const urlInput = document.getElementById('shareUrlInput');
+    if (urlInput) urlInput.value = shareUrl;
 
     // 1. ÚKOLY
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
@@ -240,12 +225,20 @@ document.getElementById('addBudgetBtn').onclick = () => {
     document.getElementById('budgetItemName').value = ''; document.getElementById('budgetEstimated').value = '';
 };
 
-// Globální funkce pro onchange/onclick
+// Globální funkce
 window.db = db; window.doc = doc; window.deleteDoc = deleteDoc; window.updateDoc = updateDoc;
 window.toggleGuest = (id, s) => updateDoc(doc(db, 'hoste', id), { status: s === 'Pozváno' ? 'Potvrzeno' : 'Pozváno' });
 window.editTaskName = (id, oldText) => {
     let newText = prompt("Upravit úkol:", oldText);
     if (newText && newText.trim() !== "") updateDoc(doc(db, 'ukoly', id), { text: newText.trim() });
+};
+
+window.copyShareUrl = () => {
+    const copyText = document.getElementById("shareUrlInput");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    alert("Odkaz byl zkopírován: " + copyText.value);
 };
 
 window.openEditModal = (id) => {
