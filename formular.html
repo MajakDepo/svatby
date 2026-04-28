@@ -9,8 +9,14 @@
         body { background: #fdf2f3; }
         .form-container { max-width: 600px; margin: 30px auto; padding: 20px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .guest-row { border-bottom: 1px solid #eee; padding: 15px 0; }
-        .help-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .success-msg { text-align: center; color: #27ae60; padding: 40px; }
+        
+        /* Vylepšený design pro checkbox nabídky pomoci */
+        .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 15px; }
+        .help-card { border: 1px solid #ddd; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; background: white; }
+        .help-card:hover { border-color: #e5b2b2; background: #fdf2f3; }
+        .help-card input { display: none; }
+        .help-card.selected { background: #e5b2b2; color: white; border-color: #d49595; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -33,8 +39,8 @@
             </div>
             <button type="button" class="btn-secondary" onclick="addGuestRow()" style="width: 100%; margin-bottom: 20px;">+ Přidat další osobu</button>
 
-            <div class="input-form">
-                <label>Potřebujete ubytování?</label>
+            <div class="input-form" style="background: #fafafa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <label><strong>Potřebujete ubytování?</strong></label>
                 <select id="needsAcc" onchange="document.getElementById('roomsDiv').style.display = this.value === 'ano' ? 'block' : 'none'">
                     <option value="ne">Ne, nebudeme přespávat</option>
                     <option value="ano">Ano, prosíme o ubytování</option>
@@ -45,14 +51,14 @@
                 </div>
             </div>
 
-            <div class="card" style="background: #fafafa; border: 1px solid #eee;">
-                <label><strong>Jste ochotni nám s něčím pomoci?</strong></label>
-                <div class="help-options">
-                    <label><input type="checkbox" name="help" value="Pečení/Dorty"> Pečení / Dorty</label>
-                    <label><input type="checkbox" name="help" value="Výzdoba"> Výzdoba</label>
-                    <label><input type="checkbox" name="help" value="Doprava"> Doprava hostů</label>
-                    <label><input type="checkbox" name="help" value="Koordinace"> Koordinace na místě</label>
-                    <label><input type="checkbox" name="help" value="Hudba/Program"> Hudba / Program</label>
+            <div style="background: #fdf9f9; padding: 15px; border-radius: 8px; border: 1px solid #fce4ec;">
+                <label><strong>Jste ochotni nám s něčím pomoci? (Klikněte na možnost)</strong></label>
+                <div class="help-grid">
+                    <label class="help-card"><input type="checkbox" name="help" value="Pečení/Dorty" onchange="toggleCard(this)"> 🎂 Pečení / Dorty</label>
+                    <label class="help-card"><input type="checkbox" name="help" value="Výzdoba" onchange="toggleCard(this)"> 🎀 Výzdoba</label>
+                    <label class="help-card"><input type="checkbox" name="help" value="Doprava" onchange="toggleCard(this)"> 🚗 Doprava hostů</label>
+                    <label class="help-card"><input type="checkbox" name="help" value="Koordinace" onchange="toggleCard(this)"> 📋 Koordinace na místě</label>
+                    <label class="help-card"><input type="checkbox" name="help" value="Hudba/Program" onchange="toggleCard(this)"> 🎵 Hudba / Program</label>
                 </div>
             </div>
 
@@ -61,11 +67,7 @@
     </div>
 
     <div id="successArea" class="form-container hidden">
-        <div class="success-msg">
-            <h1>❤️</h1>
-            <h2>Děkujeme!</h2>
-            <p>Vaše údaje byly úspěšně odeslány. Těšíme se na vás!</p>
-        </div>
+        <div class="success-msg"><h1>❤️</h1><h2>Děkujeme!</h2><p>Vaše údaje byly úspěšně odeslány.</p></div>
     </div>
 
     <script type="module">
@@ -85,6 +87,12 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const ownerUid = urlParams.get('uid');
+
+        // Funkce pro obarvení vybraných karet
+        window.toggleCard = (checkbox) => {
+            if (checkbox.checked) checkbox.parentElement.classList.add('selected');
+            else checkbox.parentElement.classList.remove('selected');
+        };
 
         window.addGuestRow = () => {
             const container = document.getElementById('additionalGuestsContainer');
@@ -109,7 +117,7 @@
             
             const allNames = [mainName];
             document.querySelectorAll('.add-name').forEach(input => { if(input.value) allNames.push(input.value); });
-            const todayISO = new Date().toISOString().split('T')[0]; // Uloží datum jako YYYY-MM-DD
+            const todayISO = new Date().toISOString(); 
 
             try {
                 for(let i = 0; i < allNames.length; i++) {
@@ -120,11 +128,11 @@
                         status: 'Potvrzeno',
                         isHelper: helpValues.length > 0,
                         helperTask: helpValues.join(", "),
-                        helperStatus: helpValues.length > 0 ? 'pending' : 'assigned', // Jde do čekačky
+                        helperStatus: helpValues.length > 0 ? 'pending' : 'assigned',
                         needsAcc: needsAcc,
                         accPlace: '',
                         accRoom: needsAcc ? (i === 0 ? `Požadavek: ${rooms} pokojů (skupina)` : 'Součást skupiny') : '',
-                        accStatus: needsAcc ? 'pending' : 'assigned', // Jde do čekačky
+                        accStatus: needsAcc ? 'pending' : 'assigned',
                         userId: ownerUid,
                         submittedDate: todayISO 
                     });
