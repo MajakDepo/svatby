@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Svatební Plánovač</title>
+    <title>Svatební Plánovač Pro</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -31,6 +31,8 @@
                 <ul>
                     <li><a href="#todo">Úkoly</a></li>
                     <li><a href="#guests">Hosté</a></li>
+                    <li><a href="#helper-section">Pomocníci</a></li>
+                    <li><a href="#accommodation-section">Ubytování</a></li>
                     <li><a href="#budget">Rozpočet</a></li>
                 </ul>
                 <button id="logoutBtn" class="btn-small">Odhlásit se</button>
@@ -46,25 +48,56 @@
             </section>
 
             <section id="guests" class="card">
-                <h2>Seznam hostů</h2>
-                <div class="input-form">
-                    <input type="text" id="guestName" placeholder="Jméno hosta">
-                    <select id="guestSide">
-                        <option value="Nevěsta">Strana Nevěsty</option>
-                        <option value="Ženich">Strana Ženicha</option>
-                    </select>
-                    <button id="addGuestBtn">Přidat</button>
+                <h2>Správa hostů</h2>
+                <div class="input-form-extended">
+                    <div class="row">
+                        <input type="text" id="guestName" placeholder="Jméno a příjmení">
+                        <input type="text" id="guestCity" placeholder="Město">
+                        <select id="guestSide">
+                            <option value="Nevěsta">Strana Nevěsty</option>
+                            <option value="Ženich">Strana Ženicha</option>
+                            <option value="Společný">Společný host</option>
+                        </select>
+                    </div>
+                    <div class="row checkbox-row">
+                        <label><input type="checkbox" id="isHelper"> Pomocník</label>
+                        <label><input type="checkbox" id="needsAcc"> Ubytování</label>
+                        <button id="addGuestBtn">Přidat hosta</button>
+                    </div>
                 </div>
-                <div class="stats">
-                    <div class="stat-box">Hostů: <strong id="totalGuests">0</strong></div>
-                    <div class="stat-box">Potvrzeno: <strong id="confirmedGuests">0</strong></div>
-                </div>
+                
                 <div class="table-container">
                     <table>
                         <thead>
-                            <tr><th>Jméno</th><th>Strana</th><th>Stav</th><th>Akce</th></tr>
+                            <tr><th>Jméno</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr>
                         </thead>
                         <tbody id="guestTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="helper-section" class="card">
+                <h2>💪 Seznam pomocníků</h2>
+                <p>Zde se automaticky zobrazí hosté označení jako pomocníci.</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Jméno</th><th>Konkrétní úloha / práce</th></tr>
+                        </thead>
+                        <tbody id="helperTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="accommodation-section" class="card">
+                <h2>🏠 Organizace ubytování</h2>
+                <p>Zde jsou hosté, kteří potřebují přespat.</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Jméno</th><th>Místo / Číslo pokoje</th></tr>
+                        </thead>
+                        <tbody id="accTableBody"></tbody>
                     </table>
                 </div>
             </section>
@@ -72,7 +105,7 @@
             <section id="budget" class="card">
                 <h2>Rozpočet</h2>
                 <div class="input-form">
-                    <input type="text" id="budgetItemName" placeholder="Položka (např. Prstýnky)">
+                    <input type="text" id="budgetItemName" placeholder="Položka">
                     <input type="number" id="budgetEstimated" placeholder="Odhad (Kč)">
                     <button id="addBudgetBtn">Přidat</button>
                 </div>
