@@ -7,19 +7,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <h1>💍 Náš Svatební Plánovač</h1>
-    </header>
+    <header><h1>💍 Náš Svatební Plánovač</h1></header>
 
     <main>
         <section id="authSection" class="card text-center">
             <h2>Přihlášení / Registrace</h2>
-            <div class="input-group">
-                <input type="email" id="emailInput" placeholder="E-mail">
-            </div>
-            <div class="input-group">
-                <input type="password" id="passwordInput" placeholder="Heslo">
-            </div>
+            <div class="input-group"><input type="email" id="emailInput" placeholder="E-mail"></div>
+            <div class="input-group"><input type="password" id="passwordInput" placeholder="Heslo"></div>
             <div class="button-group">
                 <button id="loginBtn">Přihlásit se</button>
                 <button id="registerBtn" class="btn-secondary">Vytvořit účet</button>
@@ -49,7 +43,6 @@
 
             <section id="guests" class="card">
                 <h2>Správa hostů</h2>
-                
                 <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
                     <p><strong>Odkaz pro vaše hosty:</strong> Pošlete jim tento odkaz pro vyplnění účasti:</p>
                     <div style="display:flex; gap:10px; width:100%;">
@@ -78,13 +71,27 @@
                 <div class="stats-grid" id="guestStatsBlock"></div>
 
                 <div class="table-container">
-                    <div class="filter-row">
-                        <strong>Filtrovat:</strong>
-                        <input type="text" id="filterGuestName" placeholder="Jméno..." onkeyup="filterGuests()">
-                        <input type="text" id="filterGuestCity" placeholder="Město..." onkeyup="filterGuests()">
-                        <input type="text" id="filterGuestSide" placeholder="Strana..." onkeyup="filterGuests()">
-                        <input type="text" id="filterGuestStatus" placeholder="Stav..." onkeyup="filterGuests()">
+                    <div class="filter-box">
+                        <strong>Filtrovat hosty:</strong>
+                        <div class="filter-inputs">
+                            <input type="text" id="filterGuestName" placeholder="Jména (např. Jan, Petr)..." onkeyup="filterGuests()">
+                            <input type="text" id="filterGuestCity" placeholder="Města (např. Praha, Brno)..." onkeyup="filterGuests()">
+                            <input type="date" id="filterGuestDate" onchange="filterGuests()" title="Vyplněno z formuláře dne">
+                        </div>
+                        <div class="filter-checks">
+                            <span><strong>Strana:</strong></span>
+                            <label><input type="checkbox" class="filter-side" value="Nevěsta" onchange="filterGuests()"> Nevěsta</label>
+                            <label><input type="checkbox" class="filter-side" value="Ženich" onchange="filterGuests()"> Ženich</label>
+                            <label><input type="checkbox" class="filter-side" value="Společný" onchange="filterGuests()"> Společný</label>
+                        </div>
+                        <div class="filter-checks">
+                            <span><strong>Stav:</strong></span>
+                            <label><input type="checkbox" class="filter-status" value="Pozváno" onchange="filterGuests()"> Pozváno</label>
+                            <label><input type="checkbox" class="filter-status" value="Potvrzeno" onchange="filterGuests()"> Potvrzeno</label>
+                            <label><input type="checkbox" class="filter-status" value="Nezúčastní se" onchange="filterGuests()"> Nezúčastní se</label>
+                        </div>
                     </div>
+
                     <table id="guestTable">
                         <thead>
                             <tr><th>Jméno</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr>
@@ -97,29 +104,43 @@
             <section id="helper-section" class="card">
                 <h2>💪 Seznam pomocníků</h2>
                 <div class="stats" id="helperStatsBlock" style="margin-bottom: 15px; flex-wrap: wrap;"></div>
+                
+                <h3 style="margin-top:20px; color:#f39c12;">⏳ Čekající na rozřazení (z formuláře)</h3>
                 <div class="table-container">
-                    <div class="filter-row">
-                        <strong>Filtrovat:</strong>
-                        <input type="text" id="filterHelperName" placeholder="Jméno..." onkeyup="filterHelpers()">
-                        <input type="text" id="filterHelperTask" placeholder="Úloha..." onkeyup="filterHelpers()">
-                    </div>
-                    <table id="helperTable">
-                        <thead>
-                            <tr><th>Jméno</th><th>Konkrétní úloha / práce</th></tr>
-                        </thead>
-                        <tbody id="helperTableBody"></tbody>
+                    <table>
+                        <thead><tr><th>Jméno</th><th>Nabízená pomoc</th><th>Akce</th></tr></thead>
+                        <tbody id="helperPendingTableBody"></tbody>
+                    </table>
+                </div>
+
+                <h3 style="margin-top:20px; color:#27ae60;">✅ Potvrzení pomocníci</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Jméno</th><th>Konkrétní úloha / práce</th></tr></thead>
+                        <tbody id="helperAssignedTableBody"></tbody>
                     </table>
                 </div>
             </section>
 
             <section id="accommodation-section" class="card">
                 <h2>🏠 Organizace ubytování</h2>
+                
+                <div class="stats-grid" id="accStatsBlock">
+                    </div>
+
+                <h3 style="margin-top:20px; color:#f39c12;">⏳ Nové žádosti o ubytování (z formuláře)</h3>
                 <div class="table-container">
                     <table>
-                        <thead>
-                            <tr><th>Jméno</th><th>Místo (Hotel/Penzion)</th><th>Pokoj</th></tr>
-                        </thead>
-                        <tbody id="accTableBody"></tbody>
+                        <thead><tr><th>Jméno</th><th>Požadavek</th><th>Akce</th></tr></thead>
+                        <tbody id="accPendingTableBody"></tbody>
+                    </table>
+                </div>
+
+                <h3 style="margin-top:20px; color:#27ae60;">✅ Rozřazení hosté</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Jméno</th><th>Místo (Hotel/Penzion)</th><th>Pokoj</th><th>Akce</th></tr></thead>
+                        <tbody id="accAssignedTableBody"></tbody>
                     </table>
                 </div>
             </section>
@@ -137,9 +158,7 @@
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead>
-                            <tr><th>Položka</th><th>Odhad</th><th>Skutečnost</th><th>Akce</th></tr>
-                        </thead>
+                        <thead><tr><th>Položka</th><th>Odhad</th><th>Skutečnost</th><th>Akce</th></tr></thead>
                         <tbody id="budgetTableBody"></tbody>
                     </table>
                 </div>
