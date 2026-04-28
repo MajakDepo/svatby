@@ -43,8 +43,15 @@
                     </div>
                     <div class="card dash-card" onclick="showPage('guests')">
                         <h3>Hosté a Děti</h3>
-                        <p>Dospělých: <strong id="dashTotalGuests">0</strong></p>
-                        <p>Dětí celkem: <strong id="dashTotalChildren" style="color:#d81b60;">0</strong></p>
+                        <p>Celkem dospělých: <strong id="dashTotalGuests">0</strong></p>
+                        <p>Potvrzeno: <strong id="dashConfirmedGuests" style="color:#27ae60;">0</strong></p>
+                        <p>Odmítlo: <strong id="dashDeclinedGuests" style="color:#c62828;">0</strong></p>
+                        <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee; font-size: 0.9rem;">
+                            <strong>Děti:</strong><br>
+                            0-3 roky: <strong id="dashChild1" style="color:#d81b60;">0</strong> |
+                            4-10 let: <strong id="dashChild2" style="color:#d81b60;">0</strong> |
+                            11+ let: <strong id="dashChild3" style="color:#d81b60;">0</strong>
+                        </div>
                     </div>
                     <div class="card dash-card" onclick="showPage('helper-section')">
                         <h3>Pomocníci</h3>
