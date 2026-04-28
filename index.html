@@ -38,21 +38,18 @@
                     <div class="card text-center" style="grid-column: 1 / -1; background: #fce4ec; border: 2px solid #f8bbd0;">
                         <h2 style="border-bottom: none; margin-bottom: 5px;">Odpočet do svatby ⏳</h2>
                         <input type="date" id="weddingDateInput" onchange="saveWeddingDate()" style="margin-bottom: 10px;">
-                        <div id="countdownDisplay" style="font-size: 2rem; font-weight: bold; color: #d81b60;">Nastavte datum svatby</div>
+                        <div id="countdownDisplay" style="font-size: 2rem; font-weight: bold; color: #d81b60;">Načítám...</div>
                     </div>
-
                     <div class="card dash-card" onclick="showPage('guests')">
-                        <h3>Hosté</h3>
-                        <p>Pozváno: <strong id="dashTotalGuests">0</strong></p>
-                        <p>Potvrzeno: <strong id="dashConfirmedGuests" style="color: #27ae60;">0</strong></p>
+                        <h3>Hosté a Děti</h3>
+                        <p>Dospělých: <strong id="dashTotalGuests">0</strong></p>
+                        <p>Dětí celkem: <strong id="dashTotalChildren" style="color:#d81b60;">0</strong></p>
                     </div>
-
                     <div class="card dash-card" onclick="showPage('helper-section')">
                         <h3>Pomocníci</h3>
                         <p>Celkem: <strong id="dashTotalHelpers">0</strong></p>
                         <p>K rozřazení: <strong id="dashPendingHelpers" style="color: #f39c12;">0</strong></p>
                     </div>
-
                     <div class="card dash-card" onclick="showPage('accommodation-section')">
                         <h3>Ubytování</h3>
                         <p>Osob: <strong id="dashTotalAcc">0</strong></p>
@@ -61,62 +58,24 @@
                 </div>
             </section>
 
-            <section id="todo" class="card page-view hidden">
-                <h2>To-Do List</h2>
-                <div class="input-group">
-                    <input type="text" id="taskInput" placeholder="Nová položka k vyřízení...">
-                    <button id="addBtn">Přidat</button>
-                </div>
-                <ul id="taskList"></ul>
-            </section>
-
             <section id="guests" class="card page-view hidden">
                 <h2>Správa hostů</h2>
-                <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
-                    <p><strong>Odkaz pro vaše hosty:</strong></p>
-                    <div style="display:flex; gap:10px; width:100%;">
-                        <input type="text" id="shareUrlInput" readonly value="Načítám odkaz..." style="background:white; flex:1;">
-                        <button onclick="copyShareUrl()">Kopírovat</button>
-                    </div>
-                </div>
-
                 <div class="input-form-extended">
-                    <h3 style="margin-bottom: 10px; font-size: 1rem; color: #666;">Ruční přidání hosta</h3>
                     <div class="row">
                         <input type="text" id="guestName" placeholder="Jméno a příjmení">
                         <input type="text" id="guestCity" placeholder="Město">
-                        <select id="guestSide">
-                            <option value="Nevěsta">Strana Nevěsty</option>
-                            <option value="Ženich">Strana Ženicha</option>
-                            <option value="Společný">Společný host</option>
-                        </select>
+                        <select id="guestSide"><option value="Nevěsta">Nevěsta</option><option value="Ženich">Ženich</option><option value="Společný">Společný</option></select>
                     </div>
-                    <div class="row checkbox-row">
-                        <label><input type="checkbox" id="isHelper"> Pomocník</label>
-                        <label><input type="checkbox" id="needsAcc"> Ubytování</label>
+                    <div class="row">
+                        <input type="number" id="guestChildren" placeholder="Počet dětí" min="0" style="max-width:120px;">
                         <button id="addGuestBtn">Přidat hosta</button>
                     </div>
                 </div>
-                
                 <div class="stats-grid" id="guestStatsBlock"></div>
                 <div id="cityBadgesContainer" style="margin-bottom: 20px;"></div>
-
                 <div class="table-container">
-                    <div class="filter-box">
-                        <strong>Filtrovat a řadit hosty:</strong>
-                        <div class="filter-inputs">
-                            <input type="text" id="filterGuestName" placeholder="Jména (např. Jan, Petr)..." onkeyup="renderGuestsView()">
-                            <input type="text" id="filterGuestCity" placeholder="Města (např. Praha, Brno)..." onkeyup="renderGuestsView()">
-                            <input type="date" id="filterGuestDate" onchange="renderGuestsView()" title="Vyplněno dne">
-                            <select id="sortGuestDate" onchange="renderGuestsView()" style="flex:1;">
-                                <option value="desc">Nejnovější záznamy nahoře</option>
-                                <option value="asc">Nejstarší záznamy nahoře</option>
-                                <option value="name">Řadit abecedně podle jména</option>
-                            </select>
-                        </div>
-                    </div>
                     <table id="guestTable">
-                        <thead><tr><th>Jméno</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead>
+                        <thead><tr><th>Jméno / Děti</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead>
                         <tbody id="guestTableBody"></tbody>
                     </table>
                 </div>
@@ -124,145 +83,79 @@
 
             <section id="helper-section" class="card page-view hidden">
                 <h2>💪 Seznam pomocníků</h2>
-                
-                <div class="input-form-extended" style="background:#fdf9f9;">
-                    <strong>Správa kategorií (Propsáno i do formuláře pro hosty)</strong>
-                    <div class="row" style="margin-top:5px;">
-                        <input type="text" id="newCategoryInput" placeholder="Nová role (např. Hlídání dětí)">
-                        <button onclick="addHelperCategory()">Přidat kategorii</button>
-                    </div>
+                <div class="input-form-extended">
+                    <input type="text" id="newCategoryInput" placeholder="Nová kategorie pomoci">
+                    <button onclick="addHelperCategory()">Přidat</button>
                     <div id="categoryTagsContainer" style="margin-top:10px;"></div>
                 </div>
-
-                <p style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">Kliknutím na bubliny vyfiltrujete tabulku níže (lze vybrat i více najednou):</p>
                 <div id="helperStatsBlock" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
-                
-                <h3 style="margin-top:20px; color:#f39c12;">⏳ Čekající na rozřazení (z formuláře)</h3>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Jméno</th><th>Úprava a potvrzení rolí</th><th>Akce</th></tr></thead>
-                        <tbody id="helperPendingTableBody"></tbody>
-                    </table>
-                </div>
-
-                <h3 style="margin-top:20px; color:#27ae60;">✅ Potvrzení pomocníci</h3>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Jméno</th><th>Přiřazené role</th><th>Akce</th></tr></thead>
-                        <tbody id="helperAssignedTableBody"></tbody>
-                    </table>
-                </div>
+                <h3 style="color:#f39c12;">⏳ Čekající na schválení</h3>
+                <div class="table-container"><table id="helperPendingTable"><thead><tr><th>Jméno</th><th>Výběr rolí</th><th>Akce</th></tr></thead><tbody id="helperPendingTableBody"></tbody></table></div>
+                <h3 style="color:#27ae60;">✅ Potvrzení pomocníci</h3>
+                <div class="table-container"><table><thead><tr><th>Jméno</th><th>Role</th><th>Akce</th></tr></thead><tbody id="helperAssignedTableBody"></tbody></table></div>
             </section>
 
             <section id="accommodation-section" class="card page-view hidden">
-                <h2>🏠 Organizace ubytování</h2>
-                <datalist id="placesList"></datalist>
-
-                <div class="input-form-extended" style="background:#fdf9f9;">
-                    <strong>Přidat nové místo ubytování a jeho kapacitu</strong>
-                    <p style="font-size:0.85rem; color:#666;">Zadejte názvy pokojů oddělené čárkou (např. <em>5x dvoulůžkový, 2x jednolůžkový</em>). Systém sám vyhodnotí kapacitu podle názvu!</p>
-                    <div class="row" style="margin-top:5px;">
-                        <input type="text" id="newPlaceName" placeholder="Místo (např. Chalupa Na Skále)">
-                        <input type="text" id="newPlaceRooms" placeholder="Pokoje (např. 5x dvoulůžkový, 2x jednolůžkový)">
-                        <button onclick="addAccPlace()">Přidat kapacity</button>
-                    </div>
+                <h2>🏠 Ubytování</h2>
+                <div class="input-form-extended">
+                    <input type="text" id="newPlaceName" placeholder="Název hotelu/penzionu">
+                    <input type="text" id="newPlaceRooms" placeholder="Pokoje (např. 2x dvoulůžkový)">
+                    <button onclick="addAccPlace()">Vytvořit kapacity</button>
                 </div>
-
-                <div id="accPlacesContainer" style="margin-bottom: 20px;"></div>
-
-                <h3 style="margin-top:20px; color:#f39c12;">⏳ Nové žádosti o ubytování (z formuláře)</h3>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Jméno</th><th>Požadavek</th><th>Přiřazení Místa a Pokoje</th><th>Akce</th></tr></thead>
-                        <tbody id="accPendingTableBody"></tbody>
-                    </table>
-                </div>
-
-                <h3 style="margin-top:20px; color:#27ae60;">✅ Rozřazení hosté</h3>
-                <div class="filter-row" style="background:#f1f1f1; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; gap:10px;">
-                    <strong>Filtr:</strong>
-                    <input type="text" id="filterAccName" placeholder="Jméno..." onkeyup="renderAccView()">
-                    <input type="text" id="filterAccPlace" placeholder="Místo ubytování..." onkeyup="renderAccView()">
-                    <input type="text" id="filterAccRoom" placeholder="Pokoj..." onkeyup="renderAccView()">
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Jméno</th><th>Místo</th><th>Pokoj</th><th>Akce</th></tr></thead>
-                        <tbody id="accAssignedTableBody"></tbody>
-                    </table>
-                </div>
+                <div id="accPlacesContainer"></div>
+                <h3 style="color:#f39c12;">⏳ Žádosti</h3>
+                <div class="table-container"><table><thead><tr><th>Jméno</th><th>Požadavek</th><th>Přiřazení</th><th>Akce</th></tr></thead><tbody id="accPendingTableBody"></tbody></table></div>
+                <h3 style="color:#27ae60;">✅ Rozřazení</h3>
+                <div class="table-container"><table><thead><tr><th>Jméno</th><th>Místo</th><th>Pokoj</th><th>Akce</th></tr></thead><tbody id="accAssignedTableBody"></tbody></table></div>
             </section>
 
             <section id="budget" class="card page-view hidden">
-                <h2>Rozpočet</h2>
+                <h2>💰 Rozpočet</h2>
                 <div class="input-form">
                     <input type="text" id="budgetItemName" placeholder="Položka">
-                    <input type="text" id="budgetCategory" list="budgetCatList" placeholder="Kategorie (např. Výzdoba)">
-                    <input type="number" id="budgetEstimated" placeholder="Plánovaná cena (Kč)">
-                    <button id="addBudgetBtn">Přidat výdaj</button>
+                    <input type="text" id="budgetCategory" placeholder="Kategorie" list="budgetCatList">
+                    <input type="number" id="budgetEstimated" placeholder="Plánovaná cena">
+                    <button id="addBudgetBtn">Přidat</button>
                 </div>
-                
-                <datalist id="budgetCatList">
-                    <option value="Hostina"><option value="Oblečení"><option value="Výzdoba"><option value="Služby">
-                </datalist>
-
                 <div class="stats">
-                    <div class="stat-box">Plánováno: <strong id="totalEstimated">0 Kč</strong></div>
-                    <div class="stat-box">Skutečně utraceno: <strong id="totalActual">0 Kč</strong></div>
+                    <div class="stat-box">Plán: <strong id="totalEstimated">0 Kč</strong></div>
+                    <div class="stat-box">Utraceno: <strong id="totalActual">0 Kč</strong></div>
                 </div>
-
-                <div class="filter-box" style="margin-top:15px;">
-                    <strong>Filtrovat rozpočet:</strong>
-                    <div class="filter-inputs">
-                        <input type="text" id="filterBudgetText" placeholder="Název položky..." onkeyup="renderBudgetView()">
-                        <input type="text" id="filterBudgetCat" placeholder="Kategorie..." onkeyup="renderBudgetView()">
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Kategorie</th><th>Položka</th><th>Odhad</th><th>Skutečnost</th><th>Akce</th></tr></thead>
-                        <tbody id="budgetTableBody"></tbody>
+                <div class="table-container" style="margin-top:20px;">
+                    <h3>📊 Souhrn podle kategorií</h3>
+                    <table style="max-width: 500px;">
+                        <thead><tr><th>Kategorie</th><th>Celkem utraceno</th></tr></thead>
+                        <tbody id="budgetCategorySummaryBody"></tbody>
                     </table>
+                </div>
+                <div class="table-container" style="margin-top:20px;">
+                    <table id="budgetTable"><thead><tr><th>Kategorie</th><th>Položka</th><th>Plán</th><th>Skutečnost</th><th>Akce</th></tr></thead><tbody id="budgetTableBody"></tbody></table>
                 </div>
             </section>
         </div>
     </main>
 
-    <div id="editModal" class="modal hidden">
+    <div id="helperEditModal" class="modal hidden">
         <div class="modal-content">
-            <h3>Upravit hosta</h3>
-            <input type="hidden" id="editGuestId">
-            <div class="input-group"><input type="text" id="editGuestName" placeholder="Jméno"></div>
-            <div class="input-group"><input type="text" id="editGuestCity" placeholder="Město"></div>
-            <div class="input-group">
-                <select id="editGuestSide">
-                    <option value="Nevěsta">Strana Nevěsty</option>
-                    <option value="Ženich">Strana Ženicha</option>
-                    <option value="Společný">Společný host</option>
-                </select>
-            </div>
-            <div class="checkbox-row" style="margin-bottom: 15px;">
-                <label><input type="checkbox" id="editIsHelper"> Pomocník</label>
-                <label><input type="checkbox" id="editNeedsAcc"> Ubytování</label>
-            </div>
+            <h3>Přiřadit role</h3>
+            <input type="hidden" id="modalHelperId">
+            <div id="modalHelperCheckboxes" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin:15px 0;"></div>
             <div class="button-group">
-                <button onclick="saveGuestEdit()">Uložit změny</button>
-                <button class="btn-secondary" onclick="closeModal()">Zrušit</button>
+                <button onclick="saveHelperRoles()">Uložit</button>
+                <button class="btn-secondary" onclick="closeHelperModal()">Zavřít</button>
             </div>
         </div>
     </div>
 
-    <div id="editBudgetModal" class="modal hidden">
+    <div id="editModal" class="modal hidden">
         <div class="modal-content">
-            <h3>Upravit výdaj</h3>
-            <input type="hidden" id="editBudgetId">
-            <div class="input-group"><input type="text" id="editBudgetName" placeholder="Položka"></div>
-            <div class="input-group"><input type="text" id="editBudgetCat" placeholder="Kategorie"></div>
-            <div class="input-group"><input type="number" id="editBudgetEst" placeholder="Odhad"></div>
-            <div class="button-group" style="margin-top:15px;">
-                <button onclick="saveBudgetEdit()">Uložit změny</button>
-                <button class="btn-secondary" onclick="closeBudgetModal()">Zrušit</button>
+            <h3>Upravit hosta</h3>
+            <input type="hidden" id="editGuestId">
+            <input type="text" id="editGuestName" class="input-group">
+            <input type="number" id="editNumChildren" class="input-group" placeholder="Počet dětí">
+            <div class="button-group">
+                <button onclick="saveGuestEdit()">Uložit</button>
+                <button class="btn-secondary" onclick="closeModal()">Zavřít</button>
             </div>
         </div>
     </div>
