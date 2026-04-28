@@ -18,6 +18,7 @@
                 <button id="loginBtn">Přihlásit se</button>
                 <button id="registerBtn" class="btn-secondary">Vytvořit účet</button>
             </div>
+            <div id="authError" style="color: #e74c3c; margin-top: 15px; font-weight: bold;"></div>
         </section>
 
         <div id="appSection" class="hidden">
@@ -84,7 +85,16 @@
 
             <section id="guests" class="card page-view hidden">
                 <h2>Správa hostů</h2>
+                <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
+                    <p><strong>Odkaz pro vaše hosty:</strong></p>
+                    <div style="display:flex; gap:10px; width:100%;">
+                        <input type="text" id="shareUrlInput" readonly value="Načítám odkaz..." style="background:white; flex:1;">
+                        <button onclick="copyShareUrl()">Kopírovat</button>
+                    </div>
+                </div>
+
                 <div class="input-form-extended">
+                    <h3 style="margin-bottom: 10px; font-size: 1rem; color: #666;">Ruční přidání hosta</h3>
                     <div class="row">
                         <input type="text" id="guestName" placeholder="Jméno a příjmení">
                         <input type="text" id="guestCity" placeholder="Město">
@@ -92,12 +102,49 @@
                     </div>
                     <div class="row">
                         <input type="number" id="guestChildren" placeholder="Počet dětí" min="0" style="max-width:120px;">
+                        <div class="checkbox-row" style="flex:1;">
+                            <label><input type="checkbox" id="isHelper"> Pomocník</label>
+                            <label><input type="checkbox" id="needsAcc"> Ubytování</label>
+                        </div>
                         <button id="addGuestBtn">Přidat hosta</button>
                     </div>
                 </div>
+                
                 <div class="stats-grid" id="guestStatsBlock"></div>
                 <div id="cityBadgesContainer" style="margin-bottom: 20px;"></div>
-                <div class="table-container"><table id="guestTable"><thead><tr><th>Jméno / Děti</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead><tbody id="guestTableBody"></tbody></table></div>
+
+                <div class="filter-box">
+                    <strong>Filtrovat a řadit hosty:</strong>
+                    <div class="filter-inputs">
+                        <input type="text" id="filterGuestName" placeholder="Jména (např. Jan)..." onkeyup="renderGuestsView()">
+                        <input type="text" id="filterGuestCity" placeholder="Města (např. Praha)..." onkeyup="renderGuestsView()">
+                        <input type="date" id="filterGuestDate" onchange="renderGuestsView()" title="Vyplněno dne">
+                        <select id="sortGuestDate" onchange="renderGuestsView()" style="flex:1;">
+                            <option value="desc">Nejnovější nahoře</option>
+                            <option value="asc">Nejstarší nahoře</option>
+                            <option value="name">Abecedně</option>
+                        </select>
+                    </div>
+                    <div class="filter-checks">
+                        <span><strong>Strana:</strong></span>
+                        <label><input type="checkbox" class="filter-side" value="Nevěsta" onchange="renderGuestsView()"> Nevěsta</label>
+                        <label><input type="checkbox" class="filter-side" value="Ženich" onchange="renderGuestsView()"> Ženich</label>
+                        <label><input type="checkbox" class="filter-side" value="Společný" onchange="renderGuestsView()"> Společný</label>
+                    </div>
+                    <div class="filter-checks">
+                        <span><strong>Stav:</strong></span>
+                        <label><input type="checkbox" class="filter-status" value="Pozváno" onchange="renderGuestsView()"> Pozváno</label>
+                        <label><input type="checkbox" class="filter-status" value="Potvrzeno" onchange="renderGuestsView()"> Potvrzeno</label>
+                        <label><input type="checkbox" class="filter-status" value="Nezúčastní se" onchange="renderGuestsView()"> Nezúčastní se</label>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="guestTable">
+                        <thead><tr><th>Jméno / Děti</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead>
+                        <tbody id="guestTableBody"></tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="helper-section" class="card page-view hidden">
@@ -107,7 +154,9 @@
                     <button onclick="addHelperCategory()">Přidat</button>
                     <div id="categoryTagsContainer" style="margin-top:10px;"></div>
                 </div>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">Kliknutím na bubliny vyfiltrujete tabulku níže:</p>
                 <div id="helperStatsBlock" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                
                 <h3 style="color:#f39c12;">⏳ Čekající na schválení</h3>
                 <div class="table-container"><table id="helperPendingTable"><thead><tr><th>Jméno</th><th>Výběr rolí</th><th>Akce</th></tr></thead><tbody id="helperPendingTableBody"></tbody></table></div>
                 <h3 style="color:#27ae60;">✅ Potvrzení pomocníci</h3>
@@ -136,14 +185,26 @@
                     <input type="number" id="budgetEstimated" placeholder="Plánovaná cena">
                     <button id="addBudgetBtn">Přidat</button>
                 </div>
+                <datalist id="budgetCatList"><option value="Hostina"><option value="Oblečení"><option value="Výzdoba"><option value="Služby"></datalist>
+
                 <div class="stats dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
                     <div class="stat-box" style="margin:0">Plánováno: <strong id="totalEstimated">0 Kč</strong></div>
                     <div id="totalActualBox" class="stat-box" style="margin:0">Utraceno: <strong id="totalActual">0 Kč</strong></div>
                 </div>
+                
                 <div class="table-container">
                     <h3>📊 Souhrn podle kategorií</h3>
                     <table><thead><tr><th>Kategorie</th><th>Plán</th><th>Skutečnost</th></tr></thead><tbody id="budgetCategorySummaryBody"></tbody></table>
                 </div>
+
+                <div class="filter-box" style="margin-top:15px;">
+                    <strong>Filtrovat rozpočet:</strong>
+                    <div class="filter-inputs">
+                        <input type="text" id="filterBudgetText" placeholder="Název položky..." onkeyup="renderBudgetView()">
+                        <input type="text" id="filterBudgetCat" placeholder="Kategorie..." onkeyup="renderBudgetView()">
+                    </div>
+                </div>
+
                 <div class="table-container" style="margin-top:20px;">
                     <table><thead><tr><th>Kategorie</th><th>Položka</th><th>Plán</th><th>Skutečnost</th><th>Akce</th></tr></thead><tbody id="budgetTableBody"></tbody></table>
                 </div>
@@ -164,8 +225,20 @@
         <div class="modal-content">
             <h3>Upravit hosta</h3>
             <input type="hidden" id="editGuestId">
-            <input type="text" id="editGuestName" class="input-group">
+            <input type="text" id="editGuestName" class="input-group" placeholder="Jméno">
+            <input type="text" id="editGuestCity" class="input-group" placeholder="Město">
+            <div class="input-group">
+                <select id="editGuestSide">
+                    <option value="Nevěsta">Nevěsta</option>
+                    <option value="Ženich">Ženich</option>
+                    <option value="Společný">Společný</option>
+                </select>
+            </div>
             <input type="number" id="editNumChildren" class="input-group" placeholder="Počet dětí">
+            <div class="checkbox-row" style="margin-bottom: 15px;">
+                <label><input type="checkbox" id="editIsHelper"> Pomocník</label>
+                <label><input type="checkbox" id="editNeedsAcc"> Ubytování</label>
+            </div>
             <div class="button-group"><button onclick="saveGuestEdit()">Uložit</button><button class="btn-secondary" onclick="closeModal()">Zavřít</button></div>
         </div>
     </div>
@@ -177,7 +250,7 @@
             <div class="input-group"><input type="text" id="editBudgetName" placeholder="Položka"></div>
             <div class="input-group"><input type="text" id="editBudgetCat" placeholder="Kategorie" list="budgetCatList"></div>
             <div class="input-group"><input type="number" id="editBudgetEst" placeholder="Odhad"></div>
-            <div class="button-group"><button onclick="saveBudgetEdit()">Uložit</button><button class="btn-secondary" onclick="closeBudgetModal()">Zavřít</button></div>
+            <div class="button-group" style="margin-top:15px;"><button onclick="saveBudgetEdit()">Uložit</button><button class="btn-secondary" onclick="closeBudgetModal()">Zrušit</button></div>
         </div>
     </div>
 
