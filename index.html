@@ -117,17 +117,32 @@
                     <input type="number" id="budgetEstimated" placeholder="Plánovaná cena">
                     <button id="addBudgetBtn">Přidat</button>
                 </div>
+                
+                <datalist id="budgetCatList">
+                    <option value="Hostina"><option value="Oblečení"><option value="Výzdoba"><option value="Služby">
+                </datalist>
+
                 <div class="stats">
-                    <div class="stat-box">Plán: <strong id="totalEstimated">0 Kč</strong></div>
+                    <div class="stat-box">Plánováno: <strong id="totalEstimated">0 Kč</strong></div>
                     <div class="stat-box">Utraceno: <strong id="totalActual">0 Kč</strong></div>
                 </div>
+
                 <div class="table-container" style="margin-top:20px;">
                     <h3>📊 Souhrn podle kategorií</h3>
-                    <table style="max-width: 500px;">
-                        <thead><tr><th>Kategorie</th><th>Celkem utraceno</th></tr></thead>
+                    <table style="max-width: 600px;">
+                        <thead><tr><th>Kategorie</th><th>Plán</th><th>Skutečnost</th></tr></thead>
                         <tbody id="budgetCategorySummaryBody"></tbody>
                     </table>
                 </div>
+
+                <div class="filter-box" style="margin-top:15px;">
+                    <strong>Filtrovat rozpočet:</strong>
+                    <div class="filter-inputs">
+                        <input type="text" id="filterBudgetText" placeholder="Název položky..." onkeyup="renderBudgetView()">
+                        <input type="text" id="filterBudgetCat" placeholder="Kategorie..." onkeyup="renderBudgetView()">
+                    </div>
+                </div>
+
                 <div class="table-container" style="margin-top:20px;">
                     <table id="budgetTable"><thead><tr><th>Kategorie</th><th>Položka</th><th>Plán</th><th>Skutečnost</th><th>Akce</th></tr></thead><tbody id="budgetTableBody"></tbody></table>
                 </div>
@@ -156,6 +171,20 @@
             <div class="button-group">
                 <button onclick="saveGuestEdit()">Uložit</button>
                 <button class="btn-secondary" onclick="closeModal()">Zavřít</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editBudgetModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Upravit výdaj</h3>
+            <input type="hidden" id="editBudgetId">
+            <div class="input-group"><input type="text" id="editBudgetName" placeholder="Položka"></div>
+            <div class="input-group"><input type="text" id="editBudgetCat" placeholder="Kategorie" list="budgetCatList"></div>
+            <div class="input-group"><input type="number" id="editBudgetEst" placeholder="Odhad"></div>
+            <div class="button-group" style="margin-top:15px;">
+                <button onclick="saveBudgetEdit()">Uložit změny</button>
+                <button class="btn-secondary" onclick="closeBudgetModal()">Zrušit</button>
             </div>
         </div>
     </div>
