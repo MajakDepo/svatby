@@ -16,18 +16,17 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const tasksColl = collection(db, "ukoly"), guestsColl = collection(db, "hoste"), budgetColl = collection(db, "rozpocet"), accColl = collection(db, "ubytovani_kapacity");
-let unsubs = [], allGuestsData = [], allBudgetData = [], accPlacesData = [], myUid = null;
+let unsubs = [], allGuestsData = [], allBudgetData = [], accPlacesData = [], allTasksData = [], myUid = null;
 let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
 
-// --- NAVIGACE ---
+// --- NAVIGACE A AUTH ---
 window.showPage = (pageId) => {
     document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
     const page = document.getElementById(pageId);
     if(page) page.classList.remove('hidden');
 };
 
-// --- AUTHENTIKACE ---
 function handleAuthError(e) {
     const errDiv = document.getElementById('authError');
     if(!errDiv) return;
@@ -76,11 +75,7 @@ function initApp(uid) {
             }
             if(data.helperCategories && data.helperCategories.length > 0) {
                 helperCategories = data.helperCategories;
-            } else {
-                setDoc(doc(db, "nastaveni", uid), {helperCategories}, {merge:true}); // Pojistka zapsání defaultních
             }
-        } else {
-            setDoc(doc(db, "nastaveni", uid), {helperCategories}, {merge:true});
         }
         window.updateCountdown();
         window.renderHelperCategoriesUI();
@@ -88,22 +83,9 @@ function initApp(uid) {
     }));
 
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
-        const list = document.getElementById('taskList'); 
-        if(!list) return;
-        list.innerHTML = '';
-        snap.forEach(d => {
-            const t = d.data();
-            list.innerHTML += `<tr>
-                <td><select onchange="updateDoc(doc(db, 'ukoly', '${d.id}'), {status: this.value})">
-                    <option value="Není" ${t.status==='Není'?'selected':''}>❌ Není</option>
-                    <option value="V průběhu" ${t.status==='V průběhu'?'selected':''}>⏳ V průběhu</option>
-                    <option value="Hotovo" ${t.status==='Hotovo'?'selected':''}>✅ Hotovo</option>
-                </select></td>
-                <td class="priority-${t.priority}">${t.priority}</td>
-                <td><strong>${t.text}</strong></td>
-                <td><small>${t.note || '-'}</small></td>
-                <td><button class="btn-small" onclick="deleteDoc(doc(db, 'ukoly', '${d.id}'))">❌</button></td></tr>`;
-        });
+        allTasksData = [];
+        snap.forEach(d => { let t = d.data(); t.id = d.id; allTasksData.push(t); });
+        window.renderTasksView();
     }));
 
     unsubs.push(onSnapshot(query(accColl, where("userId", "==", uid)), snap => {
@@ -144,9 +126,9 @@ window.updateDashboardStats = () => {
 
 window.saveWeddingDate = () => {
     const d = document.getElementById('weddingDateInput');
-    if(d) {
-        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true });
-        window.updateCountdown();
+    if(d && d.value) {
+        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true })
+        .then(() => window.updateCountdown());
     }
 };
 
@@ -159,7 +141,7 @@ window.updateCountdown = () => {
     disp.innerText = diff >= 0 ? `Už jen ${diff} dní! 🎉` : `Svatba už proběhla! ❤️`;
 };
 
-// --- ÚKOLY ---
+// --- ÚKOLY (TO-DO) ---
 const addBtn = document.getElementById('addBtn');
 if(addBtn) {
     addBtn.onclick = () => {
@@ -170,6 +152,43 @@ if(addBtn) {
         }
     };
 }
+
+window.renderTasksView = () => {
+    const list = document.getElementById('taskList');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    const filterPri = document.getElementById('filterTaskPriority')?.value || '';
+    const filterStat = document.getElementById('filterTaskStatus')?.value || '';
+    
+    let filtered = allTasksData.filter(t => {
+        let matchP = !filterPri || t.priority === filterPri;
+        let matchS = !filterStat || t.status === filterStat;
+        return matchP && matchS;
+    });
+    
+    // Řazení: Hotovo jde vždy na konec
+    filtered.sort((a, b) => {
+        if(a.status === 'Hotovo' && b.status !== 'Hotovo') return 1;
+        if(a.status !== 'Hotovo' && b.status === 'Hotovo') return -1;
+        return 0;
+    });
+    
+    filtered.forEach(t => {
+        const isDone = t.status === 'Hotovo';
+        const textStyle = isDone ? 'text-decoration: line-through; color: #aaa;' : '';
+        list.innerHTML += `<tr>
+            <td><select onchange="updateDoc(doc(db, 'ukoly', '${t.id}'), {status: this.value})">
+                <option value="Není" ${t.status==='Není'?'selected':''}>❌ Není</option>
+                <option value="V průběhu" ${t.status==='V průběhu'?'selected':''}>⏳ V průběhu</option>
+                <option value="Hotovo" ${t.status==='Hotovo'?'selected':''}>✅ Hotovo</option>
+            </select></td>
+            <td class="priority-${t.priority}">${t.priority}</td>
+            <td><strong style="${textStyle}">${t.text}</strong></td>
+            <td><small>${t.note || '-'}</small></td>
+            <td><button class="btn-small" onclick="deleteDoc(doc(db, 'ukoly', '${t.id}'))">❌</button></td></tr>`;
+    });
+};
 
 // --- ROZPOČET ---
 window.renderBudgetView = () => {
@@ -256,7 +275,25 @@ window.saveBudgetEdit = () => {
     window.closeBudgetModal();
 };
 
-// --- HOSTÉ ---
+// --- HOSTÉ A DĚTI ---
+window.renderAdminChildrenAges = () => {
+    const num = document.getElementById('guestChildren').value;
+    const cont = document.getElementById('adminChildrenAgesContainer');
+    if(!cont) return;
+    cont.innerHTML = '';
+    for(let i=0; i<num; i++) {
+        cont.innerHTML += `
+            <div style="margin-top:5px; display:flex; gap:10px; align-items:center;">
+                <label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
+                <select class="admin-child-age-select" style="padding:5px;">
+                    <option value="Malé (0-3)">Malé (0-3 roky)</option>
+                    <option value="Střední (4-10)">Střední (4-10 let)</option>
+                    <option value="Velké (11+)">Velké (11+ let)</option>
+                </select>
+            </div>`;
+    }
+};
+
 window.renderGuestsView = () => {
     const tbody = document.getElementById('guestTableBody'); 
     if(!tbody) return;
@@ -319,12 +356,12 @@ window.renderGuestsView = () => {
     }
 };
 
-// OPRAVA: Při přidávání i úpravě z adminu jdou hosté správně do čekačky
 const addGuestBtn = document.getElementById('addGuestBtn');
 if(addGuestBtn) {
     addGuestBtn.onclick = () => {
         const name = document.getElementById('guestName').value;
         const numChild = Number(document.getElementById('guestChildren').value) || 0;
+        const childAges = Array.from(document.querySelectorAll('.admin-child-age-select')).map(s => s.value);
         const isH = document.getElementById('isHelper') ? document.getElementById('isHelper').checked : false;
         const needsA = document.getElementById('needsAcc') ? document.getElementById('needsAcc').checked : false;
 
@@ -334,9 +371,10 @@ if(addGuestBtn) {
                 isHelper: isH, needsAcc: needsA, status: 'Pozváno', 
                 helperTask: '', helperStatus: isH ? 'pending' : '', 
                 accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', 
-                userId: myUid, submittedDate: new Date().toISOString(), numChildren: numChild, childrenAges: []
+                userId: myUid, submittedDate: new Date().toISOString(), numChildren: numChild, childrenAges: childAges
             });
             document.getElementById('guestName').value = ''; document.getElementById('guestCity').value = ''; document.getElementById('guestChildren').value = '';
+            if(document.getElementById('adminChildrenAgesContainer')) document.getElementById('adminChildrenAgesContainer').innerHTML = '';
             if(document.getElementById('isHelper')) document.getElementById('isHelper').checked = false;
             if(document.getElementById('needsAcc')) document.getElementById('needsAcc').checked = false;
         }
@@ -472,24 +510,27 @@ window.addHelperCategory = () => {
         helperCategories.push(v); 
         setDoc(doc(db, "nastaveni", myUid), {helperCategories}, {merge:true}); 
         input.value = '';
-        window.renderHelperCategoriesUI();
-        window.renderHelpersView();
     }
 };
 
 window.removeHelperCategory = (cat) => {
     helperCategories = helperCategories.filter(c => c !== cat);
     setDoc(doc(db, "nastaveni", myUid), { helperCategories }, { merge: true });
-    window.renderHelperCategoriesUI();
-    window.renderHelpersView();
 };
 
 // --- UBYTOVÁNÍ ---
 function getRoomCapacity(name) {
+    // Oprava: Systém hledá explicitní slovní základ a nevyužívá náhodná ID čísla z konce textu
     let n = name.toLowerCase();
-    if(n.includes('jedno')) return 1; if(n.includes('dvou')) return 2; if(n.includes('tří') || n.includes('tri')) return 3;
-    if(n.includes('čtyř') || n.includes('ctyr')) return 4; if(n.includes('pěti') || n.includes('peti')) return 5;
-    let m = n.match(/(\d+)/); if(m) return parseInt(m[1]); return 2;
+    if(n.includes('jedno')) return 1; 
+    if(n.includes('dvou') || n.includes('dvoj')) return 2; 
+    if(n.includes('tří') || n.includes('tri')) return 3;
+    if(n.includes('čtyř') || n.includes('ctyr')) return 4; 
+    if(n.includes('pěti') || n.includes('peti')) return 5;
+    if(n.includes('šesti') || n.includes('sesti')) return 6;
+    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); 
+    if(m) return parseInt(m[1]); 
+    return 2; // Výchozí
 }
 
 window.renderAccView = () => {
