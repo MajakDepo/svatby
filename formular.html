@@ -23,7 +23,6 @@
                 <label>Vaše Jméno a Příjmení:</label>
                 <input type="text" id="mainGuestName" required placeholder="Např. Jan Novák">
             </div>
-            
             <div class="input-group">
                 <label>Město, odkud přijedete:</label>
                 <input type="text" id="mainGuestCity" required placeholder="Např. Praha">
@@ -41,7 +40,7 @@
                     <option value="ano">Ano, prosíme o ubytování</option>
                 </select>
                 <div id="roomsDiv" style="display: none; margin-top: 10px;">
-                    <label>Kolik pokojů budete potřebovat?</label>
+                    <label>Kolik pokojů budete potřebovat dohromady pro výše uvedené osoby?</label>
                     <input type="number" id="numRooms" value="1" min="1">
                 </div>
             </div>
@@ -54,7 +53,6 @@
                     <label><input type="checkbox" name="help" value="Doprava"> Doprava hostů</label>
                     <label><input type="checkbox" name="help" value="Koordinace"> Koordinace na místě</label>
                     <label><input type="checkbox" name="help" value="Hudba/Program"> Hudba / Program</label>
-                    <label><input type="checkbox" name="help" value="Jiná pomoc"> Jiné (domluvíme se)</label>
                 </div>
             </div>
 
@@ -82,11 +80,9 @@
             messagingSenderId: "1016595614269",
             appId: "1:1016595614269:web:f1c1dddbf8bd2228e43854"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Získání UID z URL (?uid=...)
         const urlParams = new URLSearchParams(window.location.search);
         const ownerUid = urlParams.get('uid');
 
@@ -95,7 +91,7 @@
             const div = document.createElement('div');
             div.className = 'guest-row';
             div.innerHTML = `
-                <input type="text" class="add-name" placeholder="Jméno dalšího hosta" style="margin-bottom:5px">
+                <input type="text" class="add-name" placeholder="Jméno dalšího hosta" style="margin-bottom:5px; width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
                 <button type="button" class="btn-small btn-secondary" onclick="this.parentElement.remove()">Odebrat</button>
             `;
             container.appendChild(div);
@@ -111,25 +107,26 @@
             const needsAcc = document.getElementById('needsAcc').value === 'ano';
             const rooms = document.getElementById('numRooms').value;
             
-            // Seznam všech jmen (hlavní + přidružení)
             const allNames = [mainName];
             document.querySelectorAll('.add-name').forEach(input => { if(input.value) allNames.push(input.value); });
+            const todayISO = new Date().toISOString().split('T')[0]; // Uloží datum jako YYYY-MM-DD
 
             try {
-                // Uložíme každého hosta jako samostatný řádek do DB
-                for(let name of allNames) {
+                for(let i = 0; i < allNames.length; i++) {
                     await addDoc(collection(db, "hoste"), {
-                        name: name,
+                        name: allNames[i],
                         city: city,
-                        side: 'Společný', // Default pro hosty z formuláře
+                        side: 'Společný',
                         status: 'Potvrzeno',
                         isHelper: helpValues.length > 0,
                         helperTask: helpValues.join(", "),
+                        helperStatus: helpValues.length > 0 ? 'pending' : 'assigned', // Jde do čekačky
                         needsAcc: needsAcc,
-                        accPlace: needsAcc ? 'Z formuláře' : '',
-                        accRoom: needsAcc ? `Pokoje: ${rooms}` : '',
+                        accPlace: '',
+                        accRoom: needsAcc ? (i === 0 ? `Požadavek: ${rooms} pokojů (skupina)` : 'Součást skupiny') : '',
+                        accStatus: needsAcc ? 'pending' : 'assigned', // Jde do čekačky
                         userId: ownerUid,
-                        submittedDate: new Date().toLocaleDateString('cs-CZ') // Datum vyplnění
+                        submittedDate: todayISO 
                     });
                 }
                 document.getElementById('formConfig').classList.add('hidden');
