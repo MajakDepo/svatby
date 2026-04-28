@@ -14,12 +14,11 @@
     <main>
         <section id="authSection" class="card text-center">
             <h2>Přihlášení / Registrace</h2>
-            <p style="margin-bottom: 15px;">Vítejte! Pro správu své svatby se prosím přihlaste.</p>
             <div class="input-group">
                 <input type="email" id="emailInput" placeholder="E-mail">
             </div>
             <div class="input-group">
-                <input type="password" id="passwordInput" placeholder="Heslo (min. 6 znaků)">
+                <input type="password" id="passwordInput" placeholder="Heslo">
             </div>
             <div class="button-group">
                 <button id="loginBtn">Přihlásit se</button>
@@ -48,46 +47,50 @@
 
             <section id="guests" class="card">
                 <h2>Seznam hostů</h2>
-                <div class="guest-form">
+                <div class="input-form">
                     <input type="text" id="guestName" placeholder="Jméno hosta">
                     <select id="guestSide">
                         <option value="Nevěsta">Strana Nevěsty</option>
                         <option value="Ženich">Strana Ženicha</option>
                     </select>
-                    <button id="addGuestBtn">Přidat hosta</button>
+                    <button id="addGuestBtn">Přidat</button>
                 </div>
-                
                 <div class="stats">
-                    <div class="stat-box">Celkem hostů: <strong id="totalGuests">0</strong></div>
+                    <div class="stat-box">Hostů: <strong id="totalGuests">0</strong></div>
                     <div class="stat-box">Potvrzeno: <strong id="confirmedGuests">0</strong></div>
                 </div>
-
                 <div class="table-container">
                     <table>
                         <thead>
-                            <tr>
-                                <th>Jméno</th>
-                                <th>Strana</th>
-                                <th>Stav</th>
-                                <th>Akce</th>
-                            </tr>
+                            <tr><th>Jméno</th><th>Strana</th><th>Stav</th><th>Akce</th></tr>
                         </thead>
-                        <tbody id="guestTableBody">
-                            </tbody>
+                        <tbody id="guestTableBody"></tbody>
                     </table>
                 </div>
             </section>
 
             <section id="budget" class="card">
                 <h2>Rozpočet</h2>
-                <p>Modul v přípravě...</p>
+                <div class="input-form">
+                    <input type="text" id="budgetItemName" placeholder="Položka (např. Prstýnky)">
+                    <input type="number" id="budgetEstimated" placeholder="Odhad (Kč)">
+                    <button id="addBudgetBtn">Přidat</button>
+                </div>
+                <div class="stats">
+                    <div class="stat-box">Plánováno: <strong id="totalEstimated">0 Kč</strong></div>
+                    <div class="stat-box">Utraceno: <strong id="totalActual">0 Kč</strong></div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Položka</th><th>Odhad</th><th>Skutečnost</th><th>Akce</th></tr>
+                        </thead>
+                        <tbody id="budgetTableBody"></tbody>
+                    </table>
+                </div>
             </section>
         </div>
     </main>
-
-    <footer>
-        <p>&copy; 2026 Můj Svatební Plánovač</p>
-    </footer>
 
     <script type="module" src="app.js"></script>
 </body>
