@@ -49,6 +49,15 @@
 
             <section id="guests" class="card">
                 <h2>Správa hostů</h2>
+                
+                <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
+                    <p><strong>Odkaz pro vaše hosty:</strong> Pošlete jim tento odkaz pro vyplnění účasti:</p>
+                    <div style="display:flex; gap:10px; width:100%;">
+                        <input type="text" id="shareUrlInput" readonly value="Načítám odkaz..." style="background:white; flex:1;">
+                        <button onclick="copyShareUrl()">Kopírovat</button>
+                    </div>
+                </div>
+
                 <div class="input-form-extended">
                     <div class="row">
                         <input type="text" id="guestName" placeholder="Jméno a příjmení">
@@ -66,8 +75,7 @@
                     </div>
                 </div>
                 
-                <div class="stats-grid" id="guestStatsBlock">
-                    </div>
+                <div class="stats-grid" id="guestStatsBlock"></div>
 
                 <div class="table-container">
                     <div class="filter-row">
@@ -88,8 +96,7 @@
 
             <section id="helper-section" class="card">
                 <h2>💪 Seznam pomocníků</h2>
-                <div class="stats" id="helperStatsBlock" style="margin-bottom: 15px; flex-wrap: wrap;">
-                    </div>
+                <div class="stats" id="helperStatsBlock" style="margin-bottom: 15px; flex-wrap: wrap;"></div>
                 <div class="table-container">
                     <div class="filter-row">
                         <strong>Filtrovat:</strong>
