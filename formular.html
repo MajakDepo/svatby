@@ -45,18 +45,14 @@
                 </select>
                 <div id="roomsDiv" style="display: none; margin-top: 10px;">
                     <label>Jaké pokoje/lůžka budete potřebovat?</label>
-                    <input type="text" id="roomDetails" placeholder="Např. 1x dvoulůžkový a 1x jednolůžkový pokoj" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; margin-top:5px;">
+                    <input type="text" id="roomDetails" placeholder="Např. 1x dvoulůžkový a 1x přistýlka" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; margin-top:5px;">
                 </div>
             </div>
 
             <div style="background: #fdf9f9; padding: 15px; border-radius: 8px; border: 1px solid #fce4ec;">
                 <label><strong>Jste ochotni nám s něčím pomoci? (Klikněte na možnost)</strong></label>
-                <div class="help-grid">
-                    <label class="help-card"><input type="checkbox" name="help" value="Pečení/Dorty" onchange="toggleCard(this)"> 🎂 Pečení / Dorty</label>
-                    <label class="help-card"><input type="checkbox" name="help" value="Výzdoba" onchange="toggleCard(this)"> 🎀 Výzdoba</label>
-                    <label class="help-card"><input type="checkbox" name="help" value="Doprava" onchange="toggleCard(this)"> 🚗 Doprava hostů</label>
-                    <label class="help-card"><input type="checkbox" name="help" value="Koordinace" onchange="toggleCard(this)"> 📋 Koordinace na místě</label>
-                    <label class="help-card"><input type="checkbox" name="help" value="Hudba/Program" onchange="toggleCard(this)"> 🎵 Hudba / Program</label>
+                <div class="help-grid" id="dynamicHelpGrid">
+                    <em>Načítám možnosti pomoci...</em>
                 </div>
             </div>
 
@@ -70,7 +66,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDA4wHyLuyz8LN4RVxKoclF3CAXxKPg7xc",
@@ -86,6 +82,23 @@
         const urlParams = new URLSearchParams(window.location.search);
         const ownerUid = urlParams.get('uid');
 
+        // Dynamické načtení kategorií pomocníků z nastavení admina
+        async function loadCategories() {
+            const grid = document.getElementById('dynamicHelpGrid');
+            let cats = ['Pečení/Dorty', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba/Program']; // Výchozí
+            if(ownerUid) {
+                const docSnap = await getDoc(doc(db, "nastaveni", ownerUid));
+                if (docSnap.exists() && docSnap.data().helperCategories) {
+                    cats = docSnap.data().helperCategories;
+                }
+            }
+            grid.innerHTML = '';
+            cats.forEach(c => {
+                grid.innerHTML += `<label class="help-card"><input type="checkbox" name="help" value="${c}" onchange="toggleCard(this)"> ${c}</label>`;
+            });
+        }
+        loadCategories();
+
         window.toggleCard = (checkbox) => {
             if (checkbox.checked) checkbox.parentElement.classList.add('selected');
             else checkbox.parentElement.classList.remove('selected');
@@ -95,10 +108,8 @@
             const container = document.getElementById('additionalGuestsContainer');
             const div = document.createElement('div');
             div.className = 'guest-row';
-            div.innerHTML = `
-                <input type="text" class="add-name" placeholder="Jméno dalšího hosta" style="margin-bottom:5px; width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
-                <button type="button" class="btn-small btn-secondary" onclick="this.parentElement.remove()">Odebrat</button>
-            `;
+            div.innerHTML = `<input type="text" class="add-name" placeholder="Jméno dalšího hosta" style="margin-bottom:5px; width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                             <button type="button" class="btn-small btn-secondary" onclick="this.parentElement.remove()">Odebrat</button>`;
             container.appendChild(div);
         }
 
@@ -124,7 +135,7 @@
                         side: 'Společný',
                         status: 'Potvrzeno',
                         isHelper: helpValues.length > 0,
-                        helperTask: helpValues.join(", "),
+                        helperTask: helpValues.join(", "), // Více rolí odděleno čárkou
                         helperStatus: helpValues.length > 0 ? 'pending' : 'assigned',
                         needsAcc: needsAcc,
                         accPlace: '',
