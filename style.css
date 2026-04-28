@@ -21,7 +21,6 @@ button:hover { background-color: #d49595; }
 .btn-secondary { background-color: #eee; color: #555; }
 .btn-small { padding: 4px 8px; font-size: 0.8rem; }
 
-/* TO-DO List */
 ul#taskList { list-style: none; }
 ul#taskList li { background: #fffcfc; border: 1px solid #fce4ec; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
 .task-main { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
@@ -30,27 +29,31 @@ ul#taskList li { background: #fffcfc; border: 1px solid #fce4ec; padding: 15px; 
 .completed .task-text { text-decoration: line-through; color: #aaa; }
 .task-note input { width: 100%; background: #f9f9f9; border: 1px dashed #ccc; font-style: italic; }
 
-/* Statistiky a Filtry */
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
 .stat-box { background: #fdf2f3; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #fbe5e7; font-size: 0.9rem;}
 .stat-box strong { font-size: 1.2rem; color: #e5b2b2; display: block; }
+.stat-acc { background: #e3f2fd; border-color: #bbdefb; }
+.stat-acc strong { color: #1976d2; }
 
-.filter-row { display: flex; gap: 10px; background: #f1f1f1; padding: 10px; border-radius: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
-.filter-row input { padding: 6px; font-size: 0.85rem; border: 1px solid #ccc; flex: 1; }
+/* Nový vzhled filtrů */
+.filter-box { background: #f1f1f1; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+.filter-inputs { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.filter-inputs input { padding: 8px; border: 1px solid #ccc; flex: 1; min-width: 150px;}
+.filter-checks { margin-top: 10px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-size: 0.9rem;}
+.filter-checks label { cursor: pointer; }
 
-/* Tabulky */
 .table-container { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 600px; }
 th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
 th { background: #fafafa; color: #888; text-transform: uppercase; font-size: 0.8rem; }
 .editable-input { width: 100%; border: 1px dashed #ccc; padding: 5px; border-radius: 4px; }
 
-/* Barvy stran */
 .side-nevesta { background-color: #fce4ec !important; } 
 .side-zenich { background-color: #e3f2fd !important; }  
 .side-spolecny { background-color: #e8f5e9 !important; } 
 
-/* Modální okno */
+.status-declined { color: #e74c3c; font-weight: bold; text-decoration: line-through; }
+
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; }
 
