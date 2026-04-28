@@ -134,12 +134,13 @@
                     <div id="categoryTagsContainer" style="margin-top:10px;"></div>
                 </div>
 
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">Kliknutím na bubliny vyfiltrujete tabulku níže (lze vybrat i více najednou):</p>
                 <div id="helperStatsBlock" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
                 
                 <h3 style="margin-top:20px; color:#f39c12;">⏳ Čekající na rozřazení (z formuláře)</h3>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Jméno</th><th>Nabízená pomoc (Vyber kategorii)</th><th>Akce</th></tr></thead>
+                        <thead><tr><th>Jméno</th><th>Úprava a potvrzení rolí</th><th>Akce</th></tr></thead>
                         <tbody id="helperPendingTableBody"></tbody>
                     </table>
                 </div>
@@ -147,7 +148,7 @@
                 <h3 style="margin-top:20px; color:#27ae60;">✅ Potvrzení pomocníci</h3>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Jméno</th><th>Přiřazená role</th><th>Akce</th></tr></thead>
+                        <thead><tr><th>Jméno</th><th>Přiřazené role</th><th>Akce</th></tr></thead>
                         <tbody id="helperAssignedTableBody"></tbody>
                     </table>
                 </div>
@@ -155,10 +156,11 @@
 
             <section id="accommodation-section" class="card page-view hidden">
                 <h2>🏠 Organizace ubytování</h2>
-                
+                <datalist id="placesList"></datalist>
+
                 <div class="input-form-extended" style="background:#fdf9f9;">
                     <strong>Přidat nové místo ubytování a jeho kapacitu</strong>
-                    <p style="font-size:0.85rem; color:#666;">Zadejte názvy/typy pokojů oddělené čárkou. Chcete-li více stejných, použijte formát: <em>PočetX Název</em></p>
+                    <p style="font-size:0.85rem; color:#666;">Zadejte názvy pokojů oddělené čárkou (např. <em>5x dvoulůžkový, 2x jednolůžkový</em>). Systém sám vyhodnotí kapacitu podle názvu!</p>
                     <div class="row" style="margin-top:5px;">
                         <input type="text" id="newPlaceName" placeholder="Místo (např. Chalupa Na Skále)">
                         <input type="text" id="newPlaceRooms" placeholder="Pokoje (např. 5x dvoulůžkový, 2x jednolůžkový)">
@@ -168,7 +170,7 @@
 
                 <div id="accPlacesContainer" style="margin-bottom: 20px;"></div>
 
-                <h3 style="margin-top:20px; color:#f39c12;">⏳ Nové žádosti o ubytování</h3>
+                <h3 style="margin-top:20px; color:#f39c12;">⏳ Nové žádosti o ubytování (z formuláře)</h3>
                 <div class="table-container">
                     <table>
                         <thead><tr><th>Jméno</th><th>Požadavek</th><th>Přiřazení Místa a Pokoje</th><th>Akce</th></tr></thead>
@@ -177,6 +179,12 @@
                 </div>
 
                 <h3 style="margin-top:20px; color:#27ae60;">✅ Rozřazení hosté</h3>
+                <div class="filter-row" style="background:#f1f1f1; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; gap:10px;">
+                    <strong>Filtr:</strong>
+                    <input type="text" id="filterAccName" placeholder="Jméno..." onkeyup="renderAccView()">
+                    <input type="text" id="filterAccPlace" placeholder="Místo ubytování..." onkeyup="renderAccView()">
+                    <input type="text" id="filterAccRoom" placeholder="Pokoj..." onkeyup="renderAccView()">
+                </div>
                 <div class="table-container">
                     <table>
                         <thead><tr><th>Jméno</th><th>Místo</th><th>Pokoj</th><th>Akce</th></tr></thead>
@@ -189,16 +197,31 @@
                 <h2>Rozpočet</h2>
                 <div class="input-form">
                     <input type="text" id="budgetItemName" placeholder="Položka">
-                    <input type="number" id="budgetEstimated" placeholder="Odhad (Kč)">
-                    <button id="addBudgetBtn">Přidat</button>
+                    <input type="text" id="budgetCategory" list="budgetCatList" placeholder="Kategorie (např. Výzdoba)">
+                    <input type="number" id="budgetEstimated" placeholder="Plánovaná cena (Kč)">
+                    <button id="addBudgetBtn">Přidat výdaj</button>
                 </div>
+                
+                <datalist id="budgetCatList">
+                    <option value="Hostina"><option value="Oblečení"><option value="Výzdoba"><option value="Služby">
+                </datalist>
+
                 <div class="stats">
                     <div class="stat-box">Plánováno: <strong id="totalEstimated">0 Kč</strong></div>
-                    <div class="stat-box">Utraceno: <strong id="totalActual">0 Kč</strong></div>
+                    <div class="stat-box">Skutečně utraceno: <strong id="totalActual">0 Kč</strong></div>
                 </div>
+
+                <div class="filter-box" style="margin-top:15px;">
+                    <strong>Filtrovat rozpočet:</strong>
+                    <div class="filter-inputs">
+                        <input type="text" id="filterBudgetText" placeholder="Název položky..." onkeyup="renderBudgetView()">
+                        <input type="text" id="filterBudgetCat" placeholder="Kategorie..." onkeyup="renderBudgetView()">
+                    </div>
+                </div>
+
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Položka</th><th>Odhad</th><th>Skutečnost</th><th>Akce</th></tr></thead>
+                        <thead><tr><th>Kategorie</th><th>Položka</th><th>Odhad</th><th>Skutečnost</th><th>Akce</th></tr></thead>
                         <tbody id="budgetTableBody"></tbody>
                     </table>
                 </div>
@@ -226,6 +249,20 @@
             <div class="button-group">
                 <button onclick="saveGuestEdit()">Uložit změny</button>
                 <button class="btn-secondary" onclick="closeModal()">Zrušit</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editBudgetModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Upravit výdaj</h3>
+            <input type="hidden" id="editBudgetId">
+            <div class="input-group"><input type="text" id="editBudgetName" placeholder="Položka"></div>
+            <div class="input-group"><input type="text" id="editBudgetCat" placeholder="Kategorie"></div>
+            <div class="input-group"><input type="number" id="editBudgetEst" placeholder="Odhad"></div>
+            <div class="button-group" style="margin-top:15px;">
+                <button onclick="saveBudgetEdit()">Uložit změny</button>
+                <button class="btn-secondary" onclick="closeBudgetModal()">Zrušit</button>
             </div>
         </div>
     </div>
