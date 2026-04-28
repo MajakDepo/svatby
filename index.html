@@ -23,16 +23,48 @@
         <div id="appSection" class="hidden">
             <nav class="app-nav">
                 <ul>
-                    <li><a href="#todo">Úkoly</a></li>
-                    <li><a href="#guests">Hosté</a></li>
-                    <li><a href="#helper-section">Pomocníci</a></li>
-                    <li><a href="#accommodation-section">Ubytování</a></li>
-                    <li><a href="#budget">Rozpočet</a></li>
+                    <li><a href="#" onclick="showPage('dashboard')">🏠 Nástěnka</a></li>
+                    <li><a href="#" onclick="showPage('todo')">✅ Úkoly</a></li>
+                    <li><a href="#" onclick="showPage('guests')">👥 Hosté</a></li>
+                    <li><a href="#" onclick="showPage('helper-section')">💪 Pomocníci</a></li>
+                    <li><a href="#" onclick="showPage('accommodation-section')">🏠 Ubytování</a></li>
+                    <li><a href="#" onclick="showPage('budget')">💰 Rozpočet</a></li>
                 </ul>
                 <button id="logoutBtn" class="btn-small">Odhlásit se</button>
             </nav>
 
-            <section id="todo" class="card">
+            <section id="dashboard" class="page-view">
+                <div class="dashboard-grid">
+                    <div class="card text-center" style="grid-column: 1 / -1; background: #fce4ec; border: 2px solid #f8bbd0;">
+                        <h2 style="border-bottom: none; margin-bottom: 5px;">Odpočet do svatby ⏳</h2>
+                        <input type="date" id="weddingDateInput" onchange="saveWeddingDate()" style="margin-bottom: 10px;">
+                        <div id="countdownDisplay" style="font-size: 2rem; font-weight: bold; color: #d81b60;">Nastavte datum svatby</div>
+                    </div>
+
+                    <div class="card dash-card" onclick="showPage('guests')">
+                        <h3>Hosté</h3>
+                        <p>Pozváno: <strong id="dashTotalGuests">0</strong></p>
+                        <p>Potvrzeno: <strong id="dashConfirmedGuests" style="color: #27ae60;">0</strong></p>
+                        <span class="btn-small btn-secondary" style="margin-top:10px; display:inline-block;">Přejít na hosty &rarr;</span>
+                    </div>
+
+                    <div class="card dash-card" onclick="showPage('helper-section')">
+                        <h3>Pomocníci</h3>
+                        <p>Celkem: <strong id="dashTotalHelpers">0</strong></p>
+                        <p>K rozřazení: <strong id="dashPendingHelpers" style="color: #f39c12;">0</strong></p>
+                        <span class="btn-small btn-secondary" style="margin-top:10px; display:inline-block;">Přejít na pomocníky &rarr;</span>
+                    </div>
+
+                    <div class="card dash-card" onclick="showPage('accommodation-section')">
+                        <h3>Ubytování</h3>
+                        <p>Osob: <strong id="dashTotalAcc">0</strong></p>
+                        <p>K rozřazení: <strong id="dashPendingAcc" style="color: #f39c12;">0</strong></p>
+                        <span class="btn-small btn-secondary" style="margin-top:10px; display:inline-block;">Přejít na ubytování &rarr;</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="todo" class="card page-view hidden">
                 <h2>To-Do List</h2>
                 <div class="input-group">
                     <input type="text" id="taskInput" placeholder="Nová položka k vyřízení...">
@@ -41,10 +73,10 @@
                 <ul id="taskList"></ul>
             </section>
 
-            <section id="guests" class="card">
+            <section id="guests" class="card page-view hidden">
                 <h2>Správa hostů</h2>
                 <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
-                    <p><strong>Odkaz pro vaše hosty:</strong> Pošlete jim tento odkaz pro vyplnění účasti:</p>
+                    <p><strong>Odkaz pro vaše hosty:</strong></p>
                     <div style="display:flex; gap:10px; width:100%;">
                         <input type="text" id="shareUrlInput" readonly value="Načítám odkaz..." style="background:white; flex:1;">
                         <button onclick="copyShareUrl()">Kopírovat</button>
@@ -52,6 +84,7 @@
                 </div>
 
                 <div class="input-form-extended">
+                    <h3 style="margin-bottom: 10px; font-size: 1rem; color: #666;">Ruční přidání hosta</h3>
                     <div class="row">
                         <input type="text" id="guestName" placeholder="Jméno a příjmení">
                         <input type="text" id="guestCity" placeholder="Město">
@@ -69,39 +102,44 @@
                 </div>
                 
                 <div class="stats-grid" id="guestStatsBlock"></div>
+                
+                <div id="cityBadgesContainer" style="margin-bottom: 20px;"></div>
 
                 <div class="table-container">
                     <div class="filter-box">
-                        <strong>Filtrovat hosty:</strong>
+                        <strong>Filtrovat a řadit hosty:</strong>
                         <div class="filter-inputs">
-                            <input type="text" id="filterGuestName" placeholder="Jména (např. Jan, Petr)..." onkeyup="filterGuests()">
-                            <input type="text" id="filterGuestCity" placeholder="Města (např. Praha, Brno)..." onkeyup="filterGuests()">
-                            <input type="date" id="filterGuestDate" onchange="filterGuests()" title="Vyplněno z formuláře dne">
+                            <input type="text" id="filterGuestName" placeholder="Jména (např. Jan, Petr)..." onkeyup="renderGuestsView()">
+                            <input type="text" id="filterGuestCity" placeholder="Města (např. Praha, Brno)..." onkeyup="renderGuestsView()">
+                            <input type="date" id="filterGuestDate" onchange="renderGuestsView()" title="Vyplněno dne">
+                            <select id="sortGuestDate" onchange="renderGuestsView()" style="flex:1;">
+                                <option value="desc">Nejnovější záznamy nahoře</option>
+                                <option value="asc">Nejstarší záznamy nahoře</option>
+                                <option value="name">Řadit abecedně podle jména</option>
+                            </select>
                         </div>
                         <div class="filter-checks">
                             <span><strong>Strana:</strong></span>
-                            <label><input type="checkbox" class="filter-side" value="Nevěsta" onchange="filterGuests()"> Nevěsta</label>
-                            <label><input type="checkbox" class="filter-side" value="Ženich" onchange="filterGuests()"> Ženich</label>
-                            <label><input type="checkbox" class="filter-side" value="Společný" onchange="filterGuests()"> Společný</label>
+                            <label><input type="checkbox" class="filter-side" value="Nevěsta" onchange="renderGuestsView()"> Nevěsta</label>
+                            <label><input type="checkbox" class="filter-side" value="Ženich" onchange="renderGuestsView()"> Ženich</label>
+                            <label><input type="checkbox" class="filter-side" value="Společný" onchange="renderGuestsView()"> Společný</label>
                         </div>
                         <div class="filter-checks">
                             <span><strong>Stav:</strong></span>
-                            <label><input type="checkbox" class="filter-status" value="Pozváno" onchange="filterGuests()"> Pozváno</label>
-                            <label><input type="checkbox" class="filter-status" value="Potvrzeno" onchange="filterGuests()"> Potvrzeno</label>
-                            <label><input type="checkbox" class="filter-status" value="Nezúčastní se" onchange="filterGuests()"> Nezúčastní se</label>
+                            <label><input type="checkbox" class="filter-status" value="Pozváno" onchange="renderGuestsView()"> Pozváno</label>
+                            <label><input type="checkbox" class="filter-status" value="Potvrzeno" onchange="renderGuestsView()"> Potvrzeno</label>
+                            <label><input type="checkbox" class="filter-status" value="Nezúčastní se" onchange="renderGuestsView()"> Nezúčastní se</label>
                         </div>
                     </div>
 
                     <table id="guestTable">
-                        <thead>
-                            <tr><th>Jméno</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr>
-                        </thead>
+                        <thead><tr><th>Jméno</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead>
                         <tbody id="guestTableBody"></tbody>
                     </table>
                 </div>
             </section>
 
-            <section id="helper-section" class="card">
+            <section id="helper-section" class="card page-view hidden">
                 <h2>💪 Seznam pomocníků</h2>
                 <div class="stats" id="helperStatsBlock" style="margin-bottom: 15px; flex-wrap: wrap;"></div>
                 
@@ -114,6 +152,11 @@
                 </div>
 
                 <h3 style="margin-top:20px; color:#27ae60;">✅ Potvrzení pomocníci</h3>
+                <div class="filter-row" style="background:#f1f1f1; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <strong>Filtr:</strong>
+                    <input type="text" id="filterHelperName" placeholder="Jméno..." onkeyup="renderHelpersView()">
+                    <input type="text" id="filterHelperTask" placeholder="Úloha/role..." onkeyup="renderHelpersView()">
+                </div>
                 <div class="table-container">
                     <table>
                         <thead><tr><th>Jméno</th><th>Konkrétní úloha / práce</th></tr></thead>
@@ -122,9 +165,8 @@
                 </div>
             </section>
 
-            <section id="accommodation-section" class="card">
+            <section id="accommodation-section" class="card page-view hidden">
                 <h2>🏠 Organizace ubytování</h2>
-                
                 <div class="stats-grid" id="accStatsBlock"></div>
 
                 <h3 style="margin-top:20px; color:#f39c12;">⏳ Nové žádosti o ubytování (z formuláře)</h3>
@@ -136,6 +178,12 @@
                 </div>
 
                 <h3 style="margin-top:20px; color:#27ae60;">✅ Rozřazení hosté</h3>
+                <div class="filter-row" style="background:#f1f1f1; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; gap:10px;">
+                    <strong>Filtr:</strong>
+                    <input type="text" id="filterAccName" placeholder="Jméno..." onkeyup="renderAccView()">
+                    <input type="text" id="filterAccPlace" placeholder="Místo ubytování..." onkeyup="renderAccView()">
+                    <input type="text" id="filterAccRoom" placeholder="Pokoj..." onkeyup="renderAccView()">
+                </div>
                 <div class="table-container">
                     <table>
                         <thead><tr><th>Jméno</th><th>Místo (Hotel/Penzion)</th><th>Pokoj</th><th>Akce</th></tr></thead>
@@ -144,7 +192,7 @@
                 </div>
             </section>
 
-            <section id="budget" class="card">
+            <section id="budget" class="card page-view hidden">
                 <h2>Rozpočet</h2>
                 <div class="input-form">
                     <input type="text" id="budgetItemName" placeholder="Položka">
@@ -192,4 +240,3 @@
     <script type="module" src="app.js"></script>
 </body>
 </html>
- 
