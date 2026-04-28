@@ -15,6 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
 const tasksColl = collection(db, "ukoly"), guestsColl = collection(db, "hoste"), budgetColl = collection(db, "rozpocet"), accColl = collection(db, "ubytovani_kapacity");
 let unsubs = [], allGuestsData = [], allBudgetData = [], accPlacesData = [], allTasksData = [], myUid = null;
 let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
@@ -104,7 +105,7 @@ function initApp(uid) {
     }));
 }
 
-// --- DASHBOARD ---
+// --- DASHBOARD & ODPOČET ---
 window.updateDashboardStats = () => {
     let totals = { guests: 0, confirmed: 0, helpers: 0, pendingHelpers: 0, accGuests: 0, pendingAcc: 0, children: 0 };
     allGuestsData.forEach(g => {
@@ -124,11 +125,13 @@ window.updateDashboardStats = () => {
     if(document.getElementById('dashPendingAcc')) document.getElementById('dashPendingAcc').innerText = totals.pendingAcc;
 };
 
+// Zaručené a okamžité zpracování data
 window.saveWeddingDate = () => {
     const d = document.getElementById('weddingDateInput');
-    if(d && d.value) {
-        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true })
-        .then(() => window.updateCountdown());
+    if(d && d.value && myUid) {
+        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true }).then(() => {
+            window.updateCountdown();
+        });
     }
 };
 
@@ -137,8 +140,15 @@ window.updateCountdown = () => {
     const disp = document.getElementById('countdownDisplay');
     if (!wedInput || !disp) return;
     if (!wedInput.value) { disp.innerText = "Nastavte datum svatby"; return; }
-    const diff = Math.ceil((new Date(wedInput.value) - new Date()) / 86400000);
-    disp.innerText = diff >= 0 ? `Už jen ${diff} dní! 🎉` : `Svatba už proběhla! ❤️`;
+    
+    // Přesný výpočet bez ohledu na posun letního času
+    const targetDate = new Date(wedInput.value);
+    targetDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const diff = Math.ceil((targetDate - today) / 86400000);
+    disp.innerText = diff > 0 ? `Už jen ${diff} dní! 🎉` : (diff === 0 ? `Dnes je ten den! 🎉` : `Svatba už proběhla! ❤️`);
 };
 
 // --- ÚKOLY (TO-DO) ---
@@ -518,9 +528,8 @@ window.removeHelperCategory = (cat) => {
     setDoc(doc(db, "nastaveni", myUid), { helperCategories }, { merge: true });
 };
 
-// --- UBYTOVÁNÍ ---
+// --- UBYTOVÁNÍ A KAPACITA ---
 function getRoomCapacity(name) {
-    // Oprava: Systém hledá explicitní slovní základ a nevyužívá náhodná ID čísla z konce textu
     let n = name.toLowerCase();
     if(n.includes('jedno')) return 1; 
     if(n.includes('dvou') || n.includes('dvoj')) return 2; 
@@ -571,13 +580,52 @@ window.renderAccView = () => {
         aPending.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accRoom || '-'}</td><td><select id="selPlace_${g.id}" style="width:100%; margin-bottom:5px;" onchange="loadRoomsForSelect('${g.id}', this.value)">${selectPlacesHtml}</select><select id="selRoom_${g.id}" style="width:100%; display:none;"><option value="">-- Nejdřív vyberte místo --</option></select></td><td><button class="btn-small" onclick="approveAcc('${g.id}')">Schválit</button></td></tr>`;
     });
 
+    // Úprava tabulky rozřazených - FILTROVÁNÍ A INLINE EDITACE
+    const filterSelect = document.getElementById('filterAccAssignedPlace');
+    if(filterSelect && filterSelect.options.length <= 1 && accPlacesData.length > 0) {
+        let opts = '<option value="">-- Všechna místa --</option>';
+        accPlacesData.forEach(p => opts += `<option value="${p.name}">${p.name}</option>`);
+        filterSelect.innerHTML = opts;
+    }
+
+    const selFilterPlace = document.getElementById('filterAccAssignedPlace')?.value || '';
+    const selFilterName = (document.getElementById('filterAccAssignedName')?.value || '').toLowerCase();
+
     allGuestsData.filter(g => g.needsAcc && g.accStatus === 'assigned').forEach(g => {
-        let options = `<option value="">-- Vybrat pokoj --</option>` + accPlacesData.map(p => p.rooms.map(r => `<option value="${p.name}|${r}" ${g.accPlace===p.name && g.accRoom===r ? 'selected':''}>${p.name}: ${r}</option>`).join('')).join('');
-        let selectHtml = `<select onchange="let v=this.value.split('|'); updateDoc(doc(db, 'hoste', '${g.id}'), {accPlace: v[0], accRoom: v[1]})">${options}</select>`;
+        if(selFilterPlace && g.accPlace !== selFilterPlace) return;
+        if(selFilterName && !g.name.toLowerCase().includes(selFilterName)) return;
+
+        let options = `<option value="">-- Vybrat místo a pokoj --</option>` + accPlacesData.map(p => p.rooms.map(r => `<option value="${p.name}|${r}" ${g.accPlace===p.name && g.accRoom===r ? 'selected':''}>${p.name}: ${r}</option>`).join('')).join('');
         
-        aAssigned.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accPlace}</td><td>${g.accRoom}</td>
-            <td style="display:flex; gap:5px;">${selectHtml}<button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})">Zpět k rozřazení</button></td></tr>`;
+        aAssigned.innerHTML += `
+            <tr>
+                <td><strong>${g.name}</strong></td>
+                <td>${g.accPlace}</td>
+                <td>
+                    <div id="disp_room_${g.id}" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                        <span>${g.accRoom}</span>
+                        <button class="btn-small btn-secondary" onclick="toggleAccEdit('${g.id}')">✏️ Upravit</button>
+                    </div>
+                    <div id="edit_box_${g.id}" class="hidden" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;">
+                        <select id="edit_sel_${g.id}" style="flex:1;">${options}</select>
+                        <button class="btn-small" onclick="saveAccEdit('${g.id}')">✔ Uložit</button>
+                        <button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})" title="Vrátit do žádostí">↩️ Do žádostí</button>
+                    </div>
+                </td>
+            </tr>`;
     });
+};
+
+window.toggleAccEdit = (id) => {
+    document.getElementById(`disp_room_${id}`).classList.add('hidden');
+    document.getElementById(`edit_box_${id}`).classList.remove('hidden');
+};
+
+window.saveAccEdit = (id) => {
+    const v = document.getElementById(`edit_sel_${id}`).value.split('|');
+    if(v.length === 2) {
+        updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]});
+    }
 };
 
 window.addAccPlace = () => {
