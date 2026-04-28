@@ -15,13 +15,12 @@
         .help-card:hover { border-color: #e5b2b2; background: #fdf2f3; }
         .help-card input { display: none; }
         .help-card.selected { background: #e5b2b2; color: white; border-color: #d49595; font-weight: bold; }
+        .child-age-row { display: flex; gap: 10px; margin-top: 5px; align-items: center; }
     </style>
 </head>
 <body>
     <div class="form-container" id="formConfig">
         <h2 style="text-align: center; color: #e5b2b2;">💍 Potvrzení účasti</h2>
-        <p style="text-align: center; margin-bottom: 20px;">Prosíme o vyplnění údajů za celou vaši skupinu.</p>
-
         <form id="rsvpForm">
             <div class="input-group">
                 <label>Vaše Jméno a Příjmení:</label>
@@ -33,9 +32,15 @@
             </div>
 
             <div id="additionalGuestsContainer">
-                <h3>Další osoby s vámi (partner, děti...)</h3>
+                <h3>Další dospělé osoby s vámi</h3>
             </div>
-            <button type="button" class="btn-secondary" onclick="addGuestRow()" style="width: 100%; margin-bottom: 20px;">+ Přidat další osobu</button>
+            <button type="button" class="btn-secondary" onclick="addGuestRow()" style="width: 100%; margin-bottom: 20px;">+ Přidat dalšího dospělého</button>
+
+            <div class="input-form" style="background: #fff8f9; border: 1px solid #fce4ec; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <label><strong>Berete s sebou děti?</strong></label>
+                <input type="number" id="numChildren" value="0" min="0" onchange="renderChildrenAges()" style="width: 80px; margin-bottom: 10px;">
+                <div id="childrenAgesContainer"></div>
+            </div>
 
             <div class="input-form" style="background: #fafafa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <label><strong>Potřebujete ubytování?</strong></label>
@@ -45,15 +50,13 @@
                 </select>
                 <div id="roomsDiv" style="display: none; margin-top: 10px;">
                     <label>Jaké pokoje/lůžka budete potřebovat?</label>
-                    <input type="text" id="roomDetails" placeholder="Např. 1x dvoulůžkový a 1x přistýlka" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; margin-top:5px;">
+                    <input type="text" id="roomDetails" placeholder="Např. 1x dvoulůžkový a 1x přistýlka">
                 </div>
             </div>
 
             <div style="background: #fdf9f9; padding: 15px; border-radius: 8px; border: 1px solid #fce4ec;">
-                <label><strong>Jste ochotni nám s něčím pomoci? (Klikněte na možnost)</strong></label>
-                <div class="help-grid" id="dynamicHelpGrid">
-                    <em>Načítám možnosti pomoci...</em>
-                </div>
+                <label><strong>Jste ochotni nám s něčím pomoci?</strong></label>
+                <div class="help-grid" id="dynamicHelpGrid"></div>
             </div>
 
             <button type="submit" style="width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 20px;">Odeslat potvrzení</button>
@@ -61,7 +64,7 @@
     </div>
 
     <div id="successArea" class="form-container hidden">
-        <div class="success-msg"><h1>❤️</h1><h2>Děkujeme!</h2><p>Vaše údaje byly úspěšně odeslány.</p></div>
+        <div class="success-msg"><h1>❤️</h1><h2>Děkujeme!</h2><p>Vaše údaje byly odeslány.</p></div>
     </div>
 
     <script type="module">
@@ -78,24 +81,18 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
         const urlParams = new URLSearchParams(window.location.search);
         const ownerUid = urlParams.get('uid');
 
-        // Dynamické načtení kategorií pomocníků z nastavení admina
         async function loadCategories() {
             const grid = document.getElementById('dynamicHelpGrid');
-            let cats = ['Pečení/Dorty', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba/Program']; // Výchozí
+            let cats = ['Pečení/Dorty', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba/Program'];
             if(ownerUid) {
                 const docSnap = await getDoc(doc(db, "nastaveni", ownerUid));
-                if (docSnap.exists() && docSnap.data().helperCategories) {
-                    cats = docSnap.data().helperCategories;
-                }
+                if (docSnap.exists() && docSnap.data().helperCategories) cats = docSnap.data().helperCategories;
             }
             grid.innerHTML = '';
-            cats.forEach(c => {
-                grid.innerHTML += `<label class="help-card"><input type="checkbox" name="help" value="${c}" onchange="toggleCard(this)"> ${c}</label>`;
-            });
+            cats.forEach(c => grid.innerHTML += `<label class="help-card"><input type="checkbox" name="help" value="${c}" onchange="toggleCard(this)"> ${c}</label>`);
         }
         loadCategories();
 
@@ -104,24 +101,40 @@
             else checkbox.parentElement.classList.remove('selected');
         };
 
+        window.renderChildrenAges = () => {
+            const num = document.getElementById('numChildren').value;
+            const cont = document.getElementById('childrenAgesContainer');
+            cont.innerHTML = '';
+            for(let i=0; i<num; i++) {
+                cont.innerHTML += `
+                    <div class="child-age-row">
+                        <label>Věk dítěte ${i+1}:</label>
+                        <select class="child-age-select">
+                            <option value="Malé (0-3)">Malé (0-3 roky)</option>
+                            <option value="Střední (4-10)">Střední (4-10 let)</option>
+                            <option value="Velké (11+)">Velké (11+ let)</option>
+                        </select>
+                    </div>`;
+            }
+        };
+
         window.addGuestRow = () => {
             const container = document.getElementById('additionalGuestsContainer');
             const div = document.createElement('div');
             div.className = 'guest-row';
-            div.innerHTML = `<input type="text" class="add-name" placeholder="Jméno dalšího hosta" style="margin-bottom:5px; width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
-                             <button type="button" class="btn-small btn-secondary" onclick="this.parentElement.remove()">Odebrat</button>`;
+            div.innerHTML = `<input type="text" class="add-name" placeholder="Jméno a příjmení" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">`;
             container.appendChild(div);
         }
 
         document.getElementById('rsvpForm').onsubmit = async (e) => {
             e.preventDefault();
-            if(!ownerUid) { alert("Chyba: Chybí ID svatby v odkazu!"); return; }
-
             const helpValues = Array.from(document.querySelectorAll('input[name="help"]:checked')).map(cb => cb.value);
             const mainName = document.getElementById('mainGuestName').value;
             const city = document.getElementById('mainGuestCity').value;
             const needsAcc = document.getElementById('needsAcc').value === 'ano';
-            const roomDetails = document.getElementById('roomDetails').value || 'Neurčeno';
+            const roomDetails = document.getElementById('roomDetails').value || '';
+            const numChildren = document.getElementById('numChildren').value;
+            const childAges = Array.from(document.querySelectorAll('.child-age-select')).map(s => s.value);
             
             const allNames = [mainName];
             document.querySelectorAll('.add-name').forEach(input => { if(input.value) allNames.push(input.value); });
@@ -135,21 +148,21 @@
                         side: 'Společný',
                         status: 'Potvrzeno',
                         isHelper: helpValues.length > 0,
-                        helperTask: helpValues.join(", "), // Více rolí odděleno čárkou
+                        helperTask: helpValues.join(", "),
                         helperStatus: helpValues.length > 0 ? 'pending' : 'assigned',
                         needsAcc: needsAcc,
                         accPlace: '',
-                        accRoom: needsAcc ? (i === 0 ? `Požadavek: ${roomDetails}` : 'Součást skupiny') : '',
+                        accRoom: needsAcc ? (i === 0 ? `Požadavek: ${roomDetails}` : 'Skupina s ' + mainName) : '',
                         accStatus: needsAcc ? 'pending' : 'assigned',
                         userId: ownerUid,
-                        submittedDate: todayISO 
+                        submittedDate: todayISO,
+                        numChildren: i === 0 ? numChildren : 0, // Připisujeme k hlavnímu kontaktu
+                        childrenAges: i === 0 ? childAges : []
                     });
                 }
                 document.getElementById('formConfig').classList.add('hidden');
                 document.getElementById('successArea').classList.remove('hidden');
-            } catch (err) {
-                alert("Chyba při odesílání: " + err.message);
-            }
+            } catch (err) { alert(err.message); }
         };
     </script>
 </body>
