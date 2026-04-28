@@ -1,146 +1,120 @@
-// 1. Importy z Firebase (Firestore i Auth)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-// 2. TVOJE FIREBASE KONFIGURACE (Doplň své údaje!)
+// --- TVOJE KONFIGURACE ---
 const firebaseConfig = {
-  apiKey: "AIzaSyDA4wHyLuyz8LN4RVxKoclF3CAXxKPg7xc",
-  authDomain: "svatebniplanovac-f8ede.firebaseapp.com",
-  projectId: "svatebniplanovac-f8ede",
-  storageBucket: "svatebniplanovac-f8ede.firebasestorage.app",
-  messagingSenderId: "1016595614269",
-  appId: "1:1016595614269:web:f1c1dddbf8bd2228e43854",
-  measurementId: "G-3LK6J78T6K"
+    apiKey: "AIzaSyDA4wHyLuyz8LN4RVxKoclF3CAXxKPg7xc",
+    authDomain: "svatebniplanovac-f8ede.firebaseapp.com",
+    projectId: "svatebniplanovac-f8ede",
+    storageBucket: "svatebniplanovac-f8ede.firebasestorage.app",
+    messagingSenderId: "1016595614269",
+    appId: "1:1016595614269:web:f1c1dddbf8bd2228e43854",
+    measurementId: "G-3LK6J78T6K"
 };
 
-// 3. Inicializace
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const tasksCollection = collection(db, "ukoly");
 
-// 4. HTML Elementy
-const authSection = document.getElementById('authSection');
-const appSection = document.getElementById('appSection');
-const emailInput = document.getElementById('emailInput');
-const passwordInput = document.getElementById('passwordInput');
-const loginBtn = document.getElementById('loginBtn');
-const registerBtn = document.getElementById('registerBtn');
-const logoutBtn = document.getElementById('logoutBtn');
+// Kolekce
+const tasksColl = collection(db, "ukoly");
+const guestsColl = collection(db, "hoste");
 
-const taskInput = document.getElementById('taskInput');
-const taskList = document.getElementById('taskList');
-const addBtn = document.getElementById('addBtn');
+// Elementy
+const authSection = document.getElementById('authSection'), appSection = document.getElementById('appSection');
+const taskInput = document.getElementById('taskInput'), taskList = document.getElementById('taskList');
+const guestName = document.getElementById('guestName'), guestSide = document.getElementById('guestSide'), guestTable = document.getElementById('guestTableBody');
+const totalGuestsEl = document.getElementById('totalGuests'), confirmedGuestsEl = document.getElementById('confirmedGuests');
 
-let unsubscribeTasks = null; // Proměnná pro zastavení načítání dat po odhlášení
+let unsubs = []; // Pole pro odhlášení sledování dat
 
-// ---------------------------------------------------------
-// SEKCE A: PŘIHLAŠOVÁNÍ A REGISTRACE
-// ---------------------------------------------------------
-
-// Sledování stavu přihlášení (spustí se automaticky při načtení a po každém přihlášení/odhlášení)
+// --- AUTH LOGIKA ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Uživatel JE přihlášen -> schováme přihlášení, ukážeme aplikaci
         authSection.classList.add('hidden');
         appSection.classList.remove('hidden');
-        loadUserTasks(user.uid); // Načteme úkoly specifické pro tohoto uživatele
+        initData(user.uid);
     } else {
-        // Uživatel NENÍ přihlášen -> ukážeme přihlášení, schováme aplikaci
         authSection.classList.remove('hidden');
         appSection.classList.add('hidden');
-        if (unsubscribeTasks) unsubscribeTasks(); // Zastavíme stahování starých dat
+        unsubs.forEach(un => un()); // Zastavit sledování
     }
 });
 
-// Registrace nového uživatele
-registerBtn.addEventListener('click', async () => {
-    try {
-        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        emailInput.value = ''; passwordInput.value = '';
-    } catch (error) {
-        alert("Chyba registrace: " + error.message);
-    }
-});
+document.getElementById('registerBtn').onclick = () => createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert(e.message));
+document.getElementById('loginBtn').onclick = () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(e => alert(e.message));
+document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
-// Přihlášení existujícího uživatele
-loginBtn.addEventListener('click', async () => {
-    try {
-        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        emailInput.value = ''; passwordInput.value = '';
-    } catch (error) {
-        alert("Chyba přihlášení: " + error.message);
-    }
-});
-
-// Odhlášení
-logoutBtn.addEventListener('click', () => {
-    signOut(auth);
-});
-
-// ---------------------------------------------------------
-// SEKCE B: LOGIKA ÚKOLŮ
-// ---------------------------------------------------------
-
-// Načítání úkolů pouze pro přihlášeného uživatele
-function loadUserTasks(userId) {
-    // Vytvoříme dotaz: "Najdi všechny úkoly, kde se userId rovná ID přihlášeného uživatele"
-    const q = query(tasksCollection, where("userId", "==", userId));
-
-    unsubscribeTasks = onSnapshot(q, (snapshot) => {
+// --- DATA INICIALIZACE ---
+function initData(uid) {
+    // Sledování Úkolů
+    const qTasks = query(tasksColl, where("userId", "==", uid));
+    const unsubTasks = onSnapshot(qTasks, (snap) => {
         taskList.innerHTML = '';
-        snapshot.forEach((docSnap) => {
-            renderTask(docSnap.id, docSnap.data());
+        snap.forEach(d => renderTask(d.id, d.data()));
+    }, err => console.error("Chyba úkolů: ", err));
+
+    // Sledování Hostů
+    const qGuests = query(guestsColl, where("userId", "==", uid));
+    const unsubGuests = onSnapshot(qGuests, (snap) => {
+        guestTable.innerHTML = '';
+        let total = 0, confirmed = 0;
+        snap.forEach(d => {
+            const g = d.data();
+            total++;
+            if(g.status === 'Potvrzeno') confirmed++;
+            renderGuest(d.id, g);
         });
-    });
+        totalGuestsEl.textContent = total;
+        confirmedGuestsEl.textContent = confirmed;
+    }, err => console.error("Chyba hostů: ", err));
+
+    unsubs = [unsubTasks, unsubGuests];
 }
 
-function renderTask(id, task) {
+// --- ÚKOLY ---
+document.getElementById('addBtn').onclick = async () => {
+    if (!taskInput.value.trim()) return;
+    await addDoc(tasksColl, { text: taskInput.value, completed: false, userId: auth.currentUser.uid, ts: Date.now() });
+    taskInput.value = '';
+};
+
+function renderTask(id, t) {
     const li = document.createElement('li');
-    if (task.completed) li.classList.add('completed');
-
-    const span = document.createElement('span');
-    span.textContent = task.text;
-    span.style.cursor = 'pointer';
-    span.onclick = () => toggleTask(id, task.completed);
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = '❌';
-    deleteBtn.style.backgroundColor = 'transparent';
-    deleteBtn.style.padding = '0';
-    deleteBtn.style.color = 'black';
-    deleteBtn.onclick = () => deleteTask(id);
-
-    li.appendChild(span);
-    li.appendChild(deleteBtn);
+    if (t.completed) li.classList.add('completed');
+    li.innerHTML = `<span>${t.text}</span> <button class="btn-small" onclick="deleteTask('${id}')">❌</button>`;
+    li.querySelector('span').onclick = () => updateDoc(doc(db, "ukoly", id), { completed: !t.completed });
     taskList.appendChild(li);
 }
+window.deleteTask = (id) => deleteDoc(doc(db, "ukoly", id));
 
-// Přidání úkolu
-addBtn.addEventListener('click', async () => {
-    const text = taskInput.value.trim();
-    if (text === '' || !auth.currentUser) return; // Zabráníme přidání, pokud chybí text nebo uživatel není přihlášen
+// --- HOSTÉ ---
+document.getElementById('addGuestBtn').onclick = async () => {
+    if (!guestName.value.trim()) return;
+    await addDoc(guestsColl, { 
+        name: guestName.value, 
+        side: guestSide.value, 
+        status: 'Pozváno', 
+        userId: auth.currentUser.uid 
+    });
+    guestName.value = '';
+};
 
-    try {
-        await addDoc(tasksCollection, {
-            text: text,
-            completed: false,
-            userId: auth.currentUser.uid, // Tímto úkol přiřadíme konkrétnímu uživateli!
-            timestamp: new Date()
-        });
-        taskInput.value = '';
-    } catch (e) {
-        console.error("Chyba: ", e);
-    }
-});
-
-// Úprava úkolu
-async function toggleTask(id, currentStatus) {
-    await updateDoc(doc(db, "ukoly", id), { completed: !currentStatus });
+function renderGuest(id, g) {
+    const tr = document.createElement('tr');
+    const statusClass = g.status === 'Potvrzeno' ? 'status-confirmed' : 'status-invited';
+    tr.innerHTML = `
+        <td>${g.name}</td>
+        <td>${g.side}</td>
+        <td class="${statusClass}" style="cursor:pointer" onclick="toggleGuest('${id}', '${g.status}')">${g.status}</td>
+        <td><button class="btn-small btn-secondary" onclick="deleteGuest('${id}')">Smazat</button></td>
+    `;
+    guestTable.appendChild(tr);
 }
 
-// Smazání úkolu
-async function deleteTask(id) {
-    await deleteDoc(doc(db, "ukoly", id));
-}
+window.toggleGuest = (id, cur) => {
+    const next = cur === 'Pozváno' ? 'Potvrzeno' : 'Pozváno';
+    updateDoc(doc(db, "hoste", id), { status: next });
+};
+window.deleteGuest = (id) => deleteDoc(doc(db, "hoste", id));
