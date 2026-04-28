@@ -58,9 +58,27 @@
                 </div>
             </section>
 
+            <section id="todo" class="card page-view hidden">
+                <h2>To-Do List</h2>
+                <div class="input-group">
+                    <input type="text" id="taskInput" placeholder="Nová položka k vyřízení...">
+                    <button id="addBtn">Přidat</button>
+                </div>
+                <ul id="taskList"></ul>
+            </section>
+
             <section id="guests" class="card page-view hidden">
                 <h2>Správa hostů</h2>
+                <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
+                    <p><strong>Odkaz pro vaše hosty:</strong></p>
+                    <div style="display:flex; gap:10px; width:100%;">
+                        <input type="text" id="shareUrlInput" readonly value="Načítám odkaz..." style="background:white; flex:1;">
+                        <button onclick="copyShareUrl()">Kopírovat</button>
+                    </div>
+                </div>
+
                 <div class="input-form-extended">
+                    <h3 style="margin-bottom: 10px; font-size: 1rem; color: #666;">Ruční přidání hosta</h3>
                     <div class="row">
                         <input type="text" id="guestName" placeholder="Jméno a příjmení">
                         <input type="text" id="guestCity" placeholder="Město">
