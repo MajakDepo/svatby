@@ -43,15 +43,8 @@
                     </div>
                     <div class="card dash-card" onclick="showPage('guests')">
                         <h3>Hosté a Děti</h3>
-                        <p>Celkem dospělých: <strong id="dashTotalGuests">0</strong></p>
-                        <p>Potvrzeno: <strong id="dashConfirmedGuests" style="color:#27ae60;">0</strong></p>
-                        <p>Odmítlo: <strong id="dashDeclinedGuests" style="color:#c62828;">0</strong></p>
-                        <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee; font-size: 0.9rem;">
-                            <strong>Děti:</strong><br>
-                            0-3 roky: <strong id="dashChild1" style="color:#d81b60;">0</strong> |
-                            4-10 let: <strong id="dashChild2" style="color:#d81b60;">0</strong> |
-                            11+ let: <strong id="dashChild3" style="color:#d81b60;">0</strong>
-                        </div>
+                        <p>Dospělých: <strong id="dashTotalGuests">0</strong></p>
+                        <p>Dětí celkem: <strong id="dashTotalChildren" style="color:#d81b60;">0</strong></p>
                     </div>
                     <div class="card dash-card" onclick="showPage('helper-section')">
                         <h3>Pomocníci</h3>
@@ -176,12 +169,12 @@
 
             <section id="helper-section" class="card page-view hidden">
                 <h2>💪 Pomocníci</h2>
-                <div class="input-form-extended">
-                    <input type="text" id="newCategoryInput" placeholder="Nová kategorie pomoci">
-                    <button onclick="addHelperCategory()">Přidat</button>
-                    <div id="categoryTagsContainer" style="margin-top:10px;"></div>
+                
+                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                    <p style="font-size: 0.9rem; color: #666; margin: 0;">Kliknutím na bubliny vyfiltrujete tabulku níže:</p>
+                    <button class="btn-small btn-secondary" onclick="openCategoryEditModal()">⚙️ Upravit kategorie</button>
                 </div>
-                <p style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">Kliknutím na bubliny vyfiltrujete tabulku níže:</p>
+                
                 <div id="helperStatsBlock" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
                 
                 <h3 style="color:#f39c12;">⏳ Čekající na schválení</h3>
@@ -253,6 +246,18 @@
             </section>
         </div>
     </main>
+
+    <div id="categoryEditModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Správa kategorií pomoci</h3>
+            <div id="modalCategoryList" style="margin: 15px 0; display: flex; flex-direction: column; gap: 8px;"></div>
+            <div class="input-group" style="display:flex; flex-direction:row; gap:10px; margin-bottom:15px;">
+                <input type="text" id="modalNewCatInput" placeholder="Nová kategorie (např. Hlídání)">
+                <button class="btn-small" onclick="addHelperCategoryFromModal()" style="width:auto;">Přidat</button>
+            </div>
+            <div class="button-group"><button class="btn-secondary" onclick="closeCategoryEditModal()" style="width:100%;">Zavřít</button></div>
+        </div>
+    </div>
 
     <div id="helperEditModal" class="modal hidden">
         <div class="modal-content">
