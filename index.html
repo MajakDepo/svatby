@@ -9,42 +9,61 @@
 <body>
     <header>
         <h1>💍 Náš Svatební Plánovač</h1>
-        <nav>
-            <ul>
-                <li><a href="#todo">Úkoly</a></li>
-                <li><a href="#guests">Hosté</a></li>
-                <li><a href="#budget">Rozpočet</a></li>
-            </ul>
-        </nav>
     </header>
 
     <main>
-        <section id="todo" class="card">
-            <h2>To-Do List & Úkoly pro pomocníky</h2>
+        <section id="authSection" class="card text-center">
+            <h2>Přihlášení / Registrace</h2>
+            <p style="margin-bottom: 15px;">Pro přístup k plánovači se prosím přihlas.</p>
             <div class="input-group">
-                <input type="text" id="taskInput" placeholder="Zadej nový úkol (např. Objednat dort)...">
-                <button id="addBtn">Přidat</button>
+                <input type="email" id="emailInput" placeholder="Zadej e-mail">
             </div>
-            <ul id="taskList"></ul>
-        </section>
-
-        <section id="guests" class="card">
-            <h2>Seznam hostů</h2>
-            <p>Zde bude modul pro správu hostů (zatím v přípravě).</p>
-            <div class="stats">
-                <div class="stat-box">Pozváno: <strong>0</strong></div>
-                <div class="stat-box">Potvrzeno: <strong>0</strong></div>
+            <div class="input-group">
+                <input type="password" id="passwordInput" placeholder="Zadej heslo (min. 6 znaků)">
+            </div>
+            <div class="button-group">
+                <button id="loginBtn">Přihlásit se</button>
+                <button id="registerBtn" class="btn-secondary">Vytvořit účet</button>
             </div>
         </section>
 
-        <section id="budget" class="card">
-            <h2>Rozpočet</h2>
-            <p>Zde bude modul pro sledování výdajů (zatím v přípravě).</p>
-            <div class="stats">
-                <div class="stat-box">Rozpočet: <strong>100 000 Kč</strong></div>
-                <div class="stat-box">Utraceno: <strong>0 Kč</strong></div>
-            </div>
-        </section>
+        <div id="appSection" class="hidden">
+            <nav class="app-nav">
+                <ul>
+                    <li><a href="#todo">Úkoly</a></li>
+                    <li><a href="#guests">Hosté</a></li>
+                    <li><a href="#budget">Rozpočet</a></li>
+                </ul>
+                <button id="logoutBtn" class="btn-small">Odhlásit se</button>
+            </nav>
+
+            <section id="todo" class="card">
+                <h2>To-Do List & Úkoly pro pomocníky</h2>
+                <div class="input-group">
+                    <input type="text" id="taskInput" placeholder="Zadej nový úkol (např. Objednat dort)...">
+                    <button id="addBtn">Přidat</button>
+                </div>
+                <ul id="taskList"></ul>
+            </section>
+
+            <section id="guests" class="card">
+                <h2>Seznam hostů</h2>
+                <p>Zde bude modul pro správu hostů (zatím v přípravě).</p>
+                <div class="stats">
+                    <div class="stat-box">Pozváno: <strong>0</strong></div>
+                    <div class="stat-box">Potvrzeno: <strong>0</strong></div>
+                </div>
+            </section>
+
+            <section id="budget" class="card">
+                <h2>Rozpočet</h2>
+                <p>Zde bude modul pro sledování výdajů (zatím v přípravě).</p>
+                <div class="stats">
+                    <div class="stat-box">Rozpočet: <strong>100 000 Kč</strong></div>
+                    <div class="stat-box">Utraceno: <strong>0 Kč</strong></div>
+                </div>
+            </section>
+        </div>
     </main>
 
     <footer>
