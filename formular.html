@@ -86,10 +86,14 @@
 
         async function loadCategories() {
             const grid = document.getElementById('dynamicHelpGrid');
-            let cats = ['Pečení/Dorty', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba/Program'];
+            let cats = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
             if(ownerUid) {
-                const docSnap = await getDoc(doc(db, "nastaveni", ownerUid));
-                if (docSnap.exists() && docSnap.data().helperCategories) cats = docSnap.data().helperCategories;
+                try {
+                    const docSnap = await getDoc(doc(db, "nastaveni", ownerUid));
+                    if (docSnap.exists() && docSnap.data().helperCategories && docSnap.data().helperCategories.length > 0) {
+                        cats = docSnap.data().helperCategories;
+                    }
+                } catch(e) { console.error(e); }
             }
             grid.innerHTML = '';
             cats.forEach(c => grid.innerHTML += `<label class="help-card"><input type="checkbox" name="help" value="${c}" onchange="toggleCard(this)"> ${c}</label>`);
@@ -149,14 +153,14 @@
                         status: 'Potvrzeno',
                         isHelper: helpValues.length > 0,
                         helperTask: helpValues.join(", "),
-                        helperStatus: helpValues.length > 0 ? 'pending' : 'assigned',
+                        helperStatus: helpValues.length > 0 ? 'pending' : '',
                         needsAcc: needsAcc,
                         accPlace: '',
                         accRoom: needsAcc ? (i === 0 ? `Požadavek: ${roomDetails}` : 'Skupina s ' + mainName) : '',
-                        accStatus: needsAcc ? 'pending' : 'assigned',
+                        accStatus: needsAcc ? 'pending' : '',
                         userId: ownerUid,
                         submittedDate: todayISO,
-                        numChildren: i === 0 ? numChildren : 0, // Připisujeme k hlavnímu kontaktu
+                        numChildren: i === 0 ? numChildren : 0,
                         childrenAges: i === 0 ? childAges : []
                     });
                 }
