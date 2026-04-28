@@ -75,6 +75,25 @@
                         <button id="addBtn">Přidat úkol</button>
                     </div>
                 </div>
+                
+                <div class="filter-box" style="margin-bottom: 15px;">
+                    <strong>Filtrovat úkoly:</strong>
+                    <div class="filter-inputs">
+                        <select id="filterTaskStatus" onchange="renderTasksView()">
+                            <option value="">-- Všechny stavy --</option>
+                            <option value="Není">❌ Není</option>
+                            <option value="V průběhu">⏳ V průběhu</option>
+                            <option value="Hotovo">✅ Hotovo</option>
+                        </select>
+                        <select id="filterTaskPriority" onchange="renderTasksView()">
+                            <option value="">-- Všechny priority --</option>
+                            <option value="Nízká">Nízká</option>
+                            <option value="Střední">Střední</option>
+                            <option value="Vysoká">Vysoká</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="table-container">
                     <table id="todoTable">
                         <thead><tr><th>Stav</th><th>Priorita</th><th>Úkol</th><th>Poznámka</th><th>Akce</th></tr></thead>
@@ -101,13 +120,14 @@
                         <select id="guestSide"><option value="Nevěsta">Nevěsta</option><option value="Ženich">Ženich</option><option value="Společný">Společný</option></select>
                     </div>
                     <div class="row">
-                        <input type="number" id="guestChildren" placeholder="Počet dětí" min="0" style="max-width:120px;">
+                        <input type="number" id="guestChildren" placeholder="Počet dětí" min="0" style="max-width:120px;" onchange="renderAdminChildrenAges()">
                         <div class="checkbox-row" style="flex:1;">
                             <label><input type="checkbox" id="isHelper"> Pomocník</label>
                             <label><input type="checkbox" id="needsAcc"> Ubytování</label>
                         </div>
                         <button id="addGuestBtn">Přidat hosta</button>
                     </div>
+                    <div id="adminChildrenAgesContainer" style="margin-top: 5px;"></div>
                 </div>
                 
                 <div class="stats-grid" id="guestStatsBlock"></div>
