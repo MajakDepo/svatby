@@ -193,8 +193,23 @@
                 <div id="accPlacesContainer"></div>
                 <h3 style="color:#f39c12;">⏳ Žádosti</h3>
                 <div class="table-container"><table><thead><tr><th>Jméno</th><th>Požadavek</th><th>Přiřazení</th><th>Akce</th></tr></thead><tbody id="accPendingTableBody"></tbody></table></div>
+                
                 <h3 style="color:#27ae60;">✅ Rozřazení</h3>
-                <div class="table-container"><table><thead><tr><th>Jméno</th><th>Místo</th><th>Pokoj</th><th>Akce</th></tr></thead><tbody id="accAssignedTableBody"></tbody></table></div>
+                <div class="filter-box" style="margin-bottom:10px;">
+                    <strong>Filtrovat rozřazené:</strong>
+                    <div class="filter-inputs">
+                        <select id="filterAccAssignedPlace" onchange="renderAccView()">
+                            <option value="">-- Všechna místa --</option>
+                        </select>
+                        <input type="text" id="filterAccAssignedName" placeholder="Hledat jméno..." onkeyup="renderAccView()">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Jméno</th><th>Místo</th><th>Pokoj</th></tr></thead>
+                        <tbody id="accAssignedTableBody"></tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="budget" class="card page-view hidden">
