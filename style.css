@@ -15,7 +15,7 @@ main { max-width: 1000px; margin: 0 auto; padding: 20px; }
 .checkbox-row { display: flex; align-items: center; gap: 20px; margin-top: 5px; }
 .checkbox-row label { cursor: pointer; font-weight: bold; color: #666; }
 
-input, select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; flex: 1; min-width: 130px; font-size: 0.95rem;}
+input, select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; flex: 1; min-width: 130px; font-size: 0.95rem; }
 button { padding: 10px 15px; background-color: #e5b2b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
 button:hover { background-color: #d49595; }
 .btn-secondary { background-color: #eee; color: #555; }
@@ -30,16 +30,15 @@ ul#taskList li { background: #fffcfc; border: 1px solid #fce4ec; padding: 15px; 
 .task-note input { width: 100%; background: #f9f9f9; border: 1px dashed #ccc; font-style: italic; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
-.stat-box { background: #fdf2f3; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #fbe5e7; font-size: 0.9rem;}
+.stat-box { background: #fdf2f3; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #fbe5e7; font-size: 0.9rem; }
 .stat-box strong { font-size: 1.2rem; color: #e5b2b2; display: block; }
 .stat-acc { background: #e3f2fd; border-color: #bbdefb; }
 .stat-acc strong { color: #1976d2; }
 
-/* Nový vzhled filtrů */
 .filter-box { background: #f1f1f1; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 .filter-inputs { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-.filter-inputs input { padding: 8px; border: 1px solid #ccc; flex: 1; min-width: 150px;}
-.filter-checks { margin-top: 10px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-size: 0.9rem;}
+.filter-inputs input { padding: 8px; border: 1px solid #ccc; flex: 1; min-width: 150px; }
+.filter-checks { margin-top: 10px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-size: 0.9rem; }
 .filter-checks label { cursor: pointer; }
 
 .table-container { overflow-x: auto; }
@@ -48,9 +47,9 @@ th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; font-si
 th { background: #fafafa; color: #888; text-transform: uppercase; font-size: 0.8rem; }
 .editable-input { width: 100%; border: 1px dashed #ccc; padding: 5px; border-radius: 4px; }
 
-.side-nevesta { background-color: #fce4ec !important; } 
-.side-zenich { background-color: #e3f2fd !important; }  
-.side-spolecny { background-color: #e8f5e9 !important; } 
+.side-nevesta { background-color: #fce4ec !important; }
+.side-zenich { background-color: #e3f2fd !important; }
+.side-spolecny { background-color: #e8f5e9 !important; }
 
 .status-declined { color: #e74c3c; font-weight: bold; text-decoration: line-through; }
 
