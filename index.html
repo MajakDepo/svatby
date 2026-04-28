@@ -60,25 +60,31 @@
 
             <section id="todo" class="card page-view hidden">
                 <h2>To-Do List</h2>
-                <div class="input-group">
-                    <input type="text" id="taskInput" placeholder="Nová položka k vyřízení...">
-                    <button id="addBtn">Přidat</button>
+                <div class="input-form-extended">
+                    <div class="row">
+                        <input type="text" id="taskInput" placeholder="Název úkolu...">
+                        <select id="taskPriority">
+                            <option value="Nízká">Priorita: Nízká</option>
+                            <option value="Střední" selected>Priorita: Střední</option>
+                            <option value="Vysoká">Priorita: Vysoká</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <input type="text" id="taskNoteInput" placeholder="Poznámka k úkolu...">
+                        <button id="addBtn">Přidat úkol</button>
+                    </div>
                 </div>
-                <ul id="taskList"></ul>
+                <div class="table-container">
+                    <table id="todoTable">
+                        <thead><tr><th>Stav</th><th>Priorita</th><th>Úkol</th><th>Poznámka</th><th>Akce</th></tr></thead>
+                        <tbody id="taskList"></tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="guests" class="card page-view hidden">
                 <h2>Správa hostů</h2>
-                <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
-                    <p><strong>Odkaz pro vaše hosty:</strong></p>
-                    <div style="display:flex; gap:10px; width:100%;">
-                        <input type="text" id="shareUrlInput" readonly value="Načítám odkaz..." style="background:white; flex:1;">
-                        <button onclick="copyShareUrl()">Kopírovat</button>
-                    </div>
-                </div>
-
                 <div class="input-form-extended">
-                    <h3 style="margin-bottom: 10px; font-size: 1rem; color: #666;">Ruční přidání hosta</h3>
                     <div class="row">
                         <input type="text" id="guestName" placeholder="Jméno a příjmení">
                         <input type="text" id="guestCity" placeholder="Město">
@@ -91,16 +97,11 @@
                 </div>
                 <div class="stats-grid" id="guestStatsBlock"></div>
                 <div id="cityBadgesContainer" style="margin-bottom: 20px;"></div>
-                <div class="table-container">
-                    <table id="guestTable">
-                        <thead><tr><th>Jméno / Děti</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead>
-                        <tbody id="guestTableBody"></tbody>
-                    </table>
-                </div>
+                <div class="table-container"><table id="guestTable"><thead><tr><th>Jméno / Děti</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead><tbody id="guestTableBody"></tbody></table></div>
             </section>
 
             <section id="helper-section" class="card page-view hidden">
-                <h2>💪 Seznam pomocníků</h2>
+                <h2>💪 Pomocníci</h2>
                 <div class="input-form-extended">
                     <input type="text" id="newCategoryInput" placeholder="Nová kategorie pomoci">
                     <button onclick="addHelperCategory()">Přidat</button>
@@ -135,34 +136,16 @@
                     <input type="number" id="budgetEstimated" placeholder="Plánovaná cena">
                     <button id="addBudgetBtn">Přidat</button>
                 </div>
-                
-                <datalist id="budgetCatList">
-                    <option value="Hostina"><option value="Oblečení"><option value="Výzdoba"><option value="Služby">
-                </datalist>
-
-                <div class="stats">
-                    <div class="stat-box">Plánováno: <strong id="totalEstimated">0 Kč</strong></div>
-                    <div class="stat-box">Utraceno: <strong id="totalActual">0 Kč</strong></div>
+                <div class="stats dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
+                    <div class="stat-box" style="margin:0">Plánováno: <strong id="totalEstimated">0 Kč</strong></div>
+                    <div id="totalActualBox" class="stat-box" style="margin:0">Utraceno: <strong id="totalActual">0 Kč</strong></div>
                 </div>
-
-                <div class="table-container" style="margin-top:20px;">
+                <div class="table-container">
                     <h3>📊 Souhrn podle kategorií</h3>
-                    <table style="max-width: 600px;">
-                        <thead><tr><th>Kategorie</th><th>Plán</th><th>Skutečnost</th></tr></thead>
-                        <tbody id="budgetCategorySummaryBody"></tbody>
-                    </table>
+                    <table><thead><tr><th>Kategorie</th><th>Plán</th><th>Skutečnost</th></tr></thead><tbody id="budgetCategorySummaryBody"></tbody></table>
                 </div>
-
-                <div class="filter-box" style="margin-top:15px;">
-                    <strong>Filtrovat rozpočet:</strong>
-                    <div class="filter-inputs">
-                        <input type="text" id="filterBudgetText" placeholder="Název položky..." onkeyup="renderBudgetView()">
-                        <input type="text" id="filterBudgetCat" placeholder="Kategorie..." onkeyup="renderBudgetView()">
-                    </div>
-                </div>
-
                 <div class="table-container" style="margin-top:20px;">
-                    <table id="budgetTable"><thead><tr><th>Kategorie</th><th>Položka</th><th>Plán</th><th>Skutečnost</th><th>Akce</th></tr></thead><tbody id="budgetTableBody"></tbody></table>
+                    <table><thead><tr><th>Kategorie</th><th>Položka</th><th>Plán</th><th>Skutečnost</th><th>Akce</th></tr></thead><tbody id="budgetTableBody"></tbody></table>
                 </div>
             </section>
         </div>
@@ -173,10 +156,7 @@
             <h3>Přiřadit role</h3>
             <input type="hidden" id="modalHelperId">
             <div id="modalHelperCheckboxes" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin:15px 0;"></div>
-            <div class="button-group">
-                <button onclick="saveHelperRoles()">Uložit</button>
-                <button class="btn-secondary" onclick="closeHelperModal()">Zavřít</button>
-            </div>
+            <div class="button-group"><button onclick="saveHelperRoles()">Uložit</button><button class="btn-secondary" onclick="closeHelperModal()">Zavřít</button></div>
         </div>
     </div>
 
@@ -186,10 +166,7 @@
             <input type="hidden" id="editGuestId">
             <input type="text" id="editGuestName" class="input-group">
             <input type="number" id="editNumChildren" class="input-group" placeholder="Počet dětí">
-            <div class="button-group">
-                <button onclick="saveGuestEdit()">Uložit</button>
-                <button class="btn-secondary" onclick="closeModal()">Zavřít</button>
-            </div>
+            <div class="button-group"><button onclick="saveGuestEdit()">Uložit</button><button class="btn-secondary" onclick="closeModal()">Zavřít</button></div>
         </div>
     </div>
 
@@ -200,10 +177,7 @@
             <div class="input-group"><input type="text" id="editBudgetName" placeholder="Položka"></div>
             <div class="input-group"><input type="text" id="editBudgetCat" placeholder="Kategorie" list="budgetCatList"></div>
             <div class="input-group"><input type="number" id="editBudgetEst" placeholder="Odhad"></div>
-            <div class="button-group" style="margin-top:15px;">
-                <button onclick="saveBudgetEdit()">Uložit změny</button>
-                <button class="btn-secondary" onclick="closeBudgetModal()">Zrušit</button>
-            </div>
+            <div class="button-group"><button onclick="saveBudgetEdit()">Uložit</button><button class="btn-secondary" onclick="closeBudgetModal()">Zavřít</button></div>
         </div>
     </div>
 
