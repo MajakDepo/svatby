@@ -214,34 +214,48 @@
 
             <section id="budget" class="card page-view hidden">
                 <h2>💰 Rozpočet</h2>
-                <div class="input-form">
-                    <input type="text" id="budgetItemName" placeholder="Položka">
-                    <input type="text" id="budgetCategory" placeholder="Kategorie" list="budgetCatList">
-                    <input type="number" id="budgetEstimated" placeholder="Plánovaná cena">
-                    <button id="addBudgetBtn">Přidat</button>
-                </div>
-                <datalist id="budgetCatList"><option value="Hostina"><option value="Oblečení"><option value="Výzdoba"><option value="Služby"></datalist>
-
-                <div class="stats dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
-                    <div class="stat-box" style="margin:0">Plánováno: <strong id="totalEstimated">0 Kč</strong></div>
-                    <div id="totalActualBox" class="stat-box" style="margin:0">Utraceno: <strong id="totalActual">0 Kč</strong></div>
-                </div>
                 
-                <div class="table-container">
-                    <h3>📊 Souhrn podle kategorií</h3>
-                    <table><thead><tr><th>Kategorie</th><th>Plán</th><th>Skutečnost</th></tr></thead><tbody id="budgetCategorySummaryBody"></tbody></table>
-                </div>
-
-                <div class="filter-box" style="margin-top:15px;">
-                    <strong>Filtrovat rozpočet:</strong>
-                    <div class="filter-inputs">
-                        <input type="text" id="filterBudgetText" placeholder="Název položky..." onkeyup="renderBudgetView()">
-                        <input type="text" id="filterBudgetCat" placeholder="Kategorie..." onkeyup="renderBudgetView()">
+                <div class="input-form-extended" style="background:#fdf9f9; margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; color: #666; margin-bottom: 10px;">1. Vytvořit rozpočet (Plán)</h3>
+                    <div class="row">
+                        <input type="text" id="planCategoryName" placeholder="Nová kategorie (např. Hostina, Prstýnky...)">
+                        <input type="number" id="planEstimatedAmount" placeholder="Plánovaná částka (Kč)">
+                        <button id="addPlanBtn">Přidat kategorii</button>
                     </div>
                 </div>
 
+                <div class="input-form-extended" style="margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; color: #666; margin-bottom: 10px;">2. Přidat skutečný výdaj</h3>
+                    <div class="row">
+                        <input type="date" id="expenseDate">
+                        <input type="text" id="expenseName" placeholder="Předmět (např. Dort)">
+                        <select id="expenseCategorySelect">
+                            <option value="">-- Vyberte kategorii --</option>
+                            </select>
+                        <input type="number" id="expenseActualAmount" placeholder="Částka (Kč)">
+                        <button id="addExpenseBtn">Přidat výdaj</button>
+                    </div>
+                </div>
+
+                <div class="stats dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
+                    <div class="stat-box" style="margin:0">Celkem plánováno: <strong id="totalEstimated">0 Kč</strong></div>
+                    <div id="totalActualBox" class="stat-box" style="margin:0">Celkem utraceno: <strong id="totalActual">0 Kč</strong></div>
+                </div>
+                
+                <div class="table-container">
+                    <h3>📊 Souhrn podle kategorií (Plán vs Skutečnost)</h3>
+                    <table>
+                        <thead><tr><th>Kategorie</th><th>Plán</th><th>Skutečnost</th><th>Akce</th></tr></thead>
+                        <tbody id="budgetCategorySummaryBody"></tbody>
+                    </table>
+                </div>
+
                 <div class="table-container" style="margin-top:20px;">
-                    <table><thead><tr><th>Kategorie</th><th>Položka</th><th>Plán</th><th>Skutečnost</th><th>Akce</th></tr></thead><tbody id="budgetTableBody"></tbody></table>
+                    <h3>💸 Jednotlivé výdaje</h3>
+                    <table>
+                        <thead><tr><th>Datum</th><th>Kategorie</th><th>Předmět</th><th>Částka</th><th>Akce</th></tr></thead>
+                        <tbody id="budgetExpensesBody"></tbody>
+                    </table>
                 </div>
             </section>
         </div>
@@ -281,7 +295,8 @@
                     <option value="Společný">Společný</option>
                 </select>
             </div>
-            <input type="number" id="editNumChildren" class="input-group" placeholder="Počet dětí">
+            <input type="number" id="editNumChildren" class="input-group" placeholder="Počet dětí" onchange="renderEditModalChildrenAges()">
+            <div id="editModalChildrenAgesContainer" style="margin-bottom: 10px;"></div>
             <div class="checkbox-row" style="margin-bottom: 15px;">
                 <label><input type="checkbox" id="editIsHelper"> Pomocník</label>
                 <label><input type="checkbox" id="editNeedsAcc"> Ubytování</label>
@@ -290,14 +305,27 @@
         </div>
     </div>
 
-    <div id="editBudgetModal" class="modal hidden">
+    <div id="editPlanModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Upravit rozpočtovou kategorii</h3>
+            <input type="hidden" id="editPlanId">
+            <div class="input-group"><input type="text" id="editPlanCatName" placeholder="Název kategorie"></div>
+            <div class="input-group"><input type="number" id="editPlanAmount" placeholder="Plánovaná částka"></div>
+            <div class="button-group" style="margin-top:15px;"><button onclick="savePlanEdit()">Uložit</button><button class="btn-secondary" onclick="closePlanModal()">Zrušit</button></div>
+        </div>
+    </div>
+
+    <div id="editExpenseModal" class="modal hidden">
         <div class="modal-content">
             <h3>Upravit výdaj</h3>
-            <input type="hidden" id="editBudgetId">
-            <div class="input-group"><input type="text" id="editBudgetName" placeholder="Položka"></div>
-            <div class="input-group"><input type="text" id="editBudgetCat" placeholder="Kategorie" list="budgetCatList"></div>
-            <div class="input-group"><input type="number" id="editBudgetEst" placeholder="Odhad"></div>
-            <div class="button-group" style="margin-top:15px;"><button onclick="saveBudgetEdit()">Uložit</button><button class="btn-secondary" onclick="closeBudgetModal()">Zrušit</button></div>
+            <input type="hidden" id="editExpId">
+            <div class="input-group"><input type="date" id="editExpDate"></div>
+            <div class="input-group"><input type="text" id="editExpName" placeholder="Předmět"></div>
+            <div class="input-group">
+                <select id="editExpCatSelect"></select>
+            </div>
+            <div class="input-group"><input type="number" id="editExpAmount" placeholder="Částka"></div>
+            <div class="button-group" style="margin-top:15px;"><button onclick="saveExpenseEdit()">Uložit</button><button class="btn-secondary" onclick="closeExpenseModal()">Zrušit</button></div>
         </div>
     </div>
 
