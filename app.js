@@ -381,7 +381,9 @@ window.renderGuestsView = () => {
 
     let cityHtml = '<strong>Hosté z měst:</strong><br>';
     for (let [city, count] of Object.entries(stats.cities)) cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
-    if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainerinnerHTML') = cityHtml;
+    
+    // OPRAVENO: .innerHTML = cityHtml; (Místo chybného '...ContainerinnerHTML')
+    if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainer').innerHTML = cityHtml;
 
     // VYKRESLENÍ ČÍSELNÍKŮ HOSTŮ
     if(document.getElementById('guestStatsBlock')) {
@@ -500,7 +502,7 @@ window.renderHelpersView = () => {
     hp.innerHTML = ''; ha.innerHTML = '';
     
     let tasksStats = {};
-    helperCategories.forEach(c => tasksStats[c] = 0); 
+    helperCategories.forEach(c => tasksStats[c] = 0);
 
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
