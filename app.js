@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, where, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, where, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDA4wHyLuyz8LN4RVxKoclF3CAXxKPg7xc",
@@ -17,7 +17,6 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 const tasksColl = collection(db, "ukoly"), guestsColl = collection(db, "hoste"), accColl = collection(db, "ubytovani_kapacity");
-// Nové kolekce rozpočtu
 const budgetPlanColl = collection(db, "rozpocet_plan");
 const expensesColl = collection(db, "rozpocet_naklady");
 
@@ -85,7 +84,7 @@ function initApp(uid) {
         }
         window.updateCountdown();
         window.renderModalCategoryList(); 
-        window.renderHelpersView(); // Zajistí, že bubliny naskočí
+        window.renderHelpersView();
     }));
 
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
@@ -104,12 +103,11 @@ function initApp(uid) {
         window.updateDashboardStats(); window.renderGuestsView(); window.renderHelpersView(); window.renderAccView();
     }));
 
-    // ROZPOČET: Plán
     unsubs.push(onSnapshot(query(budgetPlanColl, where("userId", "==", uid)), snap => {
         allBudgetPlans = []; snap.forEach(d => { let b = d.data(); b.id = d.id; allBudgetPlans.push(b); });
         window.renderBudgetView();
     }));
-    // ROZPOČET: Náklady
+
     unsubs.push(onSnapshot(query(expensesColl, where("userId", "==", uid)), snap => {
         allExpenses = []; snap.forEach(d => { let e = d.data(); e.id = d.id; allExpenses.push(e); });
         window.renderBudgetView();
@@ -221,7 +219,7 @@ window.renderTasksView = () => {
     });
 };
 
-// --- ROZPOČET (ZCELA PŘEPRACOVÁNO) ---
+// --- ROZPOČET ---
 window.renderBudgetView = () => {
     const summaryBody = document.getElementById('budgetCategorySummaryBody'); 
     const expBody = document.getElementById('budgetExpensesBody');
@@ -230,18 +228,15 @@ window.renderBudgetView = () => {
 
     let estTotal = 0, actTotal = 0, catSums = {};
 
-    // 1. Zpracování plánů
     allBudgetPlans.forEach(p => {
         estTotal += Number(p.estimated);
         catSums[p.category] = { est: Number(p.estimated), act: 0, id: p.id };
     });
 
-    // 2. Načtení výběrového menu pro náklady z vytvořených plánů
     let selHtml = '<option value="">-- Vyberte kategorii z plánu --</option>';
     allBudgetPlans.forEach(p => { selHtml += `<option value="${p.category}">${p.category}</option>`; });
     catSelect.innerHTML = selHtml;
 
-    // 3. Sčítání skutečných nákladů
     allExpenses.forEach(e => {
         let cat = e.category || 'Nezařazeno';
         let amt = Number(e.amount || 0);
@@ -250,7 +245,6 @@ window.renderBudgetView = () => {
         catSums[cat].act += amt;
     });
 
-    // 4. Vykreslení tabulky Souhrn / Plán
     summaryBody.innerHTML = '';
     for (let [cat, data] of Object.entries(catSums)) {
         let colorClass = data.act > data.est ? 'budget-negative' : (data.act > 0 ? 'budget-positive' : '');
@@ -263,7 +257,6 @@ window.renderBudgetView = () => {
         </tr>`;
     }
     
-    // 5. Vykreslení jednotlivých nákladů (od nejnovějšího)
     expBody.innerHTML = '';
     allExpenses.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
         let dStr = e.date ? new Date(e.date).toLocaleDateString('cs-CZ') : '-';
@@ -279,7 +272,6 @@ window.renderBudgetView = () => {
         </tr>`;
     });
 
-    // Zbarvení celkových počtů
     if(document.getElementById('totalEstimated')) document.getElementById('totalEstimated').innerText = estTotal.toLocaleString() + " Kč";
     if(document.getElementById('totalActual')) document.getElementById('totalActual').innerText = actTotal.toLocaleString() + " Kč";
     const actBox = document.getElementById('totalActualBox');
@@ -320,7 +312,6 @@ if(addExpenseBtn) {
     };
 }
 
-// Modály Rozpočtu
 window.openPlanModal = (id) => {
     const p = allBudgetPlans.find(x => x.id === id);
     if (!p) return;
@@ -364,7 +355,6 @@ window.saveExpenseEdit = () => {
     });
     window.closeExpenseModal();
 };
-
 
 // --- HOSTÉ A DĚTI ---
 window.renderAdminChildrenAges = () => {
@@ -503,7 +493,6 @@ window.openEditModal = (id) => {
     document.getElementById('editGuestSide').value = guest.side || 'Nevěsta';
     document.getElementById('editNumChildren').value = guest.numChildren || 0;
     
-    // Načte věk dětí
     window.renderEditModalChildrenAges();
     const ageSelects = document.querySelectorAll('.edit-child-age-select');
     if(guest.childrenAges) {
@@ -553,7 +542,7 @@ window.toggleGuest = (id, s) => {
     updateDoc(doc(db, 'hoste', id), { status: n }); 
 };
 
-// --- POMOCNÍCI (ZCELA OPRAVENO: Každá kategorie vytvoří bublinu bez ohledu na počet lidí) ---
+// --- POMOCNÍCI ---
 window.openCategoryEditModal = () => {
     window.renderModalCategoryList();
     document.getElementById('categoryEditModal').classList.remove('hidden');
@@ -584,7 +573,7 @@ window.addHelperCategoryFromModal = () => {
             .then(() => {
                 input.value = '';
                 window.renderModalCategoryList(); 
-                window.renderHelpersView(); // Ihned přidat bublinu 0x
+                window.renderHelpersView();
             });
     }
 };
@@ -610,7 +599,6 @@ window.renderHelpersView = () => {
     if(!hp || !ha) return;
     hp.innerHTML = ''; ha.innerHTML = '';
     
-    // Klíčová oprava: Inicializace všech kategorií z nastavení na nulu!
     let tasksStats = {};
     helperCategories.forEach(c => tasksStats[c] = 0);
 
@@ -623,7 +611,6 @@ window.renderHelpersView = () => {
             let tArray = (g.helperTask ? g.helperTask : 'Nepřiřazeno').split(',').map(s => s.trim()).filter(s => s);
             if(tArray.length === 0) tArray = ['Nepřiřazeno'];
             
-            // Připočtení ke statistikám (i vlastních, pokud uživatel nějakou kategorii smazal)
             tArray.forEach(t => { 
                 if (tasksStats[t] === undefined) tasksStats[t] = 0; 
                 tasksStats[t] += 1; 
@@ -684,7 +671,7 @@ function getRoomCapacity(name) {
     if(n.includes('šesti') || n.includes('sesti')) return 6;
     let m = n.match(/(\d+)(?=-?lůž|-?luz)/); 
     if(m) return parseInt(m[1]); 
-    return 2; // Výchozí
+    return 2;
 }
 
 window.renderAccView = () => {
@@ -803,6 +790,53 @@ window.approveAcc = (guestId) => {
     const room = document.getElementById(`selRoom_${guestId}`).value;
     if(!placeId) { alert("Musíte vybrat místo!"); return; }
     updateDoc(doc(db, 'hoste', guestId), { accPlace: accPlacesData.find(p => p.id === placeId).name, accRoom: room || '', accStatus: 'assigned' });
+};
+
+// --- SMAZÁNÍ ÚČTU (ZCELA NOVÁ FUNKCE) ---
+window.deleteMyAccountAndData = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const confirmDelete = confirm("Opravdu chcete nenávratně smazat svůj účet a VŠECHNA svá data ze svatby? Tuto akci nelze vzít zpět.");
+    if (!confirmDelete) return;
+
+    const uid = user.uid;
+
+    try {
+        // 1. Smazání Hostů
+        const guestsSnap = await getDocs(query(guestsColl, where("userId", "==", uid)));
+        guestsSnap.forEach(d => deleteDoc(d.ref));
+
+        // 2. Smazání Úkolů
+        const tasksSnap = await getDocs(query(tasksColl, where("userId", "==", uid)));
+        tasksSnap.forEach(d => deleteDoc(d.ref));
+
+        // 3. Smazání Rozpočtu (Plány i Výdaje)
+        const budgetPlanSnap = await getDocs(query(budgetPlanColl, where("userId", "==", uid)));
+        budgetPlanSnap.forEach(d => deleteDoc(d.ref));
+        
+        const expensesSnap = await getDocs(query(expensesColl, where("userId", "==", uid)));
+        expensesSnap.forEach(d => deleteDoc(d.ref));
+
+        // 4. Smazání Ubytovacích kapacit
+        const accSnap = await getDocs(query(accColl, where("userId", "==", uid)));
+        accSnap.forEach(d => deleteDoc(d.ref));
+
+        // 5. Smazání Nastavení
+        await deleteDoc(doc(db, "nastaveni", uid));
+
+        // 6. Smazání samotného účtu uživatele
+        await deleteUser(user);
+        
+        alert("Váš účet a všechna data byla úspěšně a bezpečně smazána.");
+        
+    } catch (error) {
+        if(error.code === 'auth/requires-recent-login') {
+            alert("Z bezpečnostních důvodů se prosím odhlaste, znovu přihlaste a zkuste to znovu.");
+        } else {
+            alert("Chyba při mazání dat: " + error.message);
+        }
+    }
 };
 
 // --- GLOBÁLNÍ EXPORTY ---
