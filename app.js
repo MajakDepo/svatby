@@ -381,9 +381,9 @@ window.renderGuestsView = () => {
 
     let cityHtml = '<strong>Hosté z měst:</strong><br>';
     for (let [city, count] of Object.entries(stats.cities)) cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
-    if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainer').innerHTML = cityHtml;
+    if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainerinnerHTML') = cityHtml;
 
-    // VYKRESLENÍ ČÍSELNÍKŮ HOSTŮ (Obnoveno a opraveno)
+    // VYKRESLENÍ ČÍSELNÍKŮ HOSTŮ
     if(document.getElementById('guestStatsBlock')) {
         document.getElementById('guestStatsBlock').innerHTML = `
             <div class="stat-box" style="background:#e3f2fd;">Zobrazeno (Dospělí): <strong>${stats.total}</strong></div>
@@ -500,7 +500,7 @@ window.renderHelpersView = () => {
     hp.innerHTML = ''; ha.innerHTML = '';
     
     let tasksStats = {};
-    helperCategories.forEach(c => tasksStats[c] = 0);
+    helperCategories.forEach(c => tasksStats[c] = 0); 
 
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
@@ -560,10 +560,14 @@ window.closeHelperModal = () => {
 // --- UBYTOVÁNÍ A KAPACITA ---
 function getRoomCapacity(name) {
     let n = name.toLowerCase();
-    if(n.includes('jedno')) return 1; if(n.includes('dvou') || n.includes('dvoj')) return 2; if(n.includes('tří') || n.includes('tri')) return 3;
-    if(n.includes('čtyř') || n.includes('ctyr')) return 4; if(n.includes('pěti') || n.includes('peti')) return 5;
+    if(n.includes('jedno')) return 1; 
+    if(n.includes('dvou') || n.includes('dvoj')) return 2; 
+    if(n.includes('tří') || n.includes('tri') || n.includes('troj')) return 3;
+    if(n.includes('čtyř') || n.includes('ctyr')) return 4; 
+    if(n.includes('pěti') || n.includes('peti')) return 5;
     if(n.includes('šesti') || n.includes('sesti')) return 6;
-    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); 
+    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); 
+    if(m) return parseInt(m[1]); 
     return 2;
 }
 
@@ -613,10 +617,12 @@ window.renderAccView = () => {
     }
 
     const selFilterPlace = document.getElementById('filterAccAssignedPlace')?.value || '';
+    const selFilterRoom = (document.getElementById('filterAccAssignedRoom')?.value || '').toLowerCase();
     const selFilterName = (document.getElementById('filterAccAssignedName')?.value || '').toLowerCase();
 
     allGuestsData.filter(g => g.needsAcc && g.accStatus === 'assigned').forEach(g => {
         if(selFilterPlace && g.accPlace !== selFilterPlace) return;
+        if(selFilterRoom && !(g.accRoom || '').toLowerCase().includes(selFilterRoom)) return;
         if(selFilterName && !g.name.toLowerCase().includes(selFilterName)) return;
 
         let options = `<option value="">-- Vybrat místo a pokoj --</option>` + accPlacesData.map(p => p.rooms.map(r => `<option value="${p.name}|${r}" ${g.accPlace===p.name && g.accRoom===r ? 'selected':''}>${p.name}: ${r}</option>`).join('')).join('');
@@ -638,6 +644,18 @@ window.renderAccView = () => {
                 </td>
             </tr>`;
     });
+};
+
+window.toggleAccEdit = (id) => {
+    document.getElementById(`disp_room_${id}`).classList.add('hidden');
+    document.getElementById(`edit_box_${id}`).classList.remove('hidden');
+};
+
+window.saveAccEdit = (id) => {
+    const v = document.getElementById(`edit_sel_${id}`).value.split('|');
+    if(v.length === 2) {
+        updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]});
+    }
 };
 
 window.openAccPlaceEditModal = (id) => {
@@ -669,16 +687,6 @@ window.saveAccPlaceEdit = () => {
     const newName = document.getElementById('editAccPlaceName').value;
     updateDoc(doc(db, 'ubytovani_kapacity', id), { name: newName, rooms: currentEditAccPlace.rooms.filter(r => r.trim() !== '') });
     document.getElementById('editAccPlaceModal').classList.add('hidden');
-};
-
-window.toggleAccEdit = (id) => {
-    document.getElementById(`disp_room_${id}`).classList.add('hidden');
-    document.getElementById(`edit_box_${id}`).classList.remove('hidden');
-};
-
-window.saveAccEdit = (id) => {
-    const v = document.getElementById(`edit_sel_${id}`).value.split('|');
-    if(v.length === 2) { updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]}); }
 };
 
 window.addAccPlace = () => {
