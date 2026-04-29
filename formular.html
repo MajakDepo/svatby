@@ -56,7 +56,9 @@
 
             <div style="background: #fdf9f9; padding: 15px; border-radius: 8px; border: 1px solid #fce4ec;">
                 <label><strong>Jste ochotni nám s něčím pomoci?</strong></label>
-                <div class="help-grid" id="dynamicHelpGrid"></div>
+                <div class="help-grid" id="dynamicHelpGrid">
+                    <em>Načítám možnosti...</em>
+                </div>
             </div>
 
             <button type="submit" style="width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 20px;">Odeslat potvrzení</button>
@@ -64,7 +66,7 @@
     </div>
 
     <div id="successArea" class="form-container hidden">
-        <div class="success-msg"><h1>❤️</h1><h2>Děkujeme!</h2><p>Vaše údaje byly odeslány.</p></div>
+        <div class="success-msg"><h1>❤️</h1><h2>Děkujeme!</h2><p>Vaše údaje byly úspěšně odeslány.</p></div>
     </div>
 
     <script type="module">
@@ -87,17 +89,22 @@
         async function loadCategories() {
             const grid = document.getElementById('dynamicHelpGrid');
             let cats = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
+            
             if(ownerUid) {
                 try {
                     const docSnap = await getDoc(doc(db, "nastaveni", ownerUid));
                     if (docSnap.exists() && docSnap.data().helperCategories && docSnap.data().helperCategories.length > 0) {
                         cats = docSnap.data().helperCategories;
                     }
-                } catch(e) { console.error(e); }
+                } catch(e) { 
+                    console.error("Nemohu načíst vlastní kategorie (zkontrolujte pravidla Firebase). Načítám výchozí.", e); 
+                }
             }
             grid.innerHTML = '';
             cats.forEach(c => grid.innerHTML += `<label class="help-card"><input type="checkbox" name="help" value="${c}" onchange="toggleCard(this)"> ${c}</label>`);
         }
+        
+        // Spustíme načtení po startu
         loadCategories();
 
         window.toggleCard = (checkbox) => {
@@ -113,7 +120,7 @@
                 cont.innerHTML += `
                     <div class="child-age-row">
                         <label>Věk dítěte ${i+1}:</label>
-                        <select class="child-age-select">
+                        <select class="child-age-select" style="padding: 5px; border-radius: 5px; border: 1px solid #ccc;">
                             <option value="Malé (0-3)">Malé (0-3 roky)</option>
                             <option value="Střední (4-10)">Střední (4-10 let)</option>
                             <option value="Velké (11+)">Velké (11+ let)</option>
@@ -132,6 +139,10 @@
 
         document.getElementById('rsvpForm').onsubmit = async (e) => {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.innerText = "Odesílám...";
+            submitBtn.disabled = true;
+
             const helpValues = Array.from(document.querySelectorAll('input[name="help"]:checked')).map(cb => cb.value);
             const mainName = document.getElementById('mainGuestName').value;
             const city = document.getElementById('mainGuestCity').value;
@@ -160,13 +171,17 @@
                         accStatus: needsAcc ? 'pending' : '',
                         userId: ownerUid,
                         submittedDate: todayISO,
-                        numChildren: i === 0 ? numChildren : 0,
+                        numChildren: i === 0 ? Number(numChildren) : 0,
                         childrenAges: i === 0 ? childAges : []
                     });
                 }
                 document.getElementById('formConfig').classList.add('hidden');
                 document.getElementById('successArea').classList.remove('hidden');
-            } catch (err) { alert(err.message); }
+            } catch (err) { 
+                alert("Došlo k chybě při odesílání formuláře. Zkontrolujte připojení k internetu nebo oprávnění Firebase (pravidlo allow read, write: if true;). Detail: " + err.message);
+                submitBtn.innerText = "Odeslat potvrzení";
+                submitBtn.disabled = false;
+            }
         };
     </script>
 </body>
