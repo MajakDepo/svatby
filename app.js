@@ -17,13 +17,13 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 const tasksColl = collection(db, "ukoly"), guestsColl = collection(db, "hoste"), accColl = collection(db, "ubytovani_kapacity");
-const budgetPlanColl = collection(db, "rozpocet_plan");
-const expensesColl = collection(db, "rozpocet_naklady");
+const budgetPlanColl = collection(db, "rozpocet_plan"), expensesColl = collection(db, "rozpocet_naklady");
 
 let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], myUid = null;
 let allBudgetPlans = [], allExpenses = [];
 let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
+let currentEditAccPlace = null; // Globální proměnná pro úpravu ubytování
 
 // --- NAVIGACE A AUTH ---
 window.showPage = (pageId) => {
@@ -88,8 +88,7 @@ function initApp(uid) {
     }));
 
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
-        allTasksData = [];
-        snap.forEach(d => { let t = d.data(); t.id = d.id; allTasksData.push(t); });
+        allTasksData = []; snap.forEach(d => { let t = d.data(); t.id = d.id; allTasksData.push(t); });
         window.renderTasksView();
     }));
 
@@ -136,12 +135,10 @@ window.updateDashboardStats = () => {
     if(document.getElementById('dashTotalGuests')) document.getElementById('dashTotalGuests').innerText = totals.guests;
     if(document.getElementById('dashConfirmedGuests')) document.getElementById('dashConfirmedGuests').innerText = totals.confirmed;
     if(document.getElementById('dashDeclinedGuests')) document.getElementById('dashDeclinedGuests').innerText = totals.declined;
-    
     if(document.getElementById('dashChild1')) document.getElementById('dashChild1').innerText = totals.child1;
     if(document.getElementById('dashChild2')) document.getElementById('dashChild2').innerText = totals.child2;
     if(document.getElementById('dashChild3')) document.getElementById('dashChild3').innerText = totals.child3;
     if(document.getElementById('dashTotalChildren')) document.getElementById('dashTotalChildren').innerText = (totals.child1 + totals.child2 + totals.child3);
-
     if(document.getElementById('dashTotalHelpers')) document.getElementById('dashTotalHelpers').innerText = totals.helpers;
     if(document.getElementById('dashPendingHelpers')) document.getElementById('dashPendingHelpers').innerText = totals.pendingHelpers;
     if(document.getElementById('dashTotalAcc')) document.getElementById('dashTotalAcc').innerText = totals.accGuests;
@@ -151,8 +148,7 @@ window.updateDashboardStats = () => {
 window.saveWeddingDate = () => {
     const d = document.getElementById('weddingDateInput');
     if(d && myUid) {
-        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true })
-        .then(() => window.updateCountdown());
+        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true }).then(() => window.updateCountdown());
     }
 };
 
@@ -162,24 +158,18 @@ window.updateCountdown = () => {
     if (!wedInput || !disp) return;
     if (!wedInput.value) { disp.innerText = "Nastavte datum svatby"; return; }
     
-    const targetDate = new Date(wedInput.value);
-    targetDate.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
+    const targetDate = new Date(wedInput.value); targetDate.setHours(0, 0, 0, 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     const diff = Math.ceil((targetDate - today) / 86400000);
     disp.innerText = diff > 0 ? `Už jen ${diff} dní! 🎉` : (diff === 0 ? `Dnes je ten den! 🎉` : `Svatba už proběhla! ❤️`);
 };
 
-// --- ÚKOLY (TO-DO) ---
+// --- ÚKOLY ---
 const addBtn = document.getElementById('addBtn');
 if(addBtn) {
     addBtn.onclick = () => {
         const i = document.getElementById('taskInput'), n = document.getElementById('taskNoteInput'), p = document.getElementById('taskPriority');
-        if(i && i.value) { 
-            addDoc(tasksColl, { text: i.value, note: n.value, priority: p.value, status: 'Není', userId: myUid }); 
-            i.value=''; n.value=''; 
-        }
+        if(i && i.value) { addDoc(tasksColl, { text: i.value, note: n.value, priority: p.value, status: 'Není', userId: myUid }); i.value=''; n.value=''; }
     };
 }
 
@@ -187,16 +177,10 @@ window.renderTasksView = () => {
     const list = document.getElementById('taskList');
     if(!list) return;
     list.innerHTML = '';
-    
     const filterPri = document.getElementById('filterTaskPriority')?.value || '';
     const filterStat = document.getElementById('filterTaskStatus')?.value || '';
     
-    let filtered = allTasksData.filter(t => {
-        let matchP = !filterPri || t.priority === filterPri;
-        let matchS = !filterStat || t.status === filterStat;
-        return matchP && matchS;
-    });
-    
+    let filtered = allTasksData.filter(t => (!filterPri || t.priority === filterPri) && (!filterStat || t.status === filterStat));
     filtered.sort((a, b) => {
         if(a.status === 'Hotovo' && b.status !== 'Hotovo') return 1;
         if(a.status !== 'Hotovo' && b.status === 'Hotovo') return -1;
@@ -204,8 +188,7 @@ window.renderTasksView = () => {
     });
     
     filtered.forEach(t => {
-        const isDone = t.status === 'Hotovo';
-        const textStyle = isDone ? 'text-decoration: line-through; color: #aaa;' : '';
+        const textStyle = t.status === 'Hotovo' ? 'text-decoration: line-through; color: #aaa;' : '';
         list.innerHTML += `<tr>
             <td><select onchange="updateDoc(doc(db, 'ukoly', '${t.id}'), {status: this.value})">
                 <option value="Není" ${t.status==='Není'?'selected':''}>❌ Není</option>
@@ -237,6 +220,9 @@ window.renderBudgetView = () => {
     allBudgetPlans.forEach(p => { selHtml += `<option value="${p.category}">${p.category}</option>`; });
     catSelect.innerHTML = selHtml;
 
+    const txtFilter = (document.getElementById('filterBudgetText')?.value || '').toLowerCase();
+    const catFilter = (document.getElementById('filterBudgetCat')?.value || '').toLowerCase();
+
     allExpenses.forEach(e => {
         let cat = e.category || 'Nezařazeno';
         let amt = Number(e.amount || 0);
@@ -249,48 +235,31 @@ window.renderBudgetView = () => {
     for (let [cat, data] of Object.entries(catSums)) {
         let colorClass = data.act > data.est ? 'budget-negative' : (data.act > 0 ? 'budget-positive' : '');
         let actionHtml = data.id ? `<button class="btn-small btn-secondary" onclick="openPlanModal('${data.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_plan', '${data.id}'))">❌</button>` : '';
-        summaryBody.innerHTML += `<tr>
-            <td><strong>${cat}</strong></td>
-            <td>${data.est.toLocaleString()} Kč</td>
-            <td class="${colorClass}"><strong>${data.act.toLocaleString()} Kč</strong></td>
-            <td>${actionHtml}</td>
-        </tr>`;
+        summaryBody.innerHTML += `<tr><td><strong>${cat}</strong></td><td>${data.est.toLocaleString()} Kč</td><td class="${colorClass}"><strong>${data.act.toLocaleString()} Kč</strong></td><td>${actionHtml}</td></tr>`;
     }
     
     expBody.innerHTML = '';
     allExpenses.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
+        if (txtFilter && !(e.name||'').toLowerCase().includes(txtFilter)) return;
+        if (catFilter && !(e.category||'').toLowerCase().includes(catFilter)) return;
         let dStr = e.date ? new Date(e.date).toLocaleDateString('cs-CZ') : '-';
-        expBody.innerHTML += `<tr>
-            <td>${dStr}</td>
-            <td>${e.category}</td>
-            <td>${e.name}</td>
-            <td><strong>${Number(e.amount).toLocaleString()} Kč</strong></td>
-            <td>
-                <button class="btn-small btn-secondary" onclick="openExpenseModal('${e.id}')">✏️</button> 
-                <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))">❌</button>
-            </td>
-        </tr>`;
+        expBody.innerHTML += `<tr><td>${dStr}</td><td>${e.category}</td><td>${e.name}</td><td><strong>${Number(e.amount).toLocaleString()} Kč</strong></td>
+            <td><button class="btn-small btn-secondary" onclick="openExpenseModal('${e.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))">❌</button></td></tr>`;
     });
 
     if(document.getElementById('totalEstimated')) document.getElementById('totalEstimated').innerText = estTotal.toLocaleString() + " Kč";
     if(document.getElementById('totalActual')) document.getElementById('totalActual').innerText = actTotal.toLocaleString() + " Kč";
     const actBox = document.getElementById('totalActualBox');
-    if(actBox) {
-        if(actTotal > estTotal) actBox.className = 'stat-box stat-negative';
-        else if(actTotal > 0) actBox.className = 'stat-box stat-positive';
-        else actBox.className = 'stat-box';
-    }
+    if(actBox) { actBox.className = actTotal > estTotal ? 'stat-box stat-negative' : (actTotal > 0 ? 'stat-box stat-positive' : 'stat-box'); }
 };
 
 const addPlanBtn = document.getElementById('addPlanBtn');
 if(addPlanBtn) {
     addPlanBtn.onclick = () => {
-        const cat = document.getElementById('planCategoryName').value;
-        const est = document.getElementById('planEstimatedAmount').value;
+        const cat = document.getElementById('planCategoryName').value; const est = document.getElementById('planEstimatedAmount').value;
         if(cat && est) {
             addDoc(budgetPlanColl, { category: cat, estimated: Number(est), userId: myUid });
-            document.getElementById('planCategoryName').value = ''; 
-            document.getElementById('planEstimatedAmount').value = '';
+            document.getElementById('planCategoryName').value = ''; document.getElementById('planEstimatedAmount').value = '';
         }
     };
 }
@@ -298,16 +267,12 @@ if(addPlanBtn) {
 const addExpenseBtn = document.getElementById('addExpenseBtn');
 if(addExpenseBtn) {
     addExpenseBtn.onclick = () => {
-        const d = document.getElementById('expenseDate').value;
-        const n = document.getElementById('expenseName').value;
-        const c = document.getElementById('expenseCategorySelect').value;
-        const a = document.getElementById('expenseActualAmount').value;
+        const d = document.getElementById('expenseDate').value, n = document.getElementById('expenseName').value;
+        const c = document.getElementById('expenseCategorySelect').value, a = document.getElementById('expenseActualAmount').value;
         if(n && a) {
             addDoc(expensesColl, { date: d, name: n, category: c, amount: Number(a), userId: myUid });
-            document.getElementById('expenseDate').value = '';
-            document.getElementById('expenseName').value = '';
-            document.getElementById('expenseCategorySelect').value = '';
-            document.getElementById('expenseActualAmount').value = '';
+            document.getElementById('expenseDate').value = ''; document.getElementById('expenseName').value = '';
+            document.getElementById('expenseCategorySelect').value = ''; document.getElementById('expenseActualAmount').value = '';
         }
     };
 }
@@ -322,11 +287,7 @@ window.openPlanModal = (id) => {
 };
 window.closePlanModal = () => document.getElementById('editPlanModal').classList.add('hidden');
 window.savePlanEdit = () => {
-    const id = document.getElementById('editPlanId').value;
-    updateDoc(doc(db, 'rozpocet_plan', id), {
-        category: document.getElementById('editPlanCatName').value,
-        estimated: Number(document.getElementById('editPlanAmount').value)
-    });
+    updateDoc(doc(db, 'rozpocet_plan', document.getElementById('editPlanId').value), { category: document.getElementById('editPlanCatName').value, estimated: Number(document.getElementById('editPlanAmount').value) });
     window.closePlanModal();
 };
 
@@ -336,60 +297,37 @@ window.openExpenseModal = (id) => {
     document.getElementById('editExpId').value = id;
     document.getElementById('editExpDate').value = e.date || '';
     document.getElementById('editExpName').value = e.name;
-    
     const sel = document.getElementById('editExpCatSelect');
     sel.innerHTML = '<option value="">-- Vyberte kategorii z plánu --</option>' + allBudgetPlans.map(p => `<option value="${p.category}">${p.category}</option>`).join('');
     sel.value = e.category || '';
-    
     document.getElementById('editExpAmount').value = e.amount;
     document.getElementById('editExpenseModal').classList.remove('hidden');
 };
 window.closeExpenseModal = () => document.getElementById('editExpenseModal').classList.add('hidden');
 window.saveExpenseEdit = () => {
-    const id = document.getElementById('editExpId').value;
-    updateDoc(doc(db, 'rozpocet_naklady', id), {
-        date: document.getElementById('editExpDate').value,
-        name: document.getElementById('editExpName').value,
-        category: document.getElementById('editExpCatSelect').value,
-        amount: Number(document.getElementById('editExpAmount').value)
+    updateDoc(doc(db, 'rozpocet_naklady', document.getElementById('editExpId').value), {
+        date: document.getElementById('editExpDate').value, name: document.getElementById('editExpName').value,
+        category: document.getElementById('editExpCatSelect').value, amount: Number(document.getElementById('editExpAmount').value)
     });
     window.closeExpenseModal();
 };
 
 // --- HOSTÉ A DĚTI ---
 window.renderAdminChildrenAges = () => {
-    const num = document.getElementById('guestChildren').value;
-    const cont = document.getElementById('adminChildrenAgesContainer');
-    if(!cont) return;
-    cont.innerHTML = '';
+    const num = document.getElementById('guestChildren').value; const cont = document.getElementById('adminChildrenAgesContainer');
+    if(!cont) return; cont.innerHTML = '';
     for(let i=0; i<num; i++) {
-        cont.innerHTML += `
-            <div style="margin-top:5px; display:flex; gap:10px; align-items:center;">
-                <label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
-                <select class="admin-child-age-select" style="padding:5px;">
-                    <option value="Malé (0-3)">Malé (0-3 roky)</option>
-                    <option value="Střední (4-10)">Střední (4-10 let)</option>
-                    <option value="Velké (11+)">Velké (11+ let)</option>
-                </select>
-            </div>`;
+        cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
+                <select class="admin-child-age-select" style="padding:5px;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`;
     }
 };
 
 window.renderEditModalChildrenAges = () => {
-    const num = document.getElementById('editNumChildren').value;
-    const cont = document.getElementById('editModalChildrenAgesContainer');
-    if(!cont) return;
-    cont.innerHTML = '';
+    const num = document.getElementById('editNumChildren').value; const cont = document.getElementById('editModalChildrenAgesContainer');
+    if(!cont) return; cont.innerHTML = '';
     for(let i=0; i<num; i++) {
-        cont.innerHTML += `
-            <div style="margin-top:5px; display:flex; gap:10px; align-items:center;">
-                <label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
-                <select class="edit-child-age-select" style="padding:5px;">
-                    <option value="Malé (0-3)">Malé (0-3 roky)</option>
-                    <option value="Střední (4-10)">Střední (4-10 let)</option>
-                    <option value="Velké (11+)">Velké (11+ let)</option>
-                </select>
-            </div>`;
+        cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
+                <select class="edit-child-age-select" style="padding:5px;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`;
     }
 };
 
@@ -444,26 +382,12 @@ window.renderGuestsView = () => {
     let cityHtml = '<strong>Hosté z měst:</strong><br>';
     for (let [city, count] of Object.entries(stats.cities)) cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
     if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainer').innerHTML = cityHtml;
-
-    if(document.getElementById('guestStatsBlock')) {
-        document.getElementById('guestStatsBlock').innerHTML = `
-            <div class="stat-box">Nevěsta: <strong>${stats.nevesta}</strong></div>
-            <div class="stat-box">Ženich: <strong>${stats.zenich}</strong></div>
-            <div class="stat-box">Společní: <strong>${stats.spolecny}</strong></div>
-            <div class="stat-box" style="background:#e8f5e9;">Potvrzeno: <strong style="color:#27ae60;">${stats.confirmed}</strong></div>
-            <div class="stat-box" style="background:#ffebee;">Odmítlo: <strong style="color:#c62828;">${stats.declined}</strong></div>
-            <div class="stat-box" style="background:#fff0f5;">Děti (0-3): <strong>${stats.children['Malé (0-3)']}</strong></div>
-            <div class="stat-box" style="background:#fff0f5;">Děti (4-10): <strong>${stats.children['Střední (4-10)']}</strong></div>
-            <div class="stat-box" style="background:#fff0f5;">Děti (11+): <strong>${stats.children['Velké (11+)']}</strong></div>
-        `;
-    }
 };
 
 const addGuestBtn = document.getElementById('addGuestBtn');
 if(addGuestBtn) {
     addGuestBtn.onclick = () => {
-        const name = document.getElementById('guestName').value;
-        const numChild = Number(document.getElementById('guestChildren').value) || 0;
+        const name = document.getElementById('guestName').value; const numChild = Number(document.getElementById('guestChildren').value) || 0;
         const childAges = Array.from(document.querySelectorAll('.admin-child-age-select')).map(s => s.value);
         const isH = document.getElementById('isHelper') ? document.getElementById('isHelper').checked : false;
         const needsA = document.getElementById('needsAcc') ? document.getElementById('needsAcc').checked : false;
@@ -471,9 +395,7 @@ if(addGuestBtn) {
         if(name) {
             addDoc(guestsColl, { 
                 name, city: document.getElementById('guestCity').value, side: document.getElementById('guestSide').value, 
-                isHelper: isH, needsAcc: needsA, status: 'Pozváno', 
-                helperTask: '', helperStatus: isH ? 'pending' : '', 
-                accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', 
+                isHelper: isH, needsAcc: needsA, status: 'Pozváno', helperTask: '', helperStatus: isH ? 'pending' : '', accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', 
                 userId: myUid, submittedDate: new Date().toISOString(), numChildren: numChild, childrenAges: childAges
             });
             document.getElementById('guestName').value = ''; document.getElementById('guestCity').value = ''; document.getElementById('guestChildren').value = '';
@@ -487,19 +409,13 @@ if(addGuestBtn) {
 window.openEditModal = (id) => {
     const guest = allGuestsData.find(g => g.id === id);
     if (!guest) return;
-    document.getElementById('editGuestId').value = id;
-    document.getElementById('editGuestName').value = guest.name;
-    document.getElementById('editGuestCity').value = guest.city || '';
-    document.getElementById('editGuestSide').value = guest.side || 'Nevěsta';
+    document.getElementById('editGuestId').value = id; document.getElementById('editGuestName').value = guest.name;
+    document.getElementById('editGuestCity').value = guest.city || ''; document.getElementById('editGuestSide').value = guest.side || 'Nevěsta';
     document.getElementById('editNumChildren').value = guest.numChildren || 0;
     
     window.renderEditModalChildrenAges();
     const ageSelects = document.querySelectorAll('.edit-child-age-select');
-    if(guest.childrenAges) {
-        guest.childrenAges.forEach((age, index) => {
-            if(ageSelects[index]) ageSelects[index].value = age;
-        });
-    }
+    if(guest.childrenAges) { guest.childrenAges.forEach((age, index) => { if(ageSelects[index]) ageSelects[index].value = age; }); }
 
     if(document.getElementById('editIsHelper')) document.getElementById('editIsHelper').checked = guest.isHelper || false;
     if(document.getElementById('editNeedsAcc')) document.getElementById('editNeedsAcc').checked = guest.needsAcc || false;
@@ -515,52 +431,30 @@ window.saveGuestEdit = () => {
     const childAges = Array.from(document.querySelectorAll('.edit-child-age-select')).map(s => s.value);
     
     const guest = allGuestsData.find(g => g.id === id);
-    let hStatus = guest.helperStatus;
-    if (isH && (!hStatus || hStatus === '')) hStatus = 'pending'; 
-    if (!isH) hStatus = '';
-
-    let aStatus = guest.accStatus;
-    if (needsA && (!aStatus || aStatus === '')) aStatus = 'pending';
-    if (!needsA) aStatus = '';
+    let hStatus = guest.helperStatus; if (isH && (!hStatus || hStatus === '')) hStatus = 'pending'; if (!isH) hStatus = '';
+    let aStatus = guest.accStatus; if (needsA && (!aStatus || aStatus === '')) aStatus = 'pending'; if (!needsA) aStatus = '';
 
     updateDoc(doc(db, 'hoste', id), { 
-        name: document.getElementById('editGuestName').value,
-        city: document.getElementById('editGuestCity').value,
-        side: document.getElementById('editGuestSide').value,
-        numChildren: Number(document.getElementById('editNumChildren').value),
-        childrenAges: childAges,
-        isHelper: isH,
-        needsAcc: needsA,
-        helperStatus: hStatus,
-        accStatus: aStatus
+        name: document.getElementById('editGuestName').value, city: document.getElementById('editGuestCity').value, side: document.getElementById('editGuestSide').value,
+        numChildren: Number(document.getElementById('editNumChildren').value), childrenAges: childAges,
+        isHelper: isH, needsAcc: needsA, helperStatus: hStatus, accStatus: aStatus
     });
     window.closeModal();
 };
 
-window.toggleGuest = (id, s) => { 
-    let n = 'Pozváno'; if (s === 'Pozváno') n = 'Potvrzeno'; else if (s === 'Potvrzeno') n = 'Nezúčastní se'; 
-    updateDoc(doc(db, 'hoste', id), { status: n }); 
-};
+window.toggleGuest = (id, s) => { let n = 'Pozváno'; if (s === 'Pozváno') n = 'Potvrzeno'; else if (s === 'Potvrzeno') n = 'Nezúčastní se'; updateDoc(doc(db, 'hoste', id), { status: n }); };
 
 // --- POMOCNÍCI ---
-window.openCategoryEditModal = () => {
-    window.renderModalCategoryList();
-    document.getElementById('categoryEditModal').classList.remove('hidden');
-};
-
-window.closeCategoryEditModal = () => {
-    document.getElementById('categoryEditModal').classList.add('hidden');
-};
+window.openCategoryEditModal = () => { window.renderModalCategoryList(); document.getElementById('categoryEditModal').classList.remove('hidden'); };
+window.closeCategoryEditModal = () => document.getElementById('categoryEditModal').classList.add('hidden');
 
 window.renderModalCategoryList = () => {
     const list = document.getElementById('modalCategoryList');
     if(!list) return;
     list.innerHTML = helperCategories.map(c => `
         <div style="display:flex; justify-content:space-between; background:#f9f9f9; padding:8px; border-radius:5px; border:1px solid #eee;">
-            <span>${c}</span>
-            <button class="btn-small btn-secondary" onclick="removeHelperCategory('${c}')">❌</button>
-        </div>
-    `).join('');
+            <span>${c}</span> <button class="btn-small btn-secondary" onclick="removeHelperCategory('${c}')">❌</button>
+        </div>`).join('');
 };
 
 window.addHelperCategoryFromModal = () => {
@@ -569,22 +463,13 @@ window.addHelperCategoryFromModal = () => {
     const v = input.value.trim();
     if(v && !helperCategories.includes(v)) { 
         helperCategories.push(v); 
-        setDoc(doc(db, "nastaveni", myUid), {helperCategories}, {merge:true})
-            .then(() => {
-                input.value = '';
-                window.renderModalCategoryList(); 
-                window.renderHelpersView();
-            });
+        setDoc(doc(db, "nastaveni", myUid), {helperCategories}, {merge:true}).then(() => { input.value = ''; window.renderModalCategoryList(); window.renderHelpersView(); });
     }
 };
 
 window.removeHelperCategory = (cat) => {
     helperCategories = helperCategories.filter(c => c !== cat);
-    setDoc(doc(db, "nastaveni", myUid), { helperCategories }, { merge: true })
-        .then(() => {
-            window.renderModalCategoryList();
-            window.renderHelpersView();
-        });
+    setDoc(doc(db, "nastaveni", myUid), { helperCategories }, { merge: true }).then(() => { window.renderModalCategoryList(); window.renderHelpersView(); });
 };
 
 window.toggleHelperFilter = (cat) => {
@@ -600,7 +485,7 @@ window.renderHelpersView = () => {
     hp.innerHTML = ''; ha.innerHTML = '';
     
     let tasksStats = {};
-    helperCategories.forEach(c => tasksStats[c] = 0);
+    helperCategories.forEach(c => tasksStats[c] = 0); // Vynucené zobrazení všech kategorií, i když mají 0
 
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
@@ -611,10 +496,7 @@ window.renderHelpersView = () => {
             let tArray = (g.helperTask ? g.helperTask : 'Nepřiřazeno').split(',').map(s => s.trim()).filter(s => s);
             if(tArray.length === 0) tArray = ['Nepřiřazeno'];
             
-            tArray.forEach(t => { 
-                if (tasksStats[t] === undefined) tasksStats[t] = 0; 
-                tasksStats[t] += 1; 
-            });
+            tArray.forEach(t => { if (tasksStats[t] === undefined) tasksStats[t] = 0; tasksStats[t] += 1; });
 
             let showRow = activeHelperFilters.length === 0 || activeHelperFilters.some(f => tArray.includes(f));
             if(showRow) {
@@ -644,8 +526,7 @@ window.openHelperModal = (id) => {
             </label>
         `).join('');
     }
-    const modal = document.getElementById('helperEditModal');
-    if(modal) modal.classList.remove('hidden');
+    const modal = document.getElementById('helperEditModal'); if(modal) modal.classList.remove('hidden');
 };
 
 window.saveHelperRoles = () => {
@@ -655,22 +536,15 @@ window.saveHelperRoles = () => {
     window.closeHelperModal();
 };
 
-window.closeHelperModal = () => {
-    const m = document.getElementById('helperEditModal');
-    if(m) m.classList.add('hidden');
-};
+window.closeHelperModal = () => { const m = document.getElementById('helperEditModal'); if(m) m.classList.add('hidden'); };
 
-// --- UBYTOVÁNÍ A KAPACITA ---
+// --- UBYTOVÁNÍ A KAPACITA (VČETNĚ ÚPRAVY POKOJŮ) ---
 function getRoomCapacity(name) {
     let n = name.toLowerCase();
-    if(n.includes('jedno')) return 1; 
-    if(n.includes('dvou') || n.includes('dvoj')) return 2; 
-    if(n.includes('tří') || n.includes('tri')) return 3;
-    if(n.includes('čtyř') || n.includes('ctyr')) return 4; 
-    if(n.includes('pěti') || n.includes('peti')) return 5;
+    if(n.includes('jedno')) return 1; if(n.includes('dvou') || n.includes('dvoj')) return 2; if(n.includes('tří') || n.includes('tri')) return 3;
+    if(n.includes('čtyř') || n.includes('ctyr')) return 4; if(n.includes('pěti') || n.includes('peti')) return 5;
     if(n.includes('šesti') || n.includes('sesti')) return 6;
-    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); 
-    if(m) return parseInt(m[1]); 
+    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); 
     return 2;
 }
 
@@ -705,7 +579,7 @@ window.renderAccView = () => {
             else if (occ.length >= cap) { classes = 'room-tag full'; title = `PLNĚ OBSAZENO: ${occ.join(', ')}`; }
             rHtml += `<span class="${classes}" title="${title}">${r}</span>`;
         });
-        placesCont.innerHTML += `<div class="acc-place-card"><h4>${p.name} <button class="btn-small btn-secondary" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))">Smazat</button></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
+        placesCont.innerHTML += `<div class="acc-place-card"><h4>${p.name} <div><button class="btn-small btn-secondary" onclick="openAccPlaceEditModal('${p.id}')">✏️ Upravit</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))">❌ Smazat</button></div></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
     });
 
     allGuestsData.filter(g => g.needsAcc && g.accStatus === 'pending').forEach(g => {
@@ -747,6 +621,48 @@ window.renderAccView = () => {
     });
 };
 
+// Logika pro úpravu celého ubytovacího místa a pokojů
+window.openAccPlaceEditModal = (id) => {
+    const place = accPlacesData.find(p => p.id === id);
+    if (!place) return;
+    currentEditAccPlace = JSON.parse(JSON.stringify(place));
+    document.getElementById('editAccPlaceId').value = id;
+    document.getElementById('editAccPlaceName').value = currentEditAccPlace.name;
+    window.renderModalAccRooms();
+    document.getElementById('editAccPlaceModal').classList.remove('hidden');
+};
+
+window.renderModalAccRooms = () => {
+    const container = document.getElementById('editAccRoomsContainer');
+    if(!container) return;
+    container.innerHTML = currentEditAccPlace.rooms.map((r, i) => `
+        <div style="display:flex; gap:5px; margin-bottom:5px;">
+            <input type="text" class="editable-input" value="${r}" onchange="currentEditAccPlace.rooms[${i}] = this.value">
+            <button class="btn-small btn-secondary" onclick="removeRoomFromModal(${i})">❌</button>
+        </div>
+    `).join('');
+};
+
+window.addRoomToModal = () => {
+    currentEditAccPlace.rooms.push("Nový pokoj");
+    window.renderModalAccRooms();
+};
+
+window.removeRoomFromModal = (index) => {
+    currentEditAccPlace.rooms.splice(index, 1);
+    window.renderModalAccRooms();
+};
+
+window.saveAccPlaceEdit = () => {
+    const id = document.getElementById('editAccPlaceId').value;
+    const newName = document.getElementById('editAccPlaceName').value;
+    updateDoc(doc(db, 'ubytovani_kapacity', id), {
+        name: newName,
+        rooms: currentEditAccPlace.rooms.filter(r => r.trim() !== '')
+    });
+    document.getElementById('editAccPlaceModal').classList.add('hidden');
+};
+
 window.toggleAccEdit = (id) => {
     document.getElementById(`disp_room_${id}`).classList.add('hidden');
     document.getElementById(`edit_box_${id}`).classList.remove('hidden');
@@ -754,9 +670,7 @@ window.toggleAccEdit = (id) => {
 
 window.saveAccEdit = (id) => {
     const v = document.getElementById(`edit_sel_${id}`).value.split('|');
-    if(v.length === 2) {
-        updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]});
-    }
+    if(v.length === 2) { updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]}); }
 };
 
 window.addAccPlace = () => {
@@ -792,7 +706,6 @@ window.approveAcc = (guestId) => {
     updateDoc(doc(db, 'hoste', guestId), { accPlace: accPlacesData.find(p => p.id === placeId).name, accRoom: room || '', accStatus: 'assigned' });
 };
 
-// --- SMAZÁNÍ ÚČTU (ZCELA NOVÁ FUNKCE) ---
 window.deleteMyAccountAndData = async () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -803,39 +716,17 @@ window.deleteMyAccountAndData = async () => {
     const uid = user.uid;
 
     try {
-        // 1. Smazání Hostů
-        const guestsSnap = await getDocs(query(guestsColl, where("userId", "==", uid)));
-        guestsSnap.forEach(d => deleteDoc(d.ref));
-
-        // 2. Smazání Úkolů
-        const tasksSnap = await getDocs(query(tasksColl, where("userId", "==", uid)));
-        tasksSnap.forEach(d => deleteDoc(d.ref));
-
-        // 3. Smazání Rozpočtu (Plány i Výdaje)
-        const budgetPlanSnap = await getDocs(query(budgetPlanColl, where("userId", "==", uid)));
-        budgetPlanSnap.forEach(d => deleteDoc(d.ref));
-        
-        const expensesSnap = await getDocs(query(expensesColl, where("userId", "==", uid)));
-        expensesSnap.forEach(d => deleteDoc(d.ref));
-
-        // 4. Smazání Ubytovacích kapacit
-        const accSnap = await getDocs(query(accColl, where("userId", "==", uid)));
-        accSnap.forEach(d => deleteDoc(d.ref));
-
-        // 5. Smazání Nastavení
+        const guestsSnap = await getDocs(query(guestsColl, where("userId", "==", uid))); guestsSnap.forEach(d => deleteDoc(d.ref));
+        const tasksSnap = await getDocs(query(tasksColl, where("userId", "==", uid))); tasksSnap.forEach(d => deleteDoc(d.ref));
+        const budgetPlanSnap = await getDocs(query(budgetPlanColl, where("userId", "==", uid))); budgetPlanSnap.forEach(d => deleteDoc(d.ref));
+        const expensesSnap = await getDocs(query(expensesColl, where("userId", "==", uid))); expensesSnap.forEach(d => deleteDoc(d.ref));
+        const accSnap = await getDocs(query(accColl, where("userId", "==", uid))); accSnap.forEach(d => deleteDoc(d.ref));
         await deleteDoc(doc(db, "nastaveni", uid));
-
-        // 6. Smazání samotného účtu uživatele
         await deleteUser(user);
-        
         alert("Váš účet a všechna data byla úspěšně a bezpečně smazána.");
-        
     } catch (error) {
-        if(error.code === 'auth/requires-recent-login') {
-            alert("Z bezpečnostních důvodů se prosím odhlaste, znovu přihlaste a zkuste to znovu.");
-        } else {
-            alert("Chyba při mazání dat: " + error.message);
-        }
+        if(error.code === 'auth/requires-recent-login') alert("Z bezpečnostních důvodů se prosím odhlaste, znovu přihlaste a zkuste to znovu.");
+        else alert("Chyba při mazání dat: " + error.message);
     }
 };
 
