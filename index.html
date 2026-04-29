@@ -31,7 +31,10 @@
                     <li><a href="#" onclick="showPage('accommodation-section')">🏠 Ubytování</a></li>
                     <li><a href="#" onclick="showPage('budget')">💰 Rozpočet</a></li>
                 </ul>
-                <button id="logoutBtn" class="btn-small">Odhlásit se</button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="logoutBtn" class="btn-small">Odhlásit se</button>
+                    <button class="btn-small" style="background-color: #c62828;" onclick="deleteMyAccountAndData()">Smazat účet</button>
+                </div>
             </nav>
 
             <section id="dashboard" class="page-view">
@@ -231,7 +234,7 @@
                         <input type="text" id="expenseName" placeholder="Předmět (např. Dort)">
                         <select id="expenseCategorySelect">
                             <option value="">-- Vyberte kategorii --</option>
-                            </select>
+                        </select>
                         <input type="number" id="expenseActualAmount" placeholder="Částka (Kč)">
                         <button id="addExpenseBtn">Přidat výdaj</button>
                     </div>
