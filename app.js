@@ -16,8 +16,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const tasksColl = collection(db, "ukoly"), guestsColl = collection(db, "hoste"), budgetColl = collection(db, "rozpocet"), accColl = collection(db, "ubytovani_kapacity");
-let unsubs = [], allGuestsData = [], allBudgetData = [], accPlacesData = [], allTasksData = [], myUid = null;
+const tasksColl = collection(db, "ukoly"), guestsColl = collection(db, "hoste"), accColl = collection(db, "ubytovani_kapacity");
+// Nové kolekce rozpočtu
+const budgetPlanColl = collection(db, "rozpocet_plan");
+const expensesColl = collection(db, "rozpocet_naklady");
+
+let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], myUid = null;
+let allBudgetPlans = [], allExpenses = [];
 let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
 
@@ -79,8 +84,8 @@ function initApp(uid) {
             }
         }
         window.updateCountdown();
-        window.renderHelpersView();
         window.renderModalCategoryList(); 
+        window.renderHelpersView(); // Zajistí, že bubliny naskočí
     }));
 
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
@@ -99,16 +104,21 @@ function initApp(uid) {
         window.updateDashboardStats(); window.renderGuestsView(); window.renderHelpersView(); window.renderAccView();
     }));
 
-    unsubs.push(onSnapshot(query(budgetColl, where("userId", "==", uid)), snap => {
-        allBudgetData = []; snap.forEach(d => { let b = d.data(); b.id = d.id; allBudgetData.push(b); });
+    // ROZPOČET: Plán
+    unsubs.push(onSnapshot(query(budgetPlanColl, where("userId", "==", uid)), snap => {
+        allBudgetPlans = []; snap.forEach(d => { let b = d.data(); b.id = d.id; allBudgetPlans.push(b); });
+        window.renderBudgetView();
+    }));
+    // ROZPOČET: Náklady
+    unsubs.push(onSnapshot(query(expensesColl, where("userId", "==", uid)), snap => {
+        allExpenses = []; snap.forEach(d => { let e = d.data(); e.id = d.id; allExpenses.push(e); });
         window.renderBudgetView();
     }));
 }
 
-// --- DASHBOARD & ODPOČET ---
+// --- DASHBOARD ---
 window.updateDashboardStats = () => {
     let totals = { guests: 0, confirmed: 0, declined: 0, helpers: 0, pendingHelpers: 0, accGuests: 0, pendingAcc: 0, child1: 0, child2: 0, child3: 0 };
-    
     allGuestsData.forEach(g => {
         totals.guests++;
         if (g.status === 'Potvrzeno') totals.confirmed++;
@@ -132,6 +142,7 @@ window.updateDashboardStats = () => {
     if(document.getElementById('dashChild1')) document.getElementById('dashChild1').innerText = totals.child1;
     if(document.getElementById('dashChild2')) document.getElementById('dashChild2').innerText = totals.child2;
     if(document.getElementById('dashChild3')) document.getElementById('dashChild3').innerText = totals.child3;
+    if(document.getElementById('dashTotalChildren')) document.getElementById('dashTotalChildren').innerText = (totals.child1 + totals.child2 + totals.child3);
 
     if(document.getElementById('dashTotalHelpers')) document.getElementById('dashTotalHelpers').innerText = totals.helpers;
     if(document.getElementById('dashPendingHelpers')) document.getElementById('dashPendingHelpers').innerText = totals.pendingHelpers;
@@ -142,9 +153,8 @@ window.updateDashboardStats = () => {
 window.saveWeddingDate = () => {
     const d = document.getElementById('weddingDateInput');
     if(d && myUid) {
-        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value, userId: myUid }, { merge: true })
-        .then(() => window.updateCountdown())
-        .catch(e => alert("Chyba oprávnění Firebase: Ujistěte se, že máte ve Firebase -> Firestore -> Rules nastaveno 'allow read, write: if request.auth != null;'. Detail: " + e.message));
+        setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true })
+        .then(() => window.updateCountdown());
     }
 };
 
@@ -211,46 +221,67 @@ window.renderTasksView = () => {
     });
 };
 
-// --- ROZPOČET ---
+// --- ROZPOČET (ZCELA PŘEPRACOVÁNO) ---
 window.renderBudgetView = () => {
-    const tbody = document.getElementById('budgetTableBody'); 
     const summaryBody = document.getElementById('budgetCategorySummaryBody'); 
-    if(!tbody || !summaryBody) return;
+    const expBody = document.getElementById('budgetExpensesBody');
+    const catSelect = document.getElementById('expenseCategorySelect');
+    if(!summaryBody || !expBody || !catSelect) return;
 
-    const txtFilter = (document.getElementById('filterBudgetText')?.value || '').toLowerCase();
-    const catFilter = (document.getElementById('filterBudgetCat')?.value || '').toLowerCase();
-
-    tbody.innerHTML = ''; summaryBody.innerHTML = '';
     let estTotal = 0, actTotal = 0, catSums = {};
 
-    allBudgetData.forEach(b => {
-        let cat = b.category || 'Nezařazeno';
-        if(!catSums[cat]) catSums[cat] = { est:0, act:0 };
-        catSums[cat].est += Number(b.estimated);
-        catSums[cat].act += Number(b.actual || 0);
-
-        let matchTxt = (b.name||'').toLowerCase().includes(txtFilter);
-        let matchCat = cat.toLowerCase().includes(catFilter);
-
-        if(matchTxt && matchCat) {
-            estTotal += Number(b.estimated); actTotal += Number(b.actual || 0);
-            let color = b.actual > b.estimated ? 'budget-negative' : (b.actual > 0 ? 'budget-positive' : '');
-            tbody.innerHTML += `<tr>
-                <td>${cat}</td><td><strong>${b.name}</strong></td><td>${b.estimated} Kč</td>
-                <td style="display:flex; gap:5px;"><input type="number" class="editable-input ${color}" style="width:90px" value="${b.actual || 0}" id="act_${b.id}">
-                <button class="btn-small" onclick="updateDoc(doc(db, 'rozpocet', '${b.id}'), {actual: Number(document.getElementById('act_${b.id}').value)})">✔</button></td>
-                <td><button class="btn-small btn-secondary" onclick="openBudgetModal('${b.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet', '${b.id}'))">❌</button></td></tr>`;
-        }
+    // 1. Zpracování plánů
+    allBudgetPlans.forEach(p => {
+        estTotal += Number(p.estimated);
+        catSums[p.category] = { est: Number(p.estimated), act: 0, id: p.id };
     });
 
-    for (let [cat, sum] of Object.entries(catSums)) {
-        let colorClass = sum.act > sum.est ? 'budget-negative' : (sum.act > 0 ? 'budget-positive' : '');
-        summaryBody.innerHTML += `<tr><td>${cat}</td><td>${sum.est.toLocaleString()} Kč</td><td class="${colorClass}"><strong>${sum.act.toLocaleString()} Kč</strong></td></tr>`;
+    // 2. Načtení výběrového menu pro náklady z vytvořených plánů
+    let selHtml = '<option value="">-- Vyberte kategorii z plánu --</option>';
+    allBudgetPlans.forEach(p => { selHtml += `<option value="${p.category}">${p.category}</option>`; });
+    catSelect.innerHTML = selHtml;
+
+    // 3. Sčítání skutečných nákladů
+    allExpenses.forEach(e => {
+        let cat = e.category || 'Nezařazeno';
+        let amt = Number(e.amount || 0);
+        actTotal += amt;
+        if(!catSums[cat]) catSums[cat] = { est: 0, act: 0, id: null };
+        catSums[cat].act += amt;
+    });
+
+    // 4. Vykreslení tabulky Souhrn / Plán
+    summaryBody.innerHTML = '';
+    for (let [cat, data] of Object.entries(catSums)) {
+        let colorClass = data.act > data.est ? 'budget-negative' : (data.act > 0 ? 'budget-positive' : '');
+        let actionHtml = data.id ? `<button class="btn-small btn-secondary" onclick="openPlanModal('${data.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_plan', '${data.id}'))">❌</button>` : '';
+        summaryBody.innerHTML += `<tr>
+            <td><strong>${cat}</strong></td>
+            <td>${data.est.toLocaleString()} Kč</td>
+            <td class="${colorClass}"><strong>${data.act.toLocaleString()} Kč</strong></td>
+            <td>${actionHtml}</td>
+        </tr>`;
     }
     
+    // 5. Vykreslení jednotlivých nákladů (od nejnovějšího)
+    expBody.innerHTML = '';
+    allExpenses.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
+        let dStr = e.date ? new Date(e.date).toLocaleDateString('cs-CZ') : '-';
+        expBody.innerHTML += `<tr>
+            <td>${dStr}</td>
+            <td>${e.category}</td>
+            <td>${e.name}</td>
+            <td><strong>${Number(e.amount).toLocaleString()} Kč</strong></td>
+            <td>
+                <button class="btn-small btn-secondary" onclick="openExpenseModal('${e.id}')">✏️</button> 
+                <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))">❌</button>
+            </td>
+        </tr>`;
+    });
+
+    // Zbarvení celkových počtů
     if(document.getElementById('totalEstimated')) document.getElementById('totalEstimated').innerText = estTotal.toLocaleString() + " Kč";
     if(document.getElementById('totalActual')) document.getElementById('totalActual').innerText = actTotal.toLocaleString() + " Kč";
-    
     const actBox = document.getElementById('totalActualBox');
     if(actBox) {
         if(actTotal > estTotal) actBox.className = 'stat-box stat-negative';
@@ -259,42 +290,81 @@ window.renderBudgetView = () => {
     }
 };
 
-const addBudgetBtn = document.getElementById('addBudgetBtn');
-if(addBudgetBtn) {
-    addBudgetBtn.onclick = () => {
-        const n = document.getElementById('budgetItemName').value;
-        const c = document.getElementById('budgetCategory').value;
-        const e = document.getElementById('budgetEstimated').value;
-        if(n && e) {
-            addDoc(budgetColl, { name: n, category: c, estimated: Number(e), actual: 0, userId: myUid });
-            document.getElementById('budgetItemName').value = ''; 
-            document.getElementById('budgetCategory').value = ''; 
-            document.getElementById('budgetEstimated').value = '';
+const addPlanBtn = document.getElementById('addPlanBtn');
+if(addPlanBtn) {
+    addPlanBtn.onclick = () => {
+        const cat = document.getElementById('planCategoryName').value;
+        const est = document.getElementById('planEstimatedAmount').value;
+        if(cat && est) {
+            addDoc(budgetPlanColl, { category: cat, estimated: Number(est), userId: myUid });
+            document.getElementById('planCategoryName').value = ''; 
+            document.getElementById('planEstimatedAmount').value = '';
         }
     };
 }
 
-window.openBudgetModal = (id) => {
-    const b = allBudgetData.find(x => x.id === id);
-    if (!b) return;
-    document.getElementById('editBudgetId').value = id;
-    document.getElementById('editBudgetName').value = b.name;
-    document.getElementById('editBudgetCat').value = b.category || '';
-    document.getElementById('editBudgetEst').value = b.estimated;
-    const m = document.getElementById('editBudgetModal'); if(m) m.classList.remove('hidden');
+const addExpenseBtn = document.getElementById('addExpenseBtn');
+if(addExpenseBtn) {
+    addExpenseBtn.onclick = () => {
+        const d = document.getElementById('expenseDate').value;
+        const n = document.getElementById('expenseName').value;
+        const c = document.getElementById('expenseCategorySelect').value;
+        const a = document.getElementById('expenseActualAmount').value;
+        if(n && a) {
+            addDoc(expensesColl, { date: d, name: n, category: c, amount: Number(a), userId: myUid });
+            document.getElementById('expenseDate').value = '';
+            document.getElementById('expenseName').value = '';
+            document.getElementById('expenseCategorySelect').value = '';
+            document.getElementById('expenseActualAmount').value = '';
+        }
+    };
+}
+
+// Modály Rozpočtu
+window.openPlanModal = (id) => {
+    const p = allBudgetPlans.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('editPlanId').value = id;
+    document.getElementById('editPlanCatName').value = p.category;
+    document.getElementById('editPlanAmount').value = p.estimated;
+    document.getElementById('editPlanModal').classList.remove('hidden');
 };
-
-window.closeBudgetModal = () => { const m = document.getElementById('editBudgetModal'); if(m) m.classList.add('hidden'); };
-
-window.saveBudgetEdit = () => {
-    const id = document.getElementById('editBudgetId').value;
-    updateDoc(doc(db, 'rozpocet', id), {
-        name: document.getElementById('editBudgetName').value,
-        category: document.getElementById('editBudgetCat').value,
-        estimated: Number(document.getElementById('editBudgetEst').value)
+window.closePlanModal = () => document.getElementById('editPlanModal').classList.add('hidden');
+window.savePlanEdit = () => {
+    const id = document.getElementById('editPlanId').value;
+    updateDoc(doc(db, 'rozpocet_plan', id), {
+        category: document.getElementById('editPlanCatName').value,
+        estimated: Number(document.getElementById('editPlanAmount').value)
     });
-    window.closeBudgetModal();
+    window.closePlanModal();
 };
+
+window.openExpenseModal = (id) => {
+    const e = allExpenses.find(x => x.id === id);
+    if (!e) return;
+    document.getElementById('editExpId').value = id;
+    document.getElementById('editExpDate').value = e.date || '';
+    document.getElementById('editExpName').value = e.name;
+    
+    const sel = document.getElementById('editExpCatSelect');
+    sel.innerHTML = '<option value="">-- Vyberte kategorii z plánu --</option>' + allBudgetPlans.map(p => `<option value="${p.category}">${p.category}</option>`).join('');
+    sel.value = e.category || '';
+    
+    document.getElementById('editExpAmount').value = e.amount;
+    document.getElementById('editExpenseModal').classList.remove('hidden');
+};
+window.closeExpenseModal = () => document.getElementById('editExpenseModal').classList.add('hidden');
+window.saveExpenseEdit = () => {
+    const id = document.getElementById('editExpId').value;
+    updateDoc(doc(db, 'rozpocet_naklady', id), {
+        date: document.getElementById('editExpDate').value,
+        name: document.getElementById('editExpName').value,
+        category: document.getElementById('editExpCatSelect').value,
+        amount: Number(document.getElementById('editExpAmount').value)
+    });
+    window.closeExpenseModal();
+};
+
 
 // --- HOSTÉ A DĚTI ---
 window.renderAdminChildrenAges = () => {
@@ -307,6 +377,24 @@ window.renderAdminChildrenAges = () => {
             <div style="margin-top:5px; display:flex; gap:10px; align-items:center;">
                 <label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
                 <select class="admin-child-age-select" style="padding:5px;">
+                    <option value="Malé (0-3)">Malé (0-3 roky)</option>
+                    <option value="Střední (4-10)">Střední (4-10 let)</option>
+                    <option value="Velké (11+)">Velké (11+ let)</option>
+                </select>
+            </div>`;
+    }
+};
+
+window.renderEditModalChildrenAges = () => {
+    const num = document.getElementById('editNumChildren').value;
+    const cont = document.getElementById('editModalChildrenAgesContainer');
+    if(!cont) return;
+    cont.innerHTML = '';
+    for(let i=0; i<num; i++) {
+        cont.innerHTML += `
+            <div style="margin-top:5px; display:flex; gap:10px; align-items:center;">
+                <label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
+                <select class="edit-child-age-select" style="padding:5px;">
                     <option value="Malé (0-3)">Malé (0-3 roky)</option>
                     <option value="Střední (4-10)">Střední (4-10 let)</option>
                     <option value="Velké (11+)">Velké (11+ let)</option>
@@ -414,6 +502,16 @@ window.openEditModal = (id) => {
     document.getElementById('editGuestCity').value = guest.city || '';
     document.getElementById('editGuestSide').value = guest.side || 'Nevěsta';
     document.getElementById('editNumChildren').value = guest.numChildren || 0;
+    
+    // Načte věk dětí
+    window.renderEditModalChildrenAges();
+    const ageSelects = document.querySelectorAll('.edit-child-age-select');
+    if(guest.childrenAges) {
+        guest.childrenAges.forEach((age, index) => {
+            if(ageSelects[index]) ageSelects[index].value = age;
+        });
+    }
+
     if(document.getElementById('editIsHelper')) document.getElementById('editIsHelper').checked = guest.isHelper || false;
     if(document.getElementById('editNeedsAcc')) document.getElementById('editNeedsAcc').checked = guest.needsAcc || false;
     const m = document.getElementById('editModal'); if(m) m.classList.remove('hidden');
@@ -425,6 +523,7 @@ window.saveGuestEdit = () => {
     const id = document.getElementById('editGuestId').value;
     const isH = document.getElementById('editIsHelper') ? document.getElementById('editIsHelper').checked : false;
     const needsA = document.getElementById('editNeedsAcc') ? document.getElementById('editNeedsAcc').checked : false;
+    const childAges = Array.from(document.querySelectorAll('.edit-child-age-select')).map(s => s.value);
     
     const guest = allGuestsData.find(g => g.id === id);
     let hStatus = guest.helperStatus;
@@ -440,6 +539,7 @@ window.saveGuestEdit = () => {
         city: document.getElementById('editGuestCity').value,
         side: document.getElementById('editGuestSide').value,
         numChildren: Number(document.getElementById('editNumChildren').value),
+        childrenAges: childAges,
         isHelper: isH,
         needsAcc: needsA,
         helperStatus: hStatus,
@@ -453,7 +553,7 @@ window.toggleGuest = (id, s) => {
     updateDoc(doc(db, 'hoste', id), { status: n }); 
 };
 
-// --- POMOCNÍCI (MODÁL NA KATEGORIE) ---
+// --- POMOCNÍCI (ZCELA OPRAVENO: Každá kategorie vytvoří bublinu bez ohledu na počet lidí) ---
 window.openCategoryEditModal = () => {
     window.renderModalCategoryList();
     document.getElementById('categoryEditModal').classList.remove('hidden');
@@ -484,8 +584,8 @@ window.addHelperCategoryFromModal = () => {
             .then(() => {
                 input.value = '';
                 window.renderModalCategoryList(); 
-            })
-            .catch(e => alert("Chyba při ukládání: " + e.message));
+                window.renderHelpersView(); // Ihned přidat bublinu 0x
+            });
     }
 };
 
@@ -494,6 +594,7 @@ window.removeHelperCategory = (cat) => {
     setDoc(doc(db, "nastaveni", myUid), { helperCategories }, { merge: true })
         .then(() => {
             window.renderModalCategoryList();
+            window.renderHelpersView();
         });
 };
 
@@ -508,7 +609,10 @@ window.renderHelpersView = () => {
     const ha = document.getElementById('helperAssignedTableBody'); 
     if(!hp || !ha) return;
     hp.innerHTML = ''; ha.innerHTML = '';
+    
+    // Klíčová oprava: Inicializace všech kategorií z nastavení na nulu!
     let tasksStats = {};
+    helperCategories.forEach(c => tasksStats[c] = 0);
 
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
@@ -518,7 +622,12 @@ window.renderHelpersView = () => {
         } else {
             let tArray = (g.helperTask ? g.helperTask : 'Nepřiřazeno').split(',').map(s => s.trim()).filter(s => s);
             if(tArray.length === 0) tArray = ['Nepřiřazeno'];
-            tArray.forEach(t => { tasksStats[t] = (tasksStats[t] || 0) + 1; });
+            
+            // Připočtení ke statistikám (i vlastních, pokud uživatel nějakou kategorii smazal)
+            tArray.forEach(t => { 
+                if (tasksStats[t] === undefined) tasksStats[t] = 0; 
+                tasksStats[t] += 1; 
+            });
 
             let showRow = activeHelperFilters.length === 0 || activeHelperFilters.some(f => tArray.includes(f));
             if(showRow) {
