@@ -23,7 +23,7 @@ let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], myUi
 let allBudgetPlans = [], allExpenses = [];
 let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
-let currentEditAccPlace = null; // Globální proměnná pro úpravu ubytování
+let currentEditAccPlace = null; 
 
 // --- NAVIGACE A AUTH ---
 window.showPage = (pageId) => {
@@ -312,7 +312,7 @@ window.saveExpenseEdit = () => {
     window.closeExpenseModal();
 };
 
-// --- HOSTÉ A DĚTI ---
+// --- HOSTÉ A DĚTI (VČETNĚ ČÍSELNÍKŮ) ---
 window.renderAdminChildrenAges = () => {
     const num = document.getElementById('guestChildren').value; const cont = document.getElementById('adminChildrenAgesContainer');
     if(!cont) return; cont.innerHTML = '';
@@ -382,6 +382,21 @@ window.renderGuestsView = () => {
     let cityHtml = '<strong>Hosté z měst:</strong><br>';
     for (let [city, count] of Object.entries(stats.cities)) cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
     if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainer').innerHTML = cityHtml;
+
+    // VYKRESLENÍ ČÍSELNÍKŮ HOSTŮ (Obnoveno a opraveno)
+    if(document.getElementById('guestStatsBlock')) {
+        document.getElementById('guestStatsBlock').innerHTML = `
+            <div class="stat-box" style="background:#e3f2fd;">Zobrazeno (Dospělí): <strong>${stats.total}</strong></div>
+            <div class="stat-box">Nevěsta: <strong>${stats.nevesta}</strong></div>
+            <div class="stat-box">Ženich: <strong>${stats.zenich}</strong></div>
+            <div class="stat-box">Společní: <strong>${stats.spolecny}</strong></div>
+            <div class="stat-box" style="background:#e8f5e9;">Potvrzeno: <strong style="color:#27ae60;">${stats.confirmed}</strong></div>
+            <div class="stat-box" style="background:#ffebee;">Odmítlo: <strong style="color:#c62828;">${stats.declined}</strong></div>
+            <div class="stat-box" style="background:#fff0f5;">Děti (0-3): <strong>${stats.children['Malé (0-3)']}</strong></div>
+            <div class="stat-box" style="background:#fff0f5;">Děti (4-10): <strong>${stats.children['Střední (4-10)']}</strong></div>
+            <div class="stat-box" style="background:#fff0f5;">Děti (11+): <strong>${stats.children['Velké (11+)']}</strong></div>
+        `;
+    }
 };
 
 const addGuestBtn = document.getElementById('addGuestBtn');
@@ -485,7 +500,7 @@ window.renderHelpersView = () => {
     hp.innerHTML = ''; ha.innerHTML = '';
     
     let tasksStats = {};
-    helperCategories.forEach(c => tasksStats[c] = 0); // Vynucené zobrazení všech kategorií, i když mají 0
+    helperCategories.forEach(c => tasksStats[c] = 0);
 
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
@@ -526,7 +541,8 @@ window.openHelperModal = (id) => {
             </label>
         `).join('');
     }
-    const modal = document.getElementById('helperEditModal'); if(modal) modal.classList.remove('hidden');
+    const modal = document.getElementById('helperEditModal');
+    if(modal) modal.classList.remove('hidden');
 };
 
 window.saveHelperRoles = () => {
@@ -536,9 +552,12 @@ window.saveHelperRoles = () => {
     window.closeHelperModal();
 };
 
-window.closeHelperModal = () => { const m = document.getElementById('helperEditModal'); if(m) m.classList.add('hidden'); };
+window.closeHelperModal = () => {
+    const m = document.getElementById('helperEditModal');
+    if(m) m.classList.add('hidden');
+};
 
-// --- UBYTOVÁNÍ A KAPACITA (VČETNĚ ÚPRAVY POKOJŮ) ---
+// --- UBYTOVÁNÍ A KAPACITA ---
 function getRoomCapacity(name) {
     let n = name.toLowerCase();
     if(n.includes('jedno')) return 1; if(n.includes('dvou') || n.includes('dvoj')) return 2; if(n.includes('tří') || n.includes('tri')) return 3;
@@ -621,7 +640,6 @@ window.renderAccView = () => {
     });
 };
 
-// Logika pro úpravu celého ubytovacího místa a pokojů
 window.openAccPlaceEditModal = (id) => {
     const place = accPlacesData.find(p => p.id === id);
     if (!place) return;
@@ -643,23 +661,13 @@ window.renderModalAccRooms = () => {
     `).join('');
 };
 
-window.addRoomToModal = () => {
-    currentEditAccPlace.rooms.push("Nový pokoj");
-    window.renderModalAccRooms();
-};
-
-window.removeRoomFromModal = (index) => {
-    currentEditAccPlace.rooms.splice(index, 1);
-    window.renderModalAccRooms();
-};
+window.addRoomToModal = () => { currentEditAccPlace.rooms.push("Nový pokoj"); window.renderModalAccRooms(); };
+window.removeRoomFromModal = (index) => { currentEditAccPlace.rooms.splice(index, 1); window.renderModalAccRooms(); };
 
 window.saveAccPlaceEdit = () => {
     const id = document.getElementById('editAccPlaceId').value;
     const newName = document.getElementById('editAccPlaceName').value;
-    updateDoc(doc(db, 'ubytovani_kapacity', id), {
-        name: newName,
-        rooms: currentEditAccPlace.rooms.filter(r => r.trim() !== '')
-    });
+    updateDoc(doc(db, 'ubytovani_kapacity', id), { name: newName, rooms: currentEditAccPlace.rooms.filter(r => r.trim() !== '') });
     document.getElementById('editAccPlaceModal').classList.add('hidden');
 };
 
