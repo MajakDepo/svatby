@@ -190,7 +190,7 @@
                 <h2>🏠 Ubytování</h2>
                 <div class="input-form-extended">
                     <input type="text" id="newPlaceName" placeholder="Název hotelu/penzionu">
-                    <input type="text" id="newPlaceRooms" placeholder="Pokoje (např. 2x dvoulůžkový)">
+                    <input type="text" id="newPlaceRooms" placeholder="Pokoje (např. 2x dvoulůžkový, 1x jednolůžkový)">
                     <button onclick="addAccPlace()">Vytvořit kapacity</button>
                 </div>
                 <div id="accPlacesContainer"></div>
@@ -264,12 +264,30 @@
         </div>
     </main>
 
+    <div id="editAccPlaceModal" class="modal hidden">
+        <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+            <h3>Úprava ubytování</h3>
+            <input type="hidden" id="editAccPlaceId">
+            <div class="input-group">
+                <label>Název místa:</label>
+                <input type="text" id="editAccPlaceName" placeholder="Např. Hotel Kokořín">
+            </div>
+            <h4 style="margin-top:15px; margin-bottom:5px; font-size:1rem; color:#666;">Seznam pokojů</h4>
+            <div id="editAccRoomsContainer"></div>
+            <button class="btn-small btn-secondary" onclick="addRoomToModal()" style="margin-top:10px; width:100%;">+ Přidat další pokoj</button>
+            <div class="button-group" style="margin-top:20px;">
+                <button onclick="saveAccPlaceEdit()">Uložit změny</button>
+                <button class="btn-secondary" onclick="document.getElementById('editAccPlaceModal').classList.add('hidden')">Zavřít</button>
+            </div>
+        </div>
+    </div>
+
     <div id="categoryEditModal" class="modal hidden">
         <div class="modal-content">
             <h3>Správa kategorií pomoci</h3>
             <div id="modalCategoryList" style="margin: 15px 0; display: flex; flex-direction: column; gap: 8px;"></div>
             <div class="input-group" style="display:flex; flex-direction:row; gap:10px; margin-bottom:15px;">
-                <input type="text" id="modalNewCatInput" placeholder="Nová kategorie (např. Hlídání)">
+                <input type="text" id="modalNewCatInput" placeholder="Nová kategorie">
                 <button class="btn-small" onclick="addHelperCategoryFromModal()" style="width:auto;">Přidat</button>
             </div>
             <div class="button-group"><button class="btn-secondary" onclick="closeCategoryEditModal()" style="width:100%;">Zavřít</button></div>
@@ -292,11 +310,7 @@
             <input type="text" id="editGuestName" class="input-group" placeholder="Jméno">
             <input type="text" id="editGuestCity" class="input-group" placeholder="Město">
             <div class="input-group">
-                <select id="editGuestSide">
-                    <option value="Nevěsta">Nevěsta</option>
-                    <option value="Ženich">Ženich</option>
-                    <option value="Společný">Společný</option>
-                </select>
+                <select id="editGuestSide"><option value="Nevěsta">Nevěsta</option><option value="Ženich">Ženich</option><option value="Společný">Společný</option></select>
             </div>
             <input type="number" id="editNumChildren" class="input-group" placeholder="Počet dětí" onchange="renderEditModalChildrenAges()">
             <div id="editModalChildrenAgesContainer" style="margin-bottom: 10px;"></div>
@@ -324,9 +338,7 @@
             <input type="hidden" id="editExpId">
             <div class="input-group"><input type="date" id="editExpDate"></div>
             <div class="input-group"><input type="text" id="editExpName" placeholder="Předmět"></div>
-            <div class="input-group">
-                <select id="editExpCatSelect"></select>
-            </div>
+            <div class="input-group"><select id="editExpCatSelect"></select></div>
             <div class="input-group"><input type="number" id="editExpAmount" placeholder="Částka"></div>
             <div class="button-group" style="margin-top:15px;"><button onclick="saveExpenseEdit()">Uložit</button><button class="btn-secondary" onclick="closeExpenseModal()">Zrušit</button></div>
         </div>
