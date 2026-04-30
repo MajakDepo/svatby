@@ -64,7 +64,7 @@
                 </div>
             </div>
 
-            <!-- Speciální požadavky (NOVÉ) -->
+            <!-- Speciální požadavky -->
             <div class="input-form" style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee;">
                 <label><strong>Speciální požadavky nebo vzkaz:</strong></label>
                 <p style="font-size: 0.85rem; color: #666; margin-top: 0;">Máte nějaké diety, alergie, nebo nám chcete cokoliv vzkázat?</p>
@@ -98,7 +98,7 @@
 
         async function loadCategories() {
             const grid = document.getElementById('dynamicHelpGrid');
-            let cats = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
+            let cats = ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
             
             if(ownerUid) {
                 try {
@@ -107,7 +107,7 @@
                         cats = docSnap.data().helperCategories;
                     }
                 } catch(e) { 
-                    console.error("Nemohu načíst vlastní kategorie (zkontrolujte pravidla Firebase). Načítám výchozí.", e); 
+                    console.error("Nemohu načíst vlastní kategorie. Načítám výchozí.", e); 
                 }
             }
             grid.innerHTML = '';
