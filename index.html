@@ -10,6 +10,7 @@
     <header><h1>💍 Náš Svatební Plánovač</h1></header>
 
     <main>
+        <!-- PŘIHLÁŠENÍ -->
         <section id="authSection" class="card text-center">
             <h2>Přihlášení / Registrace</h2>
             <div class="input-group"><input type="email" id="emailInput" placeholder="E-mail"></div>
@@ -21,11 +22,12 @@
             <div id="authError" style="color: #e74c3c; margin-top: 15px; font-weight: bold;"></div>
         </section>
 
+        <!-- HLAVNÍ APLIKACE -->
         <div id="appSection" class="hidden">
             <nav class="app-nav">
                 <ul>
                     <li><a href="#" onclick="showPage('dashboard')">🏠 Nástěnka</a></li>
-                    <li><a href="#" onclick="showPage('todo')">✅ Úkoly</a></li>
+                    <li><a href="#" onclick="showPage('todo')">✅ Úkoly a Nákupy</a></li>
                     <li><a href="#" onclick="showPage('guests')">👥 Hosté</a></li>
                     <li><a href="#" onclick="showPage('helper-section')">💪 Pomocníci</a></li>
                     <li><a href="#" onclick="showPage('accommodation-section')">🏠 Ubytování</a></li>
@@ -37,6 +39,7 @@
                 </div>
             </nav>
 
+            <!-- DASHBOARD -->
             <section id="dashboard" class="page-view">
                 <div class="dashboard-grid">
                     <div class="card text-center" style="grid-column: 1 / -1; background: #fce4ec; border: 2px solid #f8bbd0;">
@@ -62,8 +65,9 @@
                 </div>
             </section>
 
+            <!-- TO-DO LIST A NÁKUPY -->
             <section id="todo" class="card page-view hidden">
-                <h2>To-Do List</h2>
+                <h2>✅ Úkoly k vyřízení</h2>
                 <div class="input-form-extended">
                     <div class="row">
                         <input type="text" id="taskInput" placeholder="Název úkolu...">
@@ -103,8 +107,25 @@
                         <tbody id="taskList"></tbody>
                     </table>
                 </div>
+
+                <!-- NÁKUPNÍ SEZNAM -->
+                <h3 style="margin-top: 40px; font-size: 1.3rem; color: #e5b2b2; border-bottom: 2px solid #f9f5f6; padding-bottom: 5px;">🛒 Nákupní seznam</h3>
+                <div class="input-form-extended" style="background:#fdf9f9; margin-bottom: 15px;">
+                    <div class="row">
+                        <input type="text" id="shoppingInput" placeholder="Položka nákupu (např. Balonky)...">
+                        <input type="text" id="shoppingNoteInput" placeholder="Poznámka (např. 20 kusů zlatých)...">
+                        <button id="addShoppingBtn">Přidat položku</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th style="width: 50px; text-align: center;">Mám</th><th>Položka</th><th>Poznámka</th><th>Akce</th></tr></thead>
+                        <tbody id="shoppingListBody"></tbody>
+                    </table>
+                </div>
             </section>
 
+            <!-- HOSTÉ -->
             <section id="guests" class="card page-view hidden">
                 <h2>Správa hostů</h2>
                 <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
@@ -170,6 +191,7 @@
                 </div>
             </section>
 
+            <!-- POMOCNÍCI -->
             <section id="helper-section" class="card page-view hidden">
                 <h2>💪 Pomocníci</h2>
                 
@@ -186,6 +208,7 @@
                 <div class="table-container"><table><thead><tr><th>Jméno</th><th>Role</th><th>Akce</th></tr></thead><tbody id="helperAssignedTableBody"></tbody></table></div>
             </section>
 
+            <!-- UBYTOVÁNÍ -->
             <section id="accommodation-section" class="card page-view hidden">
                 <h2>🏠 Ubytování</h2>
                 <div class="input-form-extended">
@@ -216,6 +239,7 @@
                 </div>
             </section>
 
+            <!-- ROZPOČET -->
             <section id="budget" class="card page-view hidden">
                 <h2>💰 Rozpočet</h2>
                 
@@ -265,14 +289,25 @@
         </div>
     </main>
 
+    <!-- MODÁLY -->
+    
+    <!-- Úprava nákupní položky -->
+    <div id="editShoppingModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Upravit položku nákupu</h3>
+            <input type="hidden" id="editShoppingId">
+            <div class="input-group"><input type="text" id="editShoppingName" placeholder="Položka"></div>
+            <div class="input-group"><input type="text" id="editShoppingNote" placeholder="Poznámka"></div>
+            <div class="button-group" style="margin-top:15px;"><button onclick="saveShoppingEdit()">Uložit</button><button class="btn-secondary" onclick="closeShoppingModal()">Zrušit</button></div>
+        </div>
+    </div>
+
+    <!-- Úprava ubytování -->
     <div id="editAccPlaceModal" class="modal hidden">
         <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
             <h3>Úprava ubytování</h3>
             <input type="hidden" id="editAccPlaceId">
-            <div class="input-group">
-                <label>Název místa:</label>
-                <input type="text" id="editAccPlaceName" placeholder="Např. Hotel Kokořín">
-            </div>
+            <div class="input-group"><label>Název místa:</label><input type="text" id="editAccPlaceName" placeholder="Např. Hotel Kokořín"></div>
             <h4 style="margin-top:15px; margin-bottom:5px; font-size:1rem; color:#666;">Seznam pokojů</h4>
             <div id="editAccRoomsContainer"></div>
             <button class="btn-small btn-secondary" onclick="addRoomToModal()" style="margin-top:10px; width:100%;">+ Přidat další pokoj</button>
@@ -283,6 +318,7 @@
         </div>
     </div>
 
+    <!-- Modály pomocníků -->
     <div id="categoryEditModal" class="modal hidden">
         <div class="modal-content">
             <h3>Správa kategorií pomoci</h3>
@@ -304,6 +340,7 @@
         </div>
     </div>
 
+    <!-- Modál hosta -->
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <h3>Upravit hosta</h3>
@@ -323,6 +360,7 @@
         </div>
     </div>
 
+    <!-- Modály rozpočtu -->
     <div id="editPlanModal" class="modal hidden">
         <div class="modal-content">
             <h3>Upravit rozpočtovou kategorii</h3>
