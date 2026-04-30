@@ -411,7 +411,15 @@ window.renderSeatingView = () => {
     });
 
     let tableOpts = `<option value="">-- Nevybráno --</option>` + allTablesData.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-    let rowOpts = `<option value="">-- Nevybráno --</option>` + allRowsData.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+    
+    // Setřídění řad do roletky stejně jako logicky ve vizualizaci
+    let sortedRowsForSelect = [...allRowsData].sort((a, b) => {
+        let aInfo = getRowInfo(a.id);
+        let bInfo = getRowInfo(b.id);
+        if(aInfo.num !== bInfo.num) return aInfo.num - bInfo.num;
+        return aInfo.sideVal - bInfo.sideVal;
+    });
+    let rowOpts = `<option value="">-- Nevybráno --</option>` + sortedRowsForSelect.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
     body.innerHTML = confirmedGuests.map(g => {
         let childInfo = g.numChildren > 0 ? ` <small style="color:#d81b60;">(+${g.numChildren} dětí)</small>` : '';
@@ -609,7 +617,7 @@ window.renderGuestsView = () => {
     filtered.sort((a, b) => {
         let aDup = window.duplicateIds.includes(a.id) ? 1 : 0;
         let bDup = window.duplicateIds.includes(b.id) ? 1 : 0;
-        if (aDup !== bDup) return bDup - aDup; 
+        if (aDup !== bDup) return bDup - aDup;
 
         if (sortType === 'name') return a.name.localeCompare(b.name);
         let dateA = a.submittedDate ? new Date(a.submittedDate).getTime() : 0;
@@ -629,6 +637,7 @@ window.renderGuestsView = () => {
         stats.cities[city] = (stats.cities[city] || 0) + 1;
 
         let childInfo = g.numChildren > 0 ? `<br><small style="color:#d81b60;">👶 ${g.numChildren} dětí (${g.childrenAges?.join(', ') || ''})</small>` : '';
+        if(g.specialReq) childInfo += `<br><small style="color:#f39c12; display:block; margin-top:3px;">💬 ${g.specialReq}</small>`;
         
         if (g.status !== 'Nezúčastní se' && g.childrenAges) {
             g.childrenAges.forEach(age => { if(stats.children[age] !== undefined) stats.children[age]++; });
@@ -670,14 +679,16 @@ if(addGuestBtn) {
         const childAges = Array.from(document.querySelectorAll('.admin-child-age-select')).map(s => s.value);
         const isH = document.getElementById('isHelper') ? document.getElementById('isHelper').checked : false;
         const needsA = document.getElementById('needsAcc') ? document.getElementById('needsAcc').checked : false;
+        const sReq = document.getElementById('guestReq') ? document.getElementById('guestReq').value : '';
 
         if(name) {
             addDoc(guestsColl, { 
                 name, city: document.getElementById('guestCity').value, side: document.getElementById('guestSide').value, 
-                isHelper: isH, needsAcc: needsA, status: 'Pozváno', helperTask: '', helperStatus: isH ? 'pending' : '', accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', 
-                userId: myUid, submittedDate: new Date().toISOString(), numChildren: numChild, childrenAges: childAges
+                isHelper: isH, needsAcc: needsA, status: 'Pozváno', helperTask: '', helperStatus: isH ? 'pending' : '', helperAgreed: false, accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', 
+                userId: myUid, submittedDate: new Date().toISOString(), numChildren: numChild, childrenAges: childAges, specialReq: sReq
             });
             document.getElementById('guestName').value = ''; document.getElementById('guestCity').value = ''; document.getElementById('guestChildren').value = '';
+            if(document.getElementById('guestReq')) document.getElementById('guestReq').value = '';
             if(document.getElementById('adminChildrenAgesContainer')) document.getElementById('adminChildrenAgesContainer').innerHTML = '';
             if(document.getElementById('isHelper')) document.getElementById('isHelper').checked = false;
             if(document.getElementById('needsAcc')) document.getElementById('needsAcc').checked = false;
@@ -690,6 +701,7 @@ window.openEditModal = (id) => {
     document.getElementById('editGuestId').value = id; document.getElementById('editGuestName').value = guest.name;
     document.getElementById('editGuestCity').value = guest.city || ''; document.getElementById('editGuestSide').value = guest.side || 'Nevěsta';
     document.getElementById('editNumChildren').value = guest.numChildren || 0;
+    if(document.getElementById('editGuestReq')) document.getElementById('editGuestReq').value = guest.specialReq || '';
     
     window.renderEditModalChildrenAges();
     const ageSelects = document.querySelectorAll('.edit-child-age-select');
@@ -706,6 +718,7 @@ window.saveGuestEdit = () => {
     const isH = document.getElementById('editIsHelper') ? document.getElementById('editIsHelper').checked : false;
     const needsA = document.getElementById('editNeedsAcc') ? document.getElementById('editNeedsAcc').checked : false;
     const childAges = Array.from(document.querySelectorAll('.edit-child-age-select')).map(s => s.value);
+    const sReq = document.getElementById('editGuestReq') ? document.getElementById('editGuestReq').value : '';
     
     const guest = allGuestsData.find(g => g.id === id);
     let hStatus = guest.helperStatus; if (isH && (!hStatus || hStatus === '')) hStatus = 'pending'; if (!isH) hStatus = '';
@@ -713,7 +726,7 @@ window.saveGuestEdit = () => {
 
     updateDoc(doc(db, 'hoste', id), { 
         name: document.getElementById('editGuestName').value, city: document.getElementById('editGuestCity').value, side: document.getElementById('editGuestSide').value,
-        numChildren: Number(document.getElementById('editNumChildren').value), childrenAges: childAges,
+        numChildren: Number(document.getElementById('editNumChildren').value), childrenAges: childAges, specialReq: sReq,
         isHelper: isH, needsAcc: needsA, helperStatus: hStatus, accStatus: aStatus
     });
     window.closeModal();
@@ -750,6 +763,8 @@ window.renderHelpersView = () => {
     
     let tasksStats = {}; helperCategories.forEach(c => tasksStats[c] = 0); 
 
+    let assignedHelpers = [];
+
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
             hp.innerHTML += `<tr><td><strong>${g.name}</strong><br><small>Z formuláře: ${g.helperTask || 'Nic'}</small></td><td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">📋 Vybrat role</button></td><td><button class="btn-small" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {helperStatus:'assigned'})">✅ Schválit</button></td></tr>`;
@@ -759,8 +774,30 @@ window.renderHelpersView = () => {
             tArray.forEach(t => { if (tasksStats[t] === undefined) tasksStats[t] = 0; tasksStats[t] += 1; });
 
             let showRow = activeHelperFilters.length === 0 || activeHelperFilters.some(f => tArray.includes(f));
-            if(showRow) ha.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.helperTask || '-'}</td><td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">✏️ Upravit</button></td></tr>`;
+            if(showRow) assignedHelpers.push(g);
         }
+    });
+
+    assignedHelpers.sort((a, b) => {
+        let aAgreed = a.helperAgreed ? 1 : 0;
+        let bAgreed = b.helperAgreed ? 1 : 0;
+        if (aAgreed !== bAgreed) return bAgreed - aAgreed;
+        return a.name.localeCompare(b.name);
+    });
+
+    assignedHelpers.forEach(g => {
+        let rowStyle = g.helperAgreed ? 'background-color: #e8f5e9;' : '';
+        ha.innerHTML += `<tr style="${rowStyle}">
+            <td><strong>${g.name}</strong></td>
+            <td>${g.helperTask || '-'}</td>
+            <td>
+                <label style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin-right:10px;">
+                    <input type="checkbox" ${g.helperAgreed ? 'checked' : ''} onchange="updateDoc(doc(db, 'hoste', '${g.id}'), {helperAgreed: this.checked})">
+                    Domluveno
+                </label>
+            </td>
+            <td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">✏️</button></td>
+        </tr>`;
     });
 
     let hHtml = '';
