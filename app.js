@@ -31,7 +31,7 @@ const ideasColl = collection(db, "napady");
 let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], allShoppingData = [], myUid = null;
 let allBudgetPlans = [], allExpenses = [], allScheduleData = [], allTablesData = [], allRowsData = [], allIdeasData = [];
 
-let helperCategories = ['Pečení/Dorty', 'Jídlo', 'Fyzická příprava', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba/Program'];
+let helperCategories = ['Pečení / Dorty', 'Jídlo', 'Fyzická příprava', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba / Program'];
 let activeHelperFilters = [];
 let currentEditAccPlace = null; 
 window.hasReception = true; 
@@ -261,10 +261,9 @@ window.renderSeatingView = () => {
     let confirmedGuests = allGuestsData.filter(g => g.status === 'Potvrzeno');
 
     confirmedGuests.forEach(g => {
-        // Získání počtu dětí, které mají sedět (výchozí stav odfiltruje děti 0-3 roky)
         let defaultSeated = g.childrenAges ? g.childrenAges.filter(a => !a.includes('0-3')).length : 0;
         let seatedCh = g.seatedChildren !== undefined ? g.seatedChildren : defaultSeated;
-        let headcount = 1 + seatedCh; // 1 dospělý + vybraný počet usazených dětí
+        let headcount = 1 + seatedCh; 
 
         if(g.receptionTable && window.hasReception) {
             tableOcc[g.receptionTable] = (tableOcc[g.receptionTable] || 0) + headcount;
@@ -335,7 +334,6 @@ window.renderSeatingView = () => {
     };
     const hasTable = (tableId) => tableId ? 1 : 0;
 
-    // Aplikace filtru strany POUZE na zobrazení v tabulce, nikoliv na kapacity plánků nahoře
     const sideFilter = document.getElementById('filterSeatingSide')?.value || '';
     let visibleGuests = confirmedGuests.filter(g => !sideFilter || g.side === sideFilter);
 
@@ -486,13 +484,27 @@ window.deleteSelectedGuests = () => {
     if(window.selectedGuests.length === 0) return alert("Vyberte alespoň jednoho hosta.");
     if(confirm(`Opravdu chcete smazat ${window.selectedGuests.length} vybraných hostů?`)) {
         window.selectedGuests.forEach(id => deleteDoc(doc(db, 'hoste', id))); window.selectedGuests = []; 
+        document.querySelectorAll('.guest-checkbox').forEach(cb => cb.checked = false);
     }
 };
 
-window.bulkChangeStatus = () => {
-    const val = document.getElementById('bulkStatusSelect').value; if(!val) return;
+window.bulkChange = () => {
+    const statusVal = document.getElementById('bulkStatusSelect').value;
+    const sideVal = document.getElementById('bulkSideSelect').value;
+    if(!statusVal && !sideVal) return;
     if(window.selectedGuests.length === 0) return alert("Vyberte alespoň jednoho hosta.");
-    window.selectedGuests.forEach(id => updateDoc(doc(db, 'hoste', id), { status: val })); window.selectedGuests = []; document.getElementById('bulkStatusSelect').value = '';
+    
+    window.selectedGuests.forEach(id => {
+        let updates = {};
+        if(statusVal) updates.status = statusVal;
+        if(sideVal) updates.side = sideVal;
+        updateDoc(doc(db, 'hoste', id), updates);
+    });
+    
+    window.selectedGuests = []; 
+    document.getElementById('bulkStatusSelect').value = '';
+    document.getElementById('bulkSideSelect').value = '';
+    document.querySelectorAll('.guest-checkbox').forEach(cb => cb.checked = false);
 };
 
 window.findDuplicates = () => {
