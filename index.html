@@ -147,6 +147,19 @@
                 <div id="ceremonyRowsContainer"></div>
 
                 <h3 class="no-print" style="margin-top: 30px;"><span class="material-symbols-outlined icon-inline">group_add</span> Rozřazení hostů</h3>
+                
+                <div class="filter-box no-print" style="margin-bottom: 15px; padding: 10px 15px;">
+                    <strong><span class="material-symbols-outlined icon-inline">filter_alt</span> Filtrovat seznam k usazení:</strong>
+                    <div class="filter-inputs" style="margin-top: 5px;">
+                        <select id="filterSeatingSide" onchange="renderSeatingView()" style="max-width: 250px; padding: 8px;">
+                            <option value="">-- Všechny strany --</option>
+                            <option value="Nevěsta">Strana: Nevěsta</option>
+                            <option value="Ženich">Strana: Ženich</option>
+                            <option value="Společný">Strana: Společný</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="table-container no-print">
                     <table>
                         <thead><tr><th>Jméno a kapacita židlí</th><th id="receptionTableHeader">Stůl (Hostina)</th><th>Řada (Obřad)</th></tr></thead>
@@ -218,10 +231,10 @@
             <section id="guests" class="card page-view hidden no-print">
                 <h2><span class="material-symbols-outlined">group</span> Správa hostů</h2>
                 <div id="shareBox" class="input-form-extended" style="background: #f4fbf7; border-color: #d1e8da;">
-                    <p style="color:#52a372;"><span class="material-symbols-outlined icon-inline">link</span> <strong>Odkaz pro vaše hosty:</strong></p>
+                    <p style="color:#4fa671;"><span class="material-symbols-outlined icon-inline">link</span> <strong>Odkaz pro vaše hosty:</strong></p>
                     <div style="display:flex; gap:10px; width:100%;">
                         <input type="text" id="shareUrlInput" readonly value="Načítám odkaz..." style="background:white; flex:1;">
-                        <button onclick="copyShareUrl()" style="background:#52a372;"><span class="material-symbols-outlined">content_copy</span> Kopírovat</button>
+                        <button onclick="copyShareUrl()" style="background:#4fa671;"><span class="material-symbols-outlined">content_copy</span> Kopírovat</button>
                     </div>
                 </div>
 
@@ -275,7 +288,7 @@
                     </div>
                 </div>
 
-                <div style="background: #fdfaf2; color: #b09058; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; border: 1px solid #e6dfcb;">
+                <div style="background: #fdfaf2; color: #a88d5e; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; border: 1px solid #e6dfcb;">
                     <strong><span class="material-symbols-outlined icon-inline">info</span> Tip k duplicitám:</strong> Algoritmus vyhledává podobnosti, ale pro jistotu doporučujeme zkontrolovat jména občas i přes filtry. Při mazání duplicit <strong>mažte primárně vaše ručně vytvořené záznamy</strong> (u těch z formuláře mohli hosté vyplnit zprávy, o které byste přišli).
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom: 10px; align-items:center; flex-wrap:wrap; gap:10px; background: #faf8f8; padding: 10px; border: 1px solid #f2ecec; border-radius: 8px;">
@@ -315,7 +328,7 @@
                 
                 <h3 style="color:#eda03b;"><span class="material-symbols-outlined icon-inline">hourglass_empty</span> Čekající na schválení</h3>
                 <div class="table-container"><table id="helperPendingTable"><thead><tr><th>Jméno</th><th>Výběr rolí</th><th>Akce</th></tr></thead><tbody id="helperPendingTableBody"></tbody></table></div>
-                <h3 style="color:#52a372;"><span class="material-symbols-outlined icon-inline">check_circle</span> Potvrzení pomocníci</h3>
+                <h3 style="color:#4fa671;"><span class="material-symbols-outlined icon-inline">check_circle</span> Potvrzení pomocníci</h3>
                 <div class="table-container"><table><thead><tr><th>Jméno</th><th>Role</th><th>Domluva</th><th>Akce</th></tr></thead><tbody id="helperAssignedTableBody"></tbody></table></div>
             </section>
 
@@ -333,7 +346,7 @@
                 <h3 style="color:#eda03b;"><span class="material-symbols-outlined icon-inline">hourglass_empty</span> Žádosti</h3>
                 <div class="table-container"><table><thead><tr><th>Jméno</th><th>Požadavek</th><th>Přiřazení</th><th>Akce</th></tr></thead><tbody id="accPendingTableBody"></tbody></table></div>
                 
-                <h3 style="color:#52a372;"><span class="material-symbols-outlined icon-inline">check_circle</span> Rozřazení</h3>
+                <h3 style="color:#4fa671;"><span class="material-symbols-outlined icon-inline">check_circle</span> Rozřazení</h3>
                 <div class="filter-box" style="margin-bottom:10px;">
                     <strong>Filtrovat rozřazené:</strong>
                     <div class="filter-inputs">
