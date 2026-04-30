@@ -80,7 +80,7 @@ function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
     for(let i = 0; i < capacity; i++) {
         if (i < totalOccupied) { 
             let dispName = formatNameForSeat(tooltips[i]);
-            html += `<div class="seat-wrapper"><div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}"><span class="material-symbols-outlined" style="font-size:1rem; color:#bda0a0;">favorite</span></div><div class="seat-label">${dispName}</div></div>`; 
+            html += `<div class="seat-wrapper"><div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}"><span class="material-symbols-outlined" style="font-size:1rem; color:#b36666;">favorite</span></div><div class="seat-label">${dispName}</div></div>`; 
         } 
         else { 
             html += `<div class="seat-wrapper"><div class="visual-seat empty ${shapeClass}" title="Volné místo"></div><div class="seat-label"></div></div>`; 
@@ -89,7 +89,7 @@ function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
     if (totalOccupied > capacity) {
         for(let i = capacity; i < totalOccupied; i++) { 
             let dispName = formatNameForSeat(tooltips[i]);
-            html += `<div class="seat-wrapper"><div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})"><span class="material-symbols-outlined" style="font-size:1rem;">warning</span></div><div class="seat-label" style="color:#c62828">${dispName}</div></div>`; 
+            html += `<div class="seat-wrapper"><div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})"><span class="material-symbols-outlined" style="font-size:1rem;">warning</span></div><div class="seat-label" style="color:#e05e5e">${dispName}</div></div>`; 
         }
     }
     if (raw) return html; 
@@ -105,7 +105,7 @@ function getRoomCapacity(name) {
     let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); return 2;
 }
 
-// --- 3. EXPORTOVÁNÍ VŠECH FUNKCÍ PRO HTML (Hoisting Zóna) ---
+// --- 3. EXPORTOVÁNÍ VŠECH FUNKCÍ PRO HTML ---
 window.doc = doc; 
 window.db = db; 
 window.deleteDoc = deleteDoc; 
@@ -170,7 +170,6 @@ window.saveWeddingDate = () => {
     if(d && myUid) { setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true }).then(() => window.updateCountdown()); }
 };
 
-// --- NÁPADY ---
 window.renderIdeasView = () => {
     const cont = document.getElementById('ideasContainer');
     if(!cont) return;
@@ -181,7 +180,7 @@ window.renderIdeasView = () => {
         cont.innerHTML += `
             <div class="card" style="background: #fffdfd; border: 1px solid #f2ecec; margin-bottom: 0;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
-                    <h4 style="margin:0; color:#9c7b7b;">${idea.title}</h4>
+                    <h4 style="margin:0; color:#b36666;">${idea.title}</h4>
                     <button class="btn-small" onclick="deleteDoc(doc(db, 'napady', '${idea.id}'))" style="background:transparent; color:#d0c4c4; border:none; padding:0; box-shadow:none;"><span class="material-symbols-outlined">delete</span></button>
                 </div>
                 <p style="font-size:0.9rem; color:#665b5b; margin:0;">${textFormatted}</p>
@@ -190,7 +189,6 @@ window.renderIdeasView = () => {
     });
 };
 
-// --- HARMONOGRAM ---
 window.addScheduleItem = () => {
     const time = document.getElementById('schedTime').value;
     const title = document.getElementById('schedTitle').value;
@@ -213,7 +211,7 @@ window.renderScheduleView = () => {
             <td>${s.note || '-'}</td>
             <td class="no-print">
                 <button class="btn-small btn-secondary" onclick="openScheduleModal('${s.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button>
-                <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'harmonogram', '${s.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
+                <button class="btn-small btn-secondary" style="color:#e05e5e;" onclick="deleteDoc(doc(db, 'harmonogram', '${s.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
             </td>
         </tr>`;
     });
@@ -234,7 +232,6 @@ window.saveScheduleEdit = () => {
     window.closeScheduleModal();
 };
 
-// --- ZASEDACÍ POŘÁDEK ---
 window.toggleReception = (checked) => { setDoc(doc(db, "nastaveni", myUid), { hasReception: checked }, { merge: true }); };
 
 window.addSeatGroup = (type) => {
@@ -261,7 +258,11 @@ window.renderSeatingView = () => {
     let confirmedGuests = allGuestsData.filter(g => g.status === 'Potvrzeno');
 
     confirmedGuests.forEach(g => {
-        let headcount = 1 + Number(g.numChildren || 0);
+        // Získání počtu dětí, které mají sedět (výchozí stav odfiltruje děti 0-3 roky)
+        let defaultSeated = g.childrenAges ? g.childrenAges.filter(a => !a.includes('0-3')).length : 0;
+        let seatedCh = g.seatedChildren !== undefined ? g.seatedChildren : defaultSeated;
+        let headcount = 1 + seatedCh; // 1 dospělý + vybraný počet usazených dětí
+
         if(g.receptionTable && window.hasReception) {
             tableOcc[g.receptionTable] = (tableOcc[g.receptionTable] || 0) + headcount;
             if(!tableGuests[g.receptionTable]) tableGuests[g.receptionTable] = [];
@@ -275,9 +276,9 @@ window.renderSeatingView = () => {
     });
 
     rCont.innerHTML = allTablesData.map(t => {
-        let occ = tableOcc[t.id] || 0; let color = occ > t.capacity ? '#c47676' : '#8ba6a2';
+        let occ = tableOcc[t.id] || 0; let color = occ > t.capacity ? '#e05e5e' : '#52a372';
         let visualSeats = generateVisualSeats(t.capacity, tableGuests[t.id], false);
-        return `<div class="seating-box"><h4>${t.name} <button class="btn-small no-print btn-secondary" style="padding:4px; color:#c47676;" onclick="deleteDoc(doc(db, 'stoly_hostina', '${t.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></h4><span style="color:${color}; font-weight:bold;">Obsazeno: ${occ}/${t.capacity}</span>${visualSeats}</div>`;
+        return `<div class="seating-box"><h4>${t.name} <button class="btn-small no-print btn-secondary" style="padding:4px; color:#e05e5e;" onclick="deleteDoc(doc(db, 'stoly_hostina', '${t.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></h4><span style="color:${color}; font-weight:bold;">Obsazeno: ${occ}/${t.capacity}</span>${visualSeats}</div>`;
     }).join('');
 
     let ceremonyLayout = {};
@@ -310,7 +311,7 @@ window.renderSeatingView = () => {
         }
 
         if (rData.left || rData.right) {
-            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#bda0a0; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div><div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div><div style="width:30px; background:#f2ecec; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div><div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div></div>`;
+            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#d18a8a; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div><div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div><div style="width:30px; background:#f2ecec; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div><div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div></div>`;
         }
 
         rData.unknown.forEach(r => {
@@ -319,7 +320,7 @@ window.renderSeatingView = () => {
         });
     });
 
-    if(sortedRows.length === 0) cContHtml = `<div style="text-align:center; color:#bda0a0; padding:20px; font-size:0.9rem;">Zatím nejsou vytvořeny žádné řady. Zadejte např. "1. řada vlevo"</div>`;
+    if(sortedRows.length === 0) cContHtml = `<div style="text-align:center; color:#d18a8a; padding:20px; font-size:0.9rem;">Zatím nejsou vytvořeny žádné řady. Zadejte např. "1. řada vlevo"</div>`;
     cCont.innerHTML = `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #f2ecec;">${cContHtml}</div>`;
 
     const getRowInfo = (rowId) => {
@@ -347,10 +348,27 @@ window.renderSeatingView = () => {
     let rowOpts = `<option value="">-- Nevybráno --</option>` + sortedRowsForSelect.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
     body.innerHTML = confirmedGuests.map(g => {
-        let childInfo = g.numChildren > 0 ? ` <small style="color:#bda0a0;">(+${g.numChildren} dětí)</small>` : '';
+        let defaultSeated = g.childrenAges ? g.childrenAges.filter(a => !a.includes('0-3')).length : 0;
+        let seatedCh = g.seatedChildren !== undefined ? g.seatedChildren : defaultSeated;
+        
+        let childControlHtml = '';
+        if (g.numChildren > 0) {
+            let opts = '';
+            for(let i=0; i<=g.numChildren; i++) {
+                opts += `<option value="${i}" ${i === seatedCh ? 'selected' : ''}>${i}</option>`;
+            }
+            childControlHtml = `<div style="margin-top: 5px; font-size: 0.85rem; color: #b36666; display: flex; align-items: center; gap: 5px;">
+                <span class="material-symbols-outlined" style="font-size: 1rem;">child_care</span>
+                <span>Usadit dětí na vlastní židli:</span>
+                <select onchange="updateDoc(doc(db, 'hoste', '${g.id}'), {seatedChildren: Number(this.value)})" style="padding: 2px 5px; min-width: 50px; font-size: 0.85rem;">
+                    ${opts}
+                </select>
+            </div>`;
+        }
+
         let recCell = window.hasReception ? `<td><select onchange="updateDoc(doc(db, 'hoste', '${g.id}'), {receptionTable: this.value})">${tableOpts.replace(`value="${g.receptionTable}"`, `value="${g.receptionTable}" selected`)}</select></td>` : '';
         return `<tr>
-            <td><strong>${g.name}</strong>${childInfo}</td>
+            <td><strong>${g.name}</strong>${childControlHtml}</td>
             ${recCell}
             <td><select onchange="updateDoc(doc(db, 'hoste', '${g.id}'), {ceremonyRow: this.value})">
                 ${rowOpts.replace(`value="${g.ceremonyRow}"`, `value="${g.ceremonyRow}" selected`)}
@@ -359,7 +377,6 @@ window.renderSeatingView = () => {
     }).join('');
 };
 
-// --- ÚKOLY A NÁKUPY ---
 window.renderTasksView = () => {
     const list = document.getElementById('taskList'); if(!list) return; list.innerHTML = '';
     const filterPri = document.getElementById('filterTaskPriority')?.value || ''; const filterStat = document.getElementById('filterTaskStatus')?.value || '';
@@ -373,7 +390,7 @@ window.renderTasksView = () => {
             <td class="priority-${t.priority}">${t.priority}</td>
             <td><strong style="${textStyle}">${t.text}</strong></td>
             <td><small>${t.note || '-'}</small></td>
-            <td class="no-print"><button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'ukoly', '${t.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></td>
+            <td class="no-print"><button class="btn-small btn-secondary" style="color:#e05e5e;" onclick="deleteDoc(doc(db, 'ukoly', '${t.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></td>
         </tr>`;
     });
 };
@@ -389,7 +406,7 @@ window.renderShoppingView = () => {
             <td><small style="${textStyle}">${s.note || '-'}</small></td>
             <td class="no-print">
                 <button class="btn-small btn-secondary" onclick="openShoppingModal('${s.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> 
-                <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'nakupni_seznam', '${s.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
+                <button class="btn-small btn-secondary" style="color:#e05e5e;" onclick="deleteDoc(doc(db, 'nakupni_seznam', '${s.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
             </td>
         </tr>`;
     });
@@ -416,7 +433,7 @@ window.renderBudgetView = () => {
     summaryBody.innerHTML = '';
     for (let [cat, data] of Object.entries(catSums)) {
         let colorClass = data.act > data.est ? 'budget-negative' : (data.act > 0 ? 'budget-positive' : ''); 
-        let actionHtml = data.id ? `<button class="btn-small btn-secondary" onclick="openPlanModal('${data.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'rozpocet_plan', '${data.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>` : '';
+        let actionHtml = data.id ? `<button class="btn-small btn-secondary" onclick="openPlanModal('${data.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> <button class="btn-small btn-secondary" style="color:#e05e5e;" onclick="deleteDoc(doc(db, 'rozpocet_plan', '${data.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>` : '';
         summaryBody.innerHTML += `<tr><td><strong>${cat}</strong></td><td>${data.est.toLocaleString()} Kč</td><td class="${colorClass}"><strong>${data.act.toLocaleString()} Kč</strong></td><td class="no-print">${actionHtml}</td></tr>`;
     }
     
@@ -427,7 +444,7 @@ window.renderBudgetView = () => {
             <td>${dStr}</td><td>${e.category}</td><td>${e.name}</td><td><strong>${Number(e.amount).toLocaleString()} Kč</strong></td>
             <td class="no-print">
                 <button class="btn-small btn-secondary" onclick="openExpenseModal('${e.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> 
-                <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
+                <button class="btn-small btn-secondary" style="color:#e05e5e;" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
             </td>
         </tr>`;
     });
@@ -503,8 +520,8 @@ window.findDuplicates = () => {
     window.renderGuestsView();
 };
 
-window.renderAdminChildrenAges = () => { const num = document.getElementById('guestChildren').value; const cont = document.getElementById('adminChildrenAgesContainer'); if(!cont) return; cont.innerHTML = ''; for(let i=0; i<num; i++) { cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label><select class="admin-child-age-select" style="padding:5px;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`; } };
-window.renderEditModalChildrenAges = () => { const num = document.getElementById('editNumChildren').value; const cont = document.getElementById('editModalChildrenAgesContainer'); if(!cont) return; cont.innerHTML = ''; for(let i=0; i<num; i++) { cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label><select class="edit-child-age-select" style="padding:5px;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`; } };
+window.renderAdminChildrenAges = () => { const num = document.getElementById('guestChildren').value; const cont = document.getElementById('adminChildrenAgesContainer'); if(!cont) return; cont.innerHTML = ''; for(let i=0; i<num; i++) { cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label><select class="admin-child-age-select" style="padding:5px; border-color:#e0d8d8;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`; } };
+window.renderEditModalChildrenAges = () => { const num = document.getElementById('editNumChildren').value; const cont = document.getElementById('editModalChildrenAgesContainer'); if(!cont) return; cont.innerHTML = ''; for(let i=0; i<num; i++) { cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label><select class="edit-child-age-select" style="padding:5px; border-color:#e0d8d8;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`; } };
 
 window.renderGuestsView = () => {
     const tbody = document.getElementById('guestTableBody'); if(!tbody) return;
@@ -543,18 +560,18 @@ window.renderGuestsView = () => {
         
         let city = g.city ? g.city.trim() : 'Nezadáno'; stats.cities[city] = (stats.cities[city] || 0) + 1;
 
-        let childInfo = g.numChildren > 0 ? `<br><small style="color:#bda0a0;"><span class="material-symbols-outlined icon-inline" style="font-size:1rem;">child_care</span> ${g.numChildren} dětí (${g.childrenAges?.join(', ') || ''})</small>` : '';
-        if(g.specialReq) childInfo += `<br><small style="color:#cca474; display:block; margin-top:3px;"><span class="material-symbols-outlined icon-inline" style="font-size:1rem;">comment</span> ${g.specialReq}</small>`;
+        let childInfo = g.numChildren > 0 ? `<br><small style="color:#b36666;"><span class="material-symbols-outlined icon-inline" style="font-size:1rem;">child_care</span> ${g.numChildren} dětí (${g.childrenAges?.join(', ') || ''})</small>` : '';
+        if(g.specialReq) childInfo += `<br><small style="color:#eda03b; display:block; margin-top:3px;"><span class="material-symbols-outlined icon-inline" style="font-size:1rem;">comment</span> ${g.specialReq}</small>`;
         
         if (g.status !== 'Nezúčastní se' && g.childrenAges) { g.childrenAges.forEach(age => { if(stats.children[age] !== undefined) stats.children[age]++; }); }
 
-        let dupStyle = window.duplicateIds.includes(g.id) ? 'background-color: #fdfaf2 !important; box-shadow: inset 4px 0 0 #cca474;' : '';
+        let dupStyle = window.duplicateIds.includes(g.id) ? 'background-color: #fdfaf2 !important; box-shadow: inset 4px 0 0 #eda03b;' : '';
         let rowClass = g.side === 'Nevěsta' ? 'side-nevesta' : (g.side === 'Ženich' ? 'side-zenich' : 'side-spolecny');
 
         let statusHtml = '';
-        if(g.status === 'Potvrzeno') statusHtml = `<span style="color:#6b8f79;"><span class="material-symbols-outlined icon-inline">check_circle</span> Potvrzeno</span>`;
+        if(g.status === 'Potvrzeno') statusHtml = `<span style="color:#4fa671;"><span class="material-symbols-outlined icon-inline">check_circle</span> Potvrzeno</span>`;
         else if(g.status === 'Nezúčastní se') statusHtml = `<span class="status-declined"><span class="material-symbols-outlined icon-inline">cancel</span> Odmítl/a</span>`;
-        else statusHtml = `<span style="color:#8ba6a2;"><span class="material-symbols-outlined icon-inline">mail</span> Pozváno</span>`;
+        else statusHtml = `<span style="color:#628cb0;"><span class="material-symbols-outlined icon-inline">mail</span> Pozváno</span>`;
 
         tbody.innerHTML += `<tr class="${rowClass}" style="${dupStyle}">
             <td style="text-align:center;"><input type="checkbox" class="guest-checkbox" value="${g.id}" ${window.selectedGuests.includes(g.id) ? 'checked' : ''} onchange="toggleGuestSelection('${g.id}', this.checked)"></td>
@@ -562,7 +579,7 @@ window.renderGuestsView = () => {
             <td style="cursor:pointer" onclick="toggleGuest('${g.id}','${g.status}')">${statusHtml}</td>
             <td class="no-print">
                 <button class="btn-small btn-secondary" onclick="openEditModal('${g.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> 
-                <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'hoste', '${g.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
+                <button class="btn-small btn-secondary" style="color:#e05e5e;" onclick="deleteDoc(doc(db, 'hoste', '${g.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
             </td>
         </tr>`;
     });
@@ -574,12 +591,12 @@ window.renderGuestsView = () => {
 
     if(document.getElementById('guestStatsBlock')) {
         document.getElementById('guestStatsBlock').innerHTML = `
-            <div class="stat-box" style="background:#f7f9fcf5;">Dospělí: <strong>${stats.total}</strong></div>
+            <div class="stat-box" style="background:#f4f7fcf5;">Dospělí: <strong>${stats.total}</strong></div>
             <div class="stat-box">Nevěsta: <strong>${stats.nevesta}</strong></div>
             <div class="stat-box">Ženich: <strong>${stats.zenich}</strong></div>
             <div class="stat-box">Společní: <strong>${stats.spolecny}</strong></div>
-            <div class="stat-box" style="background:#f2f7f4;">Potvrzeno: <strong style="color:#6b8f79;">${stats.confirmed}</strong></div>
-            <div class="stat-box" style="background:#fcf4f4;">Odmítlo: <strong style="color:#bd8686;">${stats.declined}</strong></div>
+            <div class="stat-box" style="background:#e9f5ed;">Potvrzeno: <strong style="color:#4fa671;">${stats.confirmed}</strong></div>
+            <div class="stat-box" style="background:#fcf4f4;">Odmítlo: <strong style="color:#db6b6b;">${stats.declined}</strong></div>
             <div class="stat-box" style="background:#fffafaf5;">Děti (0-3): <strong>${stats.children['Malé (0-3)']}</strong></div>
             <div class="stat-box" style="background:#fffafaf5;">Děti (4-10): <strong>${stats.children['Střední (4-10)']}</strong></div>
             <div class="stat-box" style="background:#fffafaf5;">Děti (11+): <strong>${stats.children['Velké (11+)']}</strong></div>
@@ -629,7 +646,7 @@ window.openCategoryEditModal = () => { window.renderModalCategoryList(); documen
 window.closeCategoryEditModal = () => document.getElementById('categoryEditModal').classList.add('hidden');
 window.renderModalCategoryList = () => {
     const list = document.getElementById('modalCategoryList'); if(!list) return;
-    list.innerHTML = helperCategories.map(c => `<div style="display:flex; justify-content:space-between; background:#faf8f8; padding:10px; border-radius:6px; border:1px solid #e0d8d8; align-items:center;"><span>${c}</span> <button class="btn-small btn-secondary" style="padding:4px; color:#c47676;" onclick="removeHelperCategory('${c}')"><span class="material-symbols-outlined btn-icon">delete</span></button></div>`).join('');
+    list.innerHTML = helperCategories.map(c => `<div style="display:flex; justify-content:space-between; background:#faf8f8; padding:10px; border-radius:6px; border:1px solid #e0d8d8; align-items:center;"><span>${c}</span> <button class="btn-small btn-secondary" style="padding:4px; color:#e05e5e;" onclick="removeHelperCategory('${c}')"><span class="material-symbols-outlined btn-icon">delete</span></button></div>`).join('');
 };
 
 window.addHelperCategoryFromModal = () => {
@@ -657,7 +674,7 @@ window.renderHelpersView = () => {
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
             hp.innerHTML += `<tr>
-                <td><strong>${g.name}</strong><br><small style="color:#cca474;">Z formuláře: ${g.helperTask || 'Nic'}</small></td>
+                <td><strong>${g.name}</strong><br><small style="color:#eda03b;">Z formuláře: ${g.helperTask || 'Nic'}</small></td>
                 <td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')"><span class="material-symbols-outlined btn-icon">format_list_bulleted</span> Vybrat role</button></td>
                 <td><button class="btn-small" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {helperStatus:'assigned'})"><span class="material-symbols-outlined btn-icon">check</span> Schválit</button></td>
             </tr>`;
@@ -678,7 +695,7 @@ window.renderHelpersView = () => {
     });
 
     assignedHelpers.forEach(g => {
-        let rowStyle = g.helperAgreed ? 'background-color: #f2f7f4;' : '';
+        let rowStyle = g.helperAgreed ? 'background-color: #e9f5ed;' : '';
         ha.innerHTML += `<tr style="${rowStyle}">
             <td><strong>${g.name}</strong></td>
             <td>${g.helperTask || '-'}</td>
@@ -744,7 +761,7 @@ window.renderAccView = () => {
             else if (occ.length >= cap) { classes = 'room-tag full'; title = `PLNĚ OBSAZENO: ${occ.join(', ')}`; }
             rHtml += `<span class="${classes}" title="${title}">${r}</span>`;
         });
-        placesCont.innerHTML += `<div class="acc-place-card"><h4><span class="material-symbols-outlined icon-inline">apartment</span> ${p.name} <div class="no-print"><button class="btn-small btn-secondary" onclick="openAccPlaceEditModal('${p.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></div></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
+        placesCont.innerHTML += `<div class="acc-place-card"><h4><span class="material-symbols-outlined icon-inline">apartment</span> ${p.name} <div class="no-print"><button class="btn-small btn-secondary" onclick="openAccPlaceEditModal('${p.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> <button class="btn-small btn-secondary" style="color:#e05e5e;" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></div></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
     });
 
     allGuestsData.filter(g => g.needsAcc && g.accStatus === 'pending').forEach(g => {
@@ -781,7 +798,7 @@ window.openAccPlaceEditModal = (id) => {
 };
 window.renderModalAccRooms = () => {
     const container = document.getElementById('editAccRoomsContainer'); if(!container) return;
-    container.innerHTML = currentEditAccPlace.rooms.map((r, i) => `<div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" class="editable-input" value="${r}" onchange="currentEditAccPlace.rooms[${i}] = this.value"><button class="btn-small btn-secondary" style="color:#c47676;" onclick="removeRoomFromModal(${i})"><span class="material-symbols-outlined btn-icon">delete</span></button></div>`).join('');
+    container.innerHTML = currentEditAccPlace.rooms.map((r, i) => `<div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" class="editable-input" value="${r}" onchange="currentEditAccPlace.rooms[${i}] = this.value"><button class="btn-small btn-secondary" style="color:#e05e5e;" onclick="removeRoomFromModal(${i})"><span class="material-symbols-outlined btn-icon">delete</span></button></div>`).join('');
 };
 window.addRoomToModal = () => { currentEditAccPlace.rooms.push("Nový pokoj"); window.renderModalAccRooms(); };
 window.removeRoomFromModal = (index) => { currentEditAccPlace.rooms.splice(index, 1); window.renderModalAccRooms(); };
