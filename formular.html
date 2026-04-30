@@ -6,14 +6,14 @@
     <title>Potvrzení účasti na svatbě</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .form-container { max-width: 650px; margin: 40px auto; padding: 35px; background: white; border-radius: 12px; box-shadow: 0 10px 35px rgba(156, 123, 123, 0.08); border: 1px solid #fdfbfb;}
+        .form-container { max-width: 650px; margin: 40px auto; padding: 35px; background: white; border-radius: 12px; box-shadow: 0 10px 35px rgba(179, 102, 102, 0.08); border: 1px solid #fdfbfb;}
         .guest-row { border-bottom: 1px solid #f2ecec; padding: 15px 0; }
-        .success-msg { text-align: center; color: #6b8f79; padding: 40px; font-family: 'Playfair Display', serif;}
+        .success-msg { text-align: center; color: #4fa671; padding: 40px; font-family: 'Playfair Display', serif;}
         .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 15px; }
         .help-card { border: 1px solid #e0d8d8; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; background: white; color:#7a6a6a; font-weight:600;}
-        .help-card:hover { border-color: #bda0a0; background: #faf8f8; }
+        .help-card:hover { border-color: #d18a8a; background: #faf8f8; }
         .help-card input { display: none; }
-        .help-card.selected { background: #bda0a0; color: white; border-color: #bda0a0; }
+        .help-card.selected { background: #d18a8a; color: white; border-color: #d18a8a; }
         .child-age-row { display: flex; gap: 10px; margin-top: 8px; align-items: center; }
     </style>
 </head>
@@ -109,7 +109,7 @@
                 try {
                     const docSnap = await getDoc(doc(db, "nastaveni", ownerUid));
                     if (docSnap.exists() && docSnap.data().helperCategories && docSnap.data().helperCategories.length > 0) {
-                        cats = docSnap.data().helperCategories.map(c => c.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim()); // Pokus o odstranění starých emoji pro čistotu
+                        cats = docSnap.data().helperCategories.map(c => c.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim()); 
                     }
                 } catch(e) { console.error("Nelze načíst kategorie.", e); }
             }
