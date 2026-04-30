@@ -6,77 +6,82 @@
     <title>Potvrzení účasti na svatbě</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        body { background: #fdf2f3; }
-        .form-container { max-width: 600px; margin: 30px auto; padding: 20px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .guest-row { border-bottom: 1px solid #eee; padding: 15px 0; }
-        .success-msg { text-align: center; color: #27ae60; padding: 40px; }
-        .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 15px; }
-        .help-card { border: 1px solid #ddd; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; background: white; }
-        .help-card:hover { border-color: #e5b2b2; background: #fdf2f3; }
+        .form-container { max-width: 650px; margin: 40px auto; padding: 35px; background: white; border-radius: 12px; box-shadow: 0 10px 35px rgba(156, 123, 123, 0.08); border: 1px solid #fdfbfb;}
+        .guest-row { border-bottom: 1px solid #f2ecec; padding: 15px 0; }
+        .success-msg { text-align: center; color: #6b8f79; padding: 40px; font-family: 'Playfair Display', serif;}
+        .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 15px; }
+        .help-card { border: 1px solid #e0d8d8; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; background: white; color:#7a6a6a; font-weight:600;}
+        .help-card:hover { border-color: #bda0a0; background: #faf8f8; }
         .help-card input { display: none; }
-        .help-card.selected { background: #e5b2b2; color: white; border-color: #d49595; font-weight: bold; }
-        .child-age-row { display: flex; gap: 10px; margin-top: 5px; align-items: center; }
+        .help-card.selected { background: #bda0a0; color: white; border-color: #bda0a0; }
+        .child-age-row { display: flex; gap: 10px; margin-top: 8px; align-items: center; }
     </style>
 </head>
 <body>
     <div class="form-container" id="formConfig">
-        <h2 style="text-align: center; color: #e5b2b2;">💍 Potvrzení účasti</h2>
+        <h2 style="text-align: center; margin-bottom:25px; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:2rem;">volunteer_activism</span> Potvrzení účasti
+        </h2>
         <form id="rsvpForm">
             <div class="input-group">
-                <label>Vaše Jméno a Příjmení:</label>
+                <label style="font-weight:600; color:#7a6a6a;">Vaše Jméno a Příjmení:</label>
                 <input type="text" id="mainGuestName" required placeholder="Např. Jan Novák">
             </div>
             <div class="input-group">
-                <label>Město, odkud přijedete:</label>
+                <label style="font-weight:600; color:#7a6a6a;">Město, odkud přijedete:</label>
                 <input type="text" id="mainGuestCity" required placeholder="Např. Praha">
             </div>
 
-            <div id="additionalGuestsContainer">
-                <h3>Další dospělé osoby s vámi</h3>
+            <div id="additionalGuestsContainer" style="margin-top:20px;">
+                <h3 style="font-size:1.1rem; margin-bottom:5px;">Další dospělé osoby s vámi</h3>
             </div>
-            <button type="button" class="btn-secondary" onclick="addGuestRow()" style="width: 100%; margin-bottom: 20px;">+ Přidat dalšího dospělého</button>
+            <button type="button" class="btn-secondary" onclick="addGuestRow()" style="width: 100%; margin-bottom: 25px;"><span class="material-symbols-outlined">person_add</span> Přidat dalšího dospělého</button>
 
             <!-- SEKCE DĚTI -->
-            <div class="input-form" style="background: #fff8f9; border: 1px solid #fce4ec; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <label><strong>Berete s sebou děti?</strong></label>
+            <div class="input-form">
+                <label style="font-weight:600; color:#7a6a6a;"><span class="material-symbols-outlined icon-inline">child_care</span> Berete s sebou děti?</label>
                 <input type="number" id="numChildren" value="0" min="0" onchange="renderChildrenAges()" style="width: 80px; margin-bottom: 10px;">
                 <div id="childrenAgesContainer"></div>
             </div>
 
             <!-- Ubytování -->
-            <div class="input-form" style="background: #fafafa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <label><strong>Potřebujete ubytování?</strong></label>
+            <div class="input-form">
+                <label style="font-weight:600; color:#7a6a6a;"><span class="material-symbols-outlined icon-inline">bed</span> Potřebujete ubytování?</label>
                 <select id="needsAcc" onchange="document.getElementById('roomsDiv').style.display = this.value === 'ano' ? 'block' : 'none'">
                     <option value="ne">Ne, nebudeme přespávat</option>
                     <option value="ano">Ano, prosíme o ubytování</option>
                 </select>
-                <div id="roomsDiv" style="display: none; margin-top: 10px;">
-                    <label>Jaké pokoje/lůžka budete potřebovat?</label>
+                <div id="roomsDiv" style="display: none; margin-top: 15px;">
+                    <label style="font-size:0.9rem; color:#7a6a6a;">Jaké pokoje/lůžka budete potřebovat?</label>
                     <input type="text" id="roomDetails" placeholder="Např. 1x dvoulůžkový a 1x přistýlka">
                 </div>
             </div>
 
             <!-- Pomoc -->
-            <div style="background: #fdf9f9; padding: 15px; border-radius: 8px; border: 1px solid #fce4ec; margin-bottom: 15px;">
-                <label><strong>Jste ochotni nám s něčím pomoci?</strong></label>
+            <div class="input-form">
+                <label style="font-weight:600; color:#7a6a6a;"><span class="material-symbols-outlined icon-inline">handshake</span> Jste ochotni nám s něčím pomoci?</label>
                 <div class="help-grid" id="dynamicHelpGrid">
                     <em>Načítám možnosti...</em>
                 </div>
             </div>
 
             <!-- Speciální požadavky -->
-            <div class="input-form" style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee;">
-                <label><strong>Speciální požadavky nebo vzkaz:</strong></label>
-                <p style="font-size: 0.85rem; color: #666; margin-top: 0;">Máte nějaké diety, alergie, nebo nám chcete cokoliv vzkázat?</p>
-                <textarea id="specialRequests" placeholder="Sem napište svůj požadavek..." style="width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; margin-top: 10px;"></textarea>
+            <div class="input-form">
+                <label style="font-weight:600; color:#7a6a6a;"><span class="material-symbols-outlined icon-inline">comment</span> Speciální požadavky nebo vzkaz:</label>
+                <p style="font-size: 0.85rem; color: #8ba6a2; margin-top: 0;">Máte nějaké diety, alergie, nebo nám chcete cokoliv vzkázat?</p>
+                <textarea id="specialRequests" placeholder="Sem napište svůj požadavek..." style="width: 100%; height: 80px;"></textarea>
             </div>
 
-            <button type="submit" style="width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 20px;">Odeslat potvrzení</button>
+            <button type="submit" style="width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 25px;"><span class="material-symbols-outlined">send</span> Odeslat potvrzení</button>
         </form>
     </div>
 
     <div id="successArea" class="form-container hidden">
-        <div class="success-msg"><h1>❤️</h1><h2>Děkujeme!</h2><p>Vaše údaje byly úspěšně odeslány.</p></div>
+        <div class="success-msg">
+            <span class="material-symbols-outlined" style="font-size: 4rem; margin-bottom:15px;">favorite</span>
+            <h2>Děkujeme!</h2>
+            <p style="font-family:'Nunito', sans-serif;">Vaše údaje byly úspěšně odeslány.</p>
+        </div>
     </div>
 
     <script type="module">
@@ -98,17 +103,15 @@
 
         async function loadCategories() {
             const grid = document.getElementById('dynamicHelpGrid');
-            let cats = ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
+            let cats = ['Pečení / Dorty', 'Jídlo', 'Fyzická příprava', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba / Program'];
             
             if(ownerUid) {
                 try {
                     const docSnap = await getDoc(doc(db, "nastaveni", ownerUid));
                     if (docSnap.exists() && docSnap.data().helperCategories && docSnap.data().helperCategories.length > 0) {
-                        cats = docSnap.data().helperCategories;
+                        cats = docSnap.data().helperCategories.map(c => c.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim()); // Pokus o odstranění starých emoji pro čistotu
                     }
-                } catch(e) { 
-                    console.error("Nemohu načíst vlastní kategorie. Načítám výchozí.", e); 
-                }
+                } catch(e) { console.error("Nelze načíst kategorie.", e); }
             }
             grid.innerHTML = '';
             cats.forEach(c => grid.innerHTML += `<label class="help-card"><input type="checkbox" name="help" value="${c}" onchange="toggleCard(this)"> ${c}</label>`);
@@ -129,7 +132,7 @@
                 cont.innerHTML += `
                     <div class="child-age-row">
                         <label>Věk dítěte ${i+1}:</label>
-                        <select class="child-age-select" style="padding: 5px; border-radius: 5px; border: 1px solid #ccc;">
+                        <select class="child-age-select">
                             <option value="Malé (0-3)">Malé (0-3 roky)</option>
                             <option value="Střední (4-10)">Střední (4-10 let)</option>
                             <option value="Velké (11+)">Velké (11+ let)</option>
@@ -142,14 +145,14 @@
             const container = document.getElementById('additionalGuestsContainer');
             const div = document.createElement('div');
             div.className = 'guest-row';
-            div.innerHTML = `<input type="text" class="add-name" placeholder="Jméno a příjmení" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">`;
+            div.innerHTML = `<input type="text" class="add-name" placeholder="Jméno a příjmení" style="width:100%;">`;
             container.appendChild(div);
         }
 
         document.getElementById('rsvpForm').onsubmit = async (e) => {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.innerText = "Odesílám...";
+            submitBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_empty</span> Odesílám...';
             submitBtn.disabled = true;
 
             const helpValues = Array.from(document.querySelectorAll('input[name="help"]:checked')).map(cb => cb.value);
@@ -168,30 +171,17 @@
             try {
                 for(let i = 0; i < allNames.length; i++) {
                     await addDoc(collection(db, "hoste"), {
-                        name: allNames[i],
-                        city: city,
-                        side: 'Společný',
-                        status: 'Potvrzeno',
-                        isHelper: helpValues.length > 0,
-                        helperTask: helpValues.join(", "),
-                        helperStatus: helpValues.length > 0 ? 'pending' : '',
-                        helperAgreed: false,
-                        needsAcc: needsAcc,
-                        accPlace: '',
-                        accRoom: needsAcc ? (i === 0 ? `Požadavek: ${roomDetails}` : 'Skupina s ' + mainName) : '',
-                        accStatus: needsAcc ? 'pending' : '',
-                        userId: ownerUid,
-                        submittedDate: todayISO,
-                        numChildren: i === 0 ? Number(numChildren) : 0,
-                        childrenAges: i === 0 ? childAges : [],
-                        specialReq: i === 0 ? specialReq : ''
+                        name: allNames[i], city: city, side: 'Společný', status: 'Potvrzeno',
+                        isHelper: helpValues.length > 0, helperTask: helpValues.join(", "), helperStatus: helpValues.length > 0 ? 'pending' : '', helperAgreed: false,
+                        needsAcc: needsAcc, accPlace: '', accRoom: needsAcc ? (i === 0 ? `Požadavek: ${roomDetails}` : 'Skupina s ' + mainName) : '', accStatus: needsAcc ? 'pending' : '',
+                        userId: ownerUid, submittedDate: todayISO, numChildren: i === 0 ? Number(numChildren) : 0, childrenAges: i === 0 ? childAges : [], specialReq: i === 0 ? specialReq : ''
                     });
                 }
                 document.getElementById('formConfig').classList.add('hidden');
                 document.getElementById('successArea').classList.remove('hidden');
             } catch (err) { 
-                alert("Došlo k chybě při odesílání formuláře. Zkontrolujte připojení k internetu nebo oprávnění Firebase (pravidlo allow read, write: if true;). Detail: " + err.message);
-                submitBtn.innerText = "Odeslat potvrzení";
+                alert("Došlo k chybě při odesílání formuláře.");
+                submitBtn.innerHTML = '<span class="material-symbols-outlined">send</span> Odeslat potvrzení';
                 submitBtn.disabled = false;
             }
         };
