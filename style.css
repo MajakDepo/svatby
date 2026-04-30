@@ -80,31 +80,30 @@ th { background: #fafafa; color: #888; text-transform: uppercase; font-size: 0.8
 .seating-box { background: #fffcfc; border: 1px solid #fce4ec; border-radius: 8px; padding: 15px; }
 .seating-box h4 { color: #d81b60; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f9f5f6; padding-bottom: 5px;}
 
-/* VIZUÁLNÍ MÍSTA S TEXTEM */
+/* VIZUÁLNÍ MÍSTA A JMENOVKY */
 .visual-seating-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee;}
-.visual-seat { 
-    min-width: 24px; 
-    height: 26px; 
-    border-radius: 13px; 
-    border: 2px solid #ddd; 
-    background: #f5f5f5; 
-    cursor: help; 
-    transition: 0.2s; 
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 8px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: #333;
-    white-space: nowrap;
+
+/* Obal drží tvar čtverečku nahoře a jméno úhledně dole */
+.seat-wrapper { display: flex; flex-direction: column; align-items: center; width: 55px; gap: 4px; }
+.seat-label { 
+    font-size: 0.7rem; 
+    color: #555; 
+    text-align: center; 
+    line-height: 1.1; 
+    width: 100%; 
+    overflow: hidden; 
+    display: -webkit-box; 
+    -webkit-line-clamp: 2; 
+    -webkit-box-orient: vertical; 
+    word-break: break-word; 
 }
-.visual-seat.empty { min-width: 24px; padding: 0; }
+
+/* Samotné grafické sedadlo - naprosto symetrické a čisté */
+.visual-seat { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ddd; background: #f5f5f5; cursor: help; transition: 0.2s; position: relative; display: block; }
 .visual-seat.ceremony-seat { border-radius: 4px; }
-.visual-seat.occupied { background: #fdf2f3; border-color: #d49595; color: #b71c1c; }
-.visual-seat.overcap { background: #e74c3c; border-color: #c0392b; color: white; animation: pulse 1s infinite; }
-.visual-seat:hover { transform: scale(1.1); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+.visual-seat.occupied { background: #fdf2f3; border-color: #d49595; }
+.visual-seat.overcap { background: #e74c3c; border-color: #c0392b; animation: pulse 1s infinite; }
+.visual-seat:hover { transform: scale(1.15); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
 .delete-row-btn { background: none; border: none; cursor: pointer; color: #ccc; font-size: 0.8rem; padding: 2px; transition: 0.2s;}
@@ -119,10 +118,9 @@ th { background: #fafafa; color: #888; text-transform: uppercase; font-size: 0.8
     header, .app-nav, #authSection, .no-print, .input-form-extended, .table-container, .delete-row-btn, .checkbox-row { display: none !important; }
     #appSection, #seating, .card { display: block !important; box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; }
     
-    /* Vylepšení pro tisk - barvy a ohraničení */
     .seating-box { page-break-inside: avoid; border: 1px solid #aaa !important; margin-bottom: 20px !important; }
     .visual-seat { border: 1px solid #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .visual-seat.occupied { background: #f0f0f0 !important; color: #000 !important; }
+    .visual-seat.occupied { background: #e5b2b2 !important; }
     
     h2, h3, h4 { color: black !important; }
     .seating-grid { display: block; }
