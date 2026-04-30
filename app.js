@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, where, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, where, setDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -34,6 +34,7 @@ let allScheduleData = [], allTablesData = [], allRowsData = [];
 let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
 let currentEditAccPlace = null; 
+window.hasReception = true; // Globální stav pro Zasedací pořádek
 
 // --- NAVIGACE A AUTH ---
 window.showPage = (pageId) => {
@@ -73,6 +74,27 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+// Funkce pro nastavení výchozích dat novému uživateli
+async function checkAndInitDefaults(uid) {
+    const snap = await getDoc(doc(db, "nastaveni", uid));
+    if (!snap.exists()) {
+        await setDoc(doc(db, "nastaveni", uid), {
+            helperCategories: ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'],
+            hasReception: true
+        });
+        
+        // Předdefinované řady obřadu
+        const defaultRows = [
+            { name: "1. řada vlevo", capacity: 5 }, { name: "1. řada vpravo", capacity: 5 },
+            { name: "2. řada vlevo", capacity: 5 }, { name: "2. řada vpravo", capacity: 5 },
+            { name: "3. řada vlevo", capacity: 5 }, { name: "3. řada vpravo", capacity: 5 }
+        ];
+        for (let r of defaultRows) {
+            await addDoc(rowsColl, { ...r, userId: uid });
+        }
+    }
+}
+
 // --- INICIALIZACE APLIKACE ---
 function initApp(uid) {
     let cp = window.location.pathname;
@@ -80,6 +102,8 @@ function initApp(uid) {
     if (!cp.endsWith('/')) cp += '/';
     const shareInput = document.getElementById('shareUrlInput');
     if(shareInput) shareInput.value = window.location.origin + cp + 'formular.html?uid=' + uid;
+
+    checkAndInitDefaults(uid);
 
     unsubs.push(onSnapshot(doc(db, "nastaveni", uid), (ds) => {
         if (ds.exists()) {
@@ -91,10 +115,18 @@ function initApp(uid) {
             if(data.helperCategories && data.helperCategories.length > 0) {
                 helperCategories = data.helperCategories;
             }
+            window.hasReception = data.hasReception !== false; // Výchozí je true
+        } else {
+            window.hasReception = true;
         }
+
+        const recCheck = document.getElementById('hasReceptionCheck');
+        if(recCheck) recCheck.checked = window.hasReception;
+
         window.updateCountdown();
         window.renderModalCategoryList(); 
         window.renderHelpersView();
+        window.renderSeatingView();
     }));
 
     unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
@@ -248,7 +280,11 @@ window.saveScheduleEdit = () => {
     window.closeScheduleModal();
 };
 
-// --- ZASEDACÍ POŘÁDEK S GRAFICKOU VIZUALIZACÍ (OBŘAD) ---
+// --- ZASEDACÍ POŘÁDEK S GRAFICKOU VIZUALIZACÍ A MOŽNOSTÍ HOSTINY ---
+window.toggleReception = (checked) => {
+    setDoc(doc(db, "nastaveni", myUid), { hasReception: checked }, { merge: true });
+};
+
 window.addSeatGroup = (type) => {
     if(type === 'reception') {
         const name = document.getElementById('newTableName').value;
@@ -298,7 +334,7 @@ function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
         }
     }
 
-    if (raw) return html; // Pro obřad vracíme čisté čtverečky bez rámečku
+    if (raw) return html; 
     return `<div class="visual-seating-container">${html}</div>`;
 }
 
@@ -306,7 +342,13 @@ window.renderSeatingView = () => {
     const rCont = document.getElementById('receptionTablesContainer');
     const cCont = document.getElementById('ceremonyRowsContainer');
     const body = document.getElementById('seatingGuestsBody');
+    const recSection = document.getElementById('receptionSetupSection');
+    const recTh = document.getElementById('receptionTableHeader');
+    
     if(!rCont || !cCont || !body) return;
+
+    if (recSection) recSection.style.display = window.hasReception ? 'flex' : 'none';
+    if (recTh) recTh.style.display = window.hasReception ? 'table-cell' : 'none';
 
     let tableOcc = {}, rowOcc = {};
     let tableGuests = {}, rowGuests = {}; 
@@ -316,7 +358,7 @@ window.renderSeatingView = () => {
     confirmedGuests.forEach(g => {
         let headcount = 1 + Number(g.numChildren || 0);
         
-        if(g.receptionTable) {
+        if(g.receptionTable && window.hasReception) {
             tableOcc[g.receptionTable] = (tableOcc[g.receptionTable] || 0) + headcount;
             if(!tableGuests[g.receptionTable]) tableGuests[g.receptionTable] = [];
             tableGuests[g.receptionTable].push({ name: g.name, count: headcount });
@@ -328,7 +370,7 @@ window.renderSeatingView = () => {
         }
     });
 
-    // 1. VYKRESLENÍ STOLŮ NA HOSTINU (Starý dobrý způsob v boxech)
+    // 1. VYKRESLENÍ STOLŮ NA HOSTINU
     rCont.innerHTML = allTablesData.map(t => {
         let occ = tableOcc[t.id] || 0;
         let color = occ > t.capacity ? '#c62828' : '#27ae60';
@@ -341,11 +383,11 @@ window.renderSeatingView = () => {
         </div>`;
     }).join('');
 
-    // 2. VYKRESLENÍ ŘAD NA OBŘAD (Nový ptačí pohled - mapka)
+    // 2. VYKRESLENÍ ŘAD NA OBŘAD
     let ceremonyLayout = {};
     allRowsData.forEach(r => {
         let n = r.name.toLowerCase();
-        let m = n.match(/(\d+)/); // Najde jakékoliv číslo
+        let m = n.match(/(\d+)/); 
         let rowNum = m ? parseInt(m[1]) : 999;
         let side = n.includes('pravo') ? 'right' : (n.includes('levo') ? 'left' : 'unknown');
 
@@ -392,7 +434,6 @@ window.renderSeatingView = () => {
             `;
         }
 
-        // Pokud to uživatel pojmenoval bez vlevo/vpravo (např. Zadní stání, Pod balkonem)
         rData.unknown.forEach(r => {
             let visualSeats = generateVisualSeats(r.capacity, rowGuests[r.id], true, true);
             cContHtml += `
@@ -415,17 +456,16 @@ window.renderSeatingView = () => {
 
     cCont.innerHTML = `<div style="margin-top: 15px; padding-top: 15px; border-top: 2px dashed #fce4ec;">${cContHtml}</div>`;
 
-    // 3. TABULKA PRO PŘIŘAZOVÁNÍ (Select boxy)
+    // 3. TABULKA PRO PŘIŘAZOVÁNÍ 
     let tableOpts = `<option value="">-- Nevybráno --</option>` + allTablesData.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
     let rowOpts = `<option value="">-- Nevybráno --</option>` + allRowsData.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
     body.innerHTML = confirmedGuests.map(g => {
         let childInfo = g.numChildren > 0 ? ` <small style="color:#d81b60;">(+${g.numChildren} dětí)</small>` : '';
+        let recCell = window.hasReception ? `<td><select onchange="updateDoc(doc(db, 'hoste', '${g.id}'), {receptionTable: this.value})">${tableOpts.replace(`value="${g.receptionTable}"`, `value="${g.receptionTable}" selected`)}</select></td>` : '';
         return `<tr>
             <td><strong>${g.name}</strong>${childInfo}</td>
-            <td><select onchange="updateDoc(doc(db, 'hoste', '${g.id}'), {receptionTable: this.value})">
-                ${tableOpts.replace(`value="${g.receptionTable}"`, `value="${g.receptionTable}" selected`)}
-            </select></td>
+            ${recCell}
             <td><select onchange="updateDoc(doc(db, 'hoste', '${g.id}'), {ceremonyRow: this.value})">
                 ${rowOpts.replace(`value="${g.ceremonyRow}"`, `value="${g.ceremonyRow}" selected`)}
             </select></td>
