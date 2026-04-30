@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="no-print"><h1>💍 Náš Svatební Plánovač</h1></header>
+    <header class="no-print">
+        <h1><span class="material-symbols-outlined" style="font-size: 2.2rem;">diversity_1</span> Náš Svatební Plánovač</h1>
+    </header>
 
     <main>
         <!-- PŘIHLÁŠENÍ -->
@@ -16,85 +18,83 @@
             <div class="input-group"><input type="email" id="emailInput" placeholder="E-mail"></div>
             <div class="input-group"><input type="password" id="passwordInput" placeholder="Heslo"></div>
             <div class="button-group">
-                <button id="loginBtn">Přihlásit se</button>
-                <button id="registerBtn" class="btn-secondary">Vytvořit účet</button>
+                <button id="loginBtn"><span class="material-symbols-outlined">login</span> Přihlásit se</button>
+                <button id="registerBtn" class="btn-secondary"><span class="material-symbols-outlined">person_add</span> Vytvořit účet</button>
             </div>
-            <div id="authError" style="color: #e74c3c; margin-top: 15px; font-weight: bold;"></div>
+            <div id="authError" style="color: #c47676; margin-top: 15px; font-weight: 600;"></div>
         </section>
 
         <!-- HLAVNÍ APLIKACE -->
         <div id="appSection" class="hidden">
             <nav class="app-nav no-print">
                 <ul>
-                    <li><a href="#" onclick="showPage('dashboard')">🏠 Nástěnka</a></li>
-                    <li><a href="#" onclick="showPage('ideas')">💡 Nápady</a></li>
-                    <li><a href="#" onclick="showPage('schedule')">⏱️ Harmonogram</a></li>
-                    <li><a href="#" onclick="showPage('todo')">✅ Úkoly a Nákupy</a></li>
-                    <li><a href="#" onclick="showPage('guests')">👥 Hosté</a></li>
-                    <li><a href="#" onclick="showPage('seating')">🪑 Zasedací pořádek</a></li>
-                    <li><a href="#" onclick="showPage('helper-section')">💪 Pomocníci</a></li>
-                    <li><a href="#" onclick="showPage('accommodation-section')">🏠 Ubytování</a></li>
-                    <li><a href="#" onclick="showPage('budget')">💰 Rozpočet</a></li>
+                    <li><a href="#" onclick="showPage('dashboard')"><span class="material-symbols-outlined">dashboard</span> Nástěnka</a></li>
+                    <li><a href="#" onclick="showPage('ideas')"><span class="material-symbols-outlined">lightbulb</span> Nápady</a></li>
+                    <li><a href="#" onclick="showPage('schedule')"><span class="material-symbols-outlined">schedule</span> Harmonogram</a></li>
+                    <li><a href="#" onclick="showPage('todo')"><span class="material-symbols-outlined">checklist</span> Úkoly a Nákupy</a></li>
+                    <li><a href="#" onclick="showPage('guests')"><span class="material-symbols-outlined">group</span> Hosté</a></li>
+                    <li><a href="#" onclick="showPage('seating')"><span class="material-symbols-outlined">chair_alt</span> Zasedací pořádek</a></li>
+                    <li><a href="#" onclick="showPage('helper-section')"><span class="material-symbols-outlined">handshake</span> Pomocníci</a></li>
+                    <li><a href="#" onclick="showPage('accommodation-section')"><span class="material-symbols-outlined">bed</span> Ubytování</a></li>
+                    <li><a href="#" onclick="showPage('budget')"><span class="material-symbols-outlined">account_balance_wallet</span> Rozpočet</a></li>
                 </ul>
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button id="logoutBtn" class="btn-small">Odhlásit se</button>
-                    <button class="btn-small" style="background-color: #c62828;" onclick="deleteMyAccountAndData()">Smazat účet</button>
+                    <button id="logoutBtn" class="btn-small btn-secondary"><span class="material-symbols-outlined btn-icon">logout</span> Odhlásit se</button>
+                    <button class="btn-small" style="background-color: #c47676; color:white;" onclick="deleteMyAccountAndData()"><span class="material-symbols-outlined btn-icon">delete_forever</span> Smazat účet</button>
                 </div>
             </nav>
 
             <!-- DASHBOARD -->
             <section id="dashboard" class="page-view no-print">
                 <div class="dashboard-grid">
-                    <div class="card text-center" style="grid-column: 1 / -1; background: #fce4ec; border: 2px solid #f8bbd0;">
-                        <h2 style="border-bottom: none; margin-bottom: 5px;">Odpočet do svatby ⏳</h2>
-                        <input type="date" id="weddingDateInput" onchange="saveWeddingDate()" style="margin-bottom: 10px;">
-                        <div id="countdownDisplay" style="font-size: 2rem; font-weight: bold; color: #d81b60;">Načítám...</div>
+                    <div class="card text-center" style="grid-column: 1 / -1; background: #fffafb; border: 1px solid #f2ecec;">
+                        <h2 style="border-bottom: none; margin-bottom: 5px; justify-content:center;"><span class="material-symbols-outlined">hourglass_empty</span> Odpočet do svatby</h2>
+                        <input type="date" id="weddingDateInput" onchange="saveWeddingDate()" style="margin-bottom: 10px; max-width:200px; text-align:center;">
+                        <div id="countdownDisplay" style="font-size: 2rem; font-family: 'Playfair Display', serif; color: #9c7b7b;">Načítám...</div>
                     </div>
                     <div class="card dash-card" onclick="showPage('guests')">
-                        <h3>Hosté a Děti</h3>
+                        <h3><span class="material-symbols-outlined icon-inline">group</span> Hosté a Děti</h3>
                         <p>Dospělých: <strong id="dashTotalGuests">0</strong></p>
-                        <p>Dětí celkem: <strong id="dashTotalChildren" style="color:#d81b60;">0</strong></p>
+                        <p>Dětí celkem: <strong id="dashTotalChildren" style="color:#9c7b7b;">0</strong></p>
                     </div>
                     <div class="card dash-card" onclick="showPage('helper-section')">
-                        <h3>Pomocníci</h3>
+                        <h3><span class="material-symbols-outlined icon-inline">handshake</span> Pomocníci</h3>
                         <p>Celkem: <strong id="dashTotalHelpers">0</strong></p>
-                        <p>K rozřazení: <strong id="dashPendingHelpers" style="color: #f39c12;">0</strong></p>
+                        <p>K rozřazení: <strong id="dashPendingHelpers" style="color: #cca474;">0</strong></p>
                     </div>
                     <div class="card dash-card" onclick="showPage('accommodation-section')">
-                        <h3>Ubytování</h3>
+                        <h3><span class="material-symbols-outlined icon-inline">bed</span> Ubytování</h3>
                         <p>Osob: <strong id="dashTotalAcc">0</strong></p>
-                        <p>K rozřazení: <strong id="dashPendingAcc" style="color: #f39c12;">0</strong></p>
+                        <p>K rozřazení: <strong id="dashPendingAcc" style="color: #cca474;">0</strong></p>
                     </div>
                 </div>
             </section>
 
             <!-- NÁPADY / BRAINSTORMING -->
             <section id="ideas" class="card page-view hidden no-print">
-                <h2>💡 Brainstorming a Nápady</h2>
-                <p style="margin-bottom: 15px; color: #666;">Zapište si všechny nápady, odkazy na inspiraci, barevné palety nebo cokoliv, co vás napadne.</p>
-                <div class="input-form-extended" style="background:#fffcfc;">
+                <h2><span class="material-symbols-outlined">lightbulb</span> Brainstorming a Nápady</h2>
+                <p style="margin-bottom: 15px; color: #7a6a6a;">Zapište si všechny nápady, odkazy na inspiraci, barevné palety nebo cokoliv, co vás napadne.</p>
+                <div class="input-form-extended">
                     <div class="row">
-                        <input type="text" id="ideaTitle" placeholder="Předmět / Název (např. Květinová výzdoba, Odkaz na šaty...)">
+                        <input type="text" id="ideaTitle" placeholder="Předmět / Název (např. Květinová výzdoba...)">
                     </div>
                     <div class="row">
                         <textarea id="ideaText" placeholder="Vaše poznámky, myšlenky, odkazy..." style="width:100%; min-height:80px;"></textarea>
                     </div>
-                    <button id="addIdeaBtn">Uložit nápad</button>
+                    <button id="addIdeaBtn"><span class="material-symbols-outlined">save</span> Uložit nápad</button>
                 </div>
-                <div id="ideasContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px;">
-                    <!-- Zde se vygenerují lístečky s nápady -->
-                </div>
+                <div id="ideasContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px;"></div>
             </section>
 
             <!-- HARMONOGRAM -->
             <section id="schedule" class="card page-view hidden no-print">
-                <h2>⏱️ Harmonogram svatebního dne</h2>
-                <div class="input-form-extended" style="background: #fff8f9;">
+                <h2><span class="material-symbols-outlined">schedule</span> Harmonogram svatebního dne</h2>
+                <div class="input-form-extended">
                     <div class="row">
                         <input type="time" id="schedTime" style="max-width: 120px;">
                         <input type="text" id="schedTitle" placeholder="Název události (např. Krájení dortu)">
                         <input type="text" id="schedNote" placeholder="Poznámka / Místo konání">
-                        <button onclick="addScheduleItem()">Přidat do harmonogramu</button>
+                        <button onclick="addScheduleItem()"><span class="material-symbols-outlined">add</span> Přidat</button>
                     </div>
                 </div>
                 <div class="table-container">
@@ -110,51 +110,43 @@
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom: 20px;">
                     <div>
                         <div style="display:flex; align-items:center; gap: 15px; flex-wrap:wrap;">
-                            <h2 style="margin-bottom:0; border:none; padding:0;">🪑 Zasedací pořádek</h2>
-                            <button class="btn-small btn-secondary no-print" onclick="window.print()" style="font-size:0.9rem; padding: 6px 12px; background:#fffcfc; border:1px solid #e5b2b2; color:#d81b60;">🖨️ Tisk / Export do PDF</button>
+                            <h2 style="margin-bottom:0; border:none; padding:0;"><span class="material-symbols-outlined">chair_alt</span> Zasedací pořádek</h2>
+                            <button class="btn-small btn-secondary no-print" onclick="window.print()" style="font-size:0.9rem; padding: 6px 12px; border:1px solid #bda0a0; color:#9c7b7b;"><span class="material-symbols-outlined btn-icon">print</span> Tisk / PDF</button>
                         </div>
-                        <p class="no-print" style="margin-top: 10px; margin-bottom: 0; color: #666;">Vytvořte si stoly a řady, a následně k nim přiřaďte potvrzené hosty.</p>
+                        <p class="no-print" style="margin-top: 10px; margin-bottom: 0; color: #7a6a6a;">Vytvořte si stoly a řady, a následně k nim přiřaďte potvrzené hosty.</p>
                     </div>
-                    <div class="no-print" style="background:#fffcfc; border:1px solid #fce4ec; padding:10px 15px; border-radius:8px;">
-                        <label style="font-weight:bold; color:#d81b60; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                    <div class="no-print" style="background:#faf8f8; border:1px solid #f2ecec; padding:10px 15px; border-radius:8px;">
+                        <label style="font-weight:600; color:#9c7b7b; cursor:pointer; display:flex; align-items:center; gap:8px;">
                             <input type="checkbox" id="hasReceptionCheck" onchange="toggleReception(this.checked)">
                             Plánovat i zasedací pořádek u hostiny
                         </label>
                     </div>
                 </div>
                 
-                <!-- Logické rozložení formulářů vedle sebe -->
                 <div class="setup-grid no-print" style="display:flex; flex-wrap:wrap; gap:20px; margin-bottom:30px;">
-                    <!-- Tvorba stolů na hostinu -->
                     <div class="input-form-extended" id="receptionSetupSection" style="flex:1; min-width:280px; max-width: 500px; margin-bottom:0;">
-                        <h3 style="font-size: 1.1rem; color: #d81b60;">🍽️ Tvorba stolů na hostinu</h3>
+                        <h3 style="font-size: 1.1rem;"><span class="material-symbols-outlined icon-inline">restaurant</span> Tvorba stolů na hostinu</h3>
                         <div class="row" style="margin-bottom: 10px;">
                             <input type="text" id="newTableName" placeholder="Název (např. Stůl 1)">
                             <input type="number" id="newTableCap" placeholder="Kapacita" style="max-width: 100px;">
-                            <button onclick="addSeatGroup('reception')">Přidat</button>
+                            <button onclick="addSeatGroup('reception')"><span class="material-symbols-outlined">add</span></button>
                         </div>
                     </div>
                     
-                    <!-- Tvorba řad na obřad -->
                     <div class="input-form-extended" id="ceremonySetupSection" style="flex:1; min-width:280px; max-width: 500px; margin-bottom:0;">
-                        <h3 style="font-size: 1.1rem; color: #d81b60;">⛪ Tvorba řad na obřad</h3>
+                        <h3 style="font-size: 1.1rem;"><span class="material-symbols-outlined icon-inline">church</span> Tvorba řad na obřad</h3>
                         <div class="row" style="margin-bottom: 10px;">
                             <input type="text" id="newRowName" placeholder="Název (např. 1. řada vpravo)">
                             <input type="number" id="newRowCap" placeholder="Kapacita" style="max-width: 100px;">
-                            <button onclick="addSeatGroup('ceremony')">Přidat</button>
+                            <button onclick="addSeatGroup('ceremony')"><span class="material-symbols-outlined">add</span></button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Samostatná oblast pro Hostinu (skrývá se, pokud je odškrtnuto) -->
-                <div id="receptionArea">
-                    <div id="receptionTablesContainer" class="seating-grid" style="margin-bottom: 30px;"></div>
-                </div>
-                
-                <!-- Samostatná oblast pro Obřad -->
+                <div id="receptionArea"><div id="receptionTablesContainer" class="seating-grid" style="margin-bottom: 30px;"></div></div>
                 <div id="ceremonyRowsContainer"></div>
 
-                <h3 class="no-print" style="margin-top: 30px; color: #d81b60;">Rozřazení potvrzených hostů</h3>
+                <h3 class="no-print" style="margin-top: 30px;"><span class="material-symbols-outlined icon-inline">group_add</span> Rozřazení hostů</h3>
                 <div class="table-container no-print">
                     <table>
                         <thead><tr><th>Jméno (a rodina)</th><th id="receptionTableHeader">Stůl (Hostina)</th><th>Řada (Obřad)</th></tr></thead>
@@ -165,7 +157,7 @@
 
             <!-- TO-DO LIST A NÁKUPY -->
             <section id="todo" class="card page-view hidden no-print">
-                <h2>✅ Úkoly k vyřízení</h2>
+                <h2><span class="material-symbols-outlined">checklist</span> Úkoly k vyřízení</h2>
                 <div class="input-form-extended">
                     <div class="row">
                         <input type="text" id="taskInput" placeholder="Název úkolu...">
@@ -177,7 +169,7 @@
                     </div>
                     <div class="row">
                         <input type="text" id="taskNoteInput" placeholder="Poznámka k úkolu...">
-                        <button id="addBtn">Přidat úkol</button>
+                        <button id="addBtn"><span class="material-symbols-outlined">add</span> Přidat úkol</button>
                     </div>
                 </div>
                 
@@ -186,9 +178,9 @@
                     <div class="filter-inputs">
                         <select id="filterTaskStatus" onchange="renderTasksView()">
                             <option value="">-- Všechny stavy --</option>
-                            <option value="Není">❌ Není</option>
-                            <option value="V průběhu">⏳ V průběhu</option>
-                            <option value="Hotovo">✅ Hotovo</option>
+                            <option value="Není">Nevyřešeno</option>
+                            <option value="V průběhu">V průběhu</option>
+                            <option value="Hotovo">Hotovo</option>
                         </select>
                         <select id="filterTaskPriority" onchange="renderTasksView()">
                             <option value="">-- Všechny priority --</option>
@@ -206,13 +198,12 @@
                     </table>
                 </div>
 
-                <!-- NÁKUPNÍ SEZNAM -->
-                <h3 style="margin-top: 40px; font-size: 1.3rem; color: #e5b2b2; border-bottom: 2px solid #f9f5f6; padding-bottom: 5px;">🛒 Nákupní seznam</h3>
-                <div class="input-form-extended" style="background:#fdf9f9; margin-bottom: 15px;">
+                <h3 style="margin-top: 40px; font-size: 1.3rem; border-bottom: 1px solid #f2ecec; padding-bottom: 10px;"><span class="material-symbols-outlined icon-inline">shopping_cart</span> Nákupní seznam</h3>
+                <div class="input-form-extended" style="margin-bottom: 15px;">
                     <div class="row">
                         <input type="text" id="shoppingInput" placeholder="Položka nákupu (např. Balonky)...">
                         <input type="text" id="shoppingNoteInput" placeholder="Poznámka (např. 20 kusů zlatých)...">
-                        <button id="addShoppingBtn">Přidat položku</button>
+                        <button id="addShoppingBtn"><span class="material-symbols-outlined">add</span> Přidat</button>
                     </div>
                 </div>
                 <div class="table-container">
@@ -225,17 +216,17 @@
 
             <!-- HOSTÉ -->
             <section id="guests" class="card page-view hidden no-print">
-                <h2>Správa hostů</h2>
-                <div id="shareBox" class="input-form-extended" style="background: #e8f5e9; border-color: #c8e6c9;">
-                    <p><strong>Odkaz pro vaše hosty:</strong></p>
+                <h2><span class="material-symbols-outlined">group</span> Správa hostů</h2>
+                <div id="shareBox" class="input-form-extended" style="background: #f7fbf8; border-color: #dcece3;">
+                    <p style="color:#6b8f79;"><span class="material-symbols-outlined icon-inline">link</span> <strong>Odkaz pro vaše hosty:</strong></p>
                     <div style="display:flex; gap:10px; width:100%;">
                         <input type="text" id="shareUrlInput" readonly value="Načítám odkaz..." style="background:white; flex:1;">
-                        <button onclick="copyShareUrl()">Kopírovat</button>
+                        <button onclick="copyShareUrl()" style="background:#6b8f79;"><span class="material-symbols-outlined">content_copy</span> Kopírovat</button>
                     </div>
                 </div>
 
                 <div class="input-form-extended">
-                    <h3 style="margin-bottom: 10px; font-size: 1rem; color: #666;">Ruční přidání hosta</h3>
+                    <h3 style="margin-bottom: 10px; font-size: 1rem;"><span class="material-symbols-outlined icon-inline">person_add</span> Ruční přidání hosta</h3>
                     <div class="row">
                         <input type="text" id="guestName" placeholder="Jméno a příjmení">
                         <input type="text" id="guestCity" placeholder="Město">
@@ -250,7 +241,7 @@
                             <label><input type="checkbox" id="isHelper"> Pomocník</label>
                             <label><input type="checkbox" id="needsAcc"> Ubytování</label>
                         </div>
-                        <button id="addGuestBtn">Přidat hosta</button>
+                        <button id="addGuestBtn"><span class="material-symbols-outlined">add</span> Přidat hosta</button>
                     </div>
                     <div id="adminChildrenAgesContainer" style="margin-top: 5px;"></div>
                 </div>
@@ -284,29 +275,28 @@
                     </div>
                 </div>
 
-                <!-- HROMADNÉ AKCE A DUPLICITY -->
-                <div style="background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; border: 1px solid #ffeeba;">
-                    <strong>💡 Tip k duplicitám:</strong> Algoritmus vyhledává podobnosti, ale pro jistotu doporučujeme zkontrolovat jména občas i přes filtry. Při mazání duplicit <strong>mažte primárně vaše ručně vytvořené záznamy</strong> (u těch z formuláře mohli hosté vyplnit speciální požadavky či nabídky pomoci, o které byste smazáním přišli).
+                <div style="background: #fdfaf2; color: #9c845a; padding: 15px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; border: 1px solid #eae1cc;">
+                    <strong><span class="material-symbols-outlined icon-inline">info</span> Tip k duplicitám:</strong> Algoritmus vyhledává podobnosti, ale pro jistotu doporučujeme zkontrolovat jména občas i přes filtry. Při mazání duplicit <strong>mažte primárně vaše ručně vytvořené záznamy</strong> (u těch z formuláře mohli hosté vyplnit zprávy, o které byste přišli).
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom: 10px; align-items:center; flex-wrap:wrap; gap:10px; background: #fffcfc; padding: 10px; border: 1px solid #eee; border-radius: 8px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 10px; align-items:center; flex-wrap:wrap; gap:10px; background: #faf8f8; padding: 10px; border: 1px solid #f2ecec; border-radius: 8px;">
                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                        <button class="btn-small btn-secondary" onclick="toggleAllGuests()">Vybrat vše</button>
-                        <button class="btn-small" style="background:#e74c3c;" onclick="deleteSelectedGuests()">Smazat vybrané</button>
-                        <span style="color:#aaa; margin: 0 5px;">|</span>
-                        <select id="bulkStatusSelect" class="btn-small" style="background:#fff; border:1px solid #ccc; max-width: 150px; padding: 4px;">
-                            <option value="">Hromadná změna stavu...</option>
+                        <button class="btn-small btn-secondary" onclick="toggleAllGuests()"><span class="material-symbols-outlined btn-icon">done_all</span> Vybrat vše</button>
+                        <button class="btn-small" style="background:#c47676;" onclick="deleteSelectedGuests()"><span class="material-symbols-outlined btn-icon">delete</span> Smazat vybrané</button>
+                        <span style="color:#d0c4c4; margin: 0 5px;">|</span>
+                        <select id="bulkStatusSelect" class="btn-small" style="background:#fff; border:1px solid #e0d8d8; max-width: 150px; padding: 6px;">
+                            <option value="">Hromadná změna...</option>
                             <option value="Pozváno">Pozváno</option>
                             <option value="Potvrzeno">Potvrzeno</option>
                             <option value="Nezúčastní se">Nezúčastní se</option>
                         </select>
                         <button class="btn-small btn-secondary" onclick="bulkChangeStatus()">Potvrdit</button>
                     </div>
-                    <button id="duplicateBtn" class="btn-small" style="background:#f39c12; font-size: 0.9rem;" onclick="findDuplicates()">🔍 Najít duplicity</button>
+                    <button id="duplicateBtn" class="btn-small" style="background:#cca474; font-size: 0.9rem;" onclick="findDuplicates()"><span class="material-symbols-outlined btn-icon">search</span> Najít duplicity</button>
                 </div>
 
                 <div class="table-container">
                     <table id="guestTable">
-                        <thead><tr><th style="width:30px; text-align:center;">✓</th><th>Jméno / Děti / Požadavky</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead>
+                        <thead><tr><th style="width:30px; text-align:center;"><span class="material-symbols-outlined btn-icon">check_box_outline_blank</span></th><th>Jméno / Děti / Požadavky</th><th>Město</th><th>Strana</th><th>Stav</th><th>Akce</th></tr></thead>
                         <tbody id="guestTableBody"></tbody>
                     </table>
                 </div>
@@ -314,40 +304,40 @@
 
             <!-- POMOCNÍCI -->
             <section id="helper-section" class="card page-view hidden no-print">
-                <h2>💪 Pomocníci</h2>
+                <h2><span class="material-symbols-outlined">handshake</span> Pomocníci</h2>
                 
                 <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                    <p style="font-size: 0.9rem; color: #666; margin: 0;">Kliknutím na bubliny vyfiltrujete tabulku níže:</p>
-                    <button class="btn-small btn-secondary" onclick="openCategoryEditModal()">⚙️ Upravit kategorie</button>
+                    <p style="font-size: 0.9rem; color: #7a6a6a; margin: 0;">Kliknutím na bubliny vyfiltrujete tabulku níže:</p>
+                    <button class="btn-small btn-secondary" onclick="openCategoryEditModal()"><span class="material-symbols-outlined btn-icon">settings</span> Upravit kategorie</button>
                 </div>
                 
                 <div id="helperStatsBlock" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
                 
-                <h3 style="color:#f39c12;">⏳ Čekající na schválení</h3>
+                <h3 style="color:#cca474;"><span class="material-symbols-outlined icon-inline">hourglass_empty</span> Čekající na schválení</h3>
                 <div class="table-container"><table id="helperPendingTable"><thead><tr><th>Jméno</th><th>Výběr rolí</th><th>Akce</th></tr></thead><tbody id="helperPendingTableBody"></tbody></table></div>
-                <h3 style="color:#27ae60;">✅ Potvrzení pomocníci</h3>
+                <h3 style="color:#6b8f79;"><span class="material-symbols-outlined icon-inline">check_circle</span> Potvrzení pomocníci</h3>
                 <div class="table-container"><table><thead><tr><th>Jméno</th><th>Role</th><th>Domluva</th><th>Akce</th></tr></thead><tbody id="helperAssignedTableBody"></tbody></table></div>
             </section>
 
             <!-- UBYTOVÁNÍ -->
             <section id="accommodation-section" class="card page-view hidden no-print">
-                <h2>🏠 Ubytování</h2>
+                <h2><span class="material-symbols-outlined">bed</span> Ubytování</h2>
                 <div class="input-form-extended">
-                    <input type="text" id="newPlaceName" placeholder="Název hotelu/penzionu">
-                    <input type="text" id="newPlaceRooms" placeholder="Pokoje (např. 2x dvoulůžkový, 1x jednolůžkový)">
-                    <button onclick="addAccPlace()">Vytvořit kapacity</button>
+                    <div class="row">
+                        <input type="text" id="newPlaceName" placeholder="Název hotelu/penzionu">
+                        <input type="text" id="newPlaceRooms" placeholder="Pokoje (např. 2x dvoulůžkový, 1x jednolůžkový)">
+                        <button onclick="addAccPlace()"><span class="material-symbols-outlined">add</span> Vytvořit kapacity</button>
+                    </div>
                 </div>
                 <div id="accPlacesContainer"></div>
-                <h3 style="color:#f39c12;">⏳ Žádosti</h3>
+                <h3 style="color:#cca474;"><span class="material-symbols-outlined icon-inline">hourglass_empty</span> Žádosti</h3>
                 <div class="table-container"><table><thead><tr><th>Jméno</th><th>Požadavek</th><th>Přiřazení</th><th>Akce</th></tr></thead><tbody id="accPendingTableBody"></tbody></table></div>
                 
-                <h3 style="color:#27ae60;">✅ Rozřazení</h3>
+                <h3 style="color:#6b8f79;"><span class="material-symbols-outlined icon-inline">check_circle</span> Rozřazení</h3>
                 <div class="filter-box" style="margin-bottom:10px;">
                     <strong>Filtrovat rozřazené:</strong>
                     <div class="filter-inputs">
-                        <select id="filterAccAssignedPlace" onchange="renderAccView()">
-                            <option value="">-- Všechna místa --</option>
-                        </select>
+                        <select id="filterAccAssignedPlace" onchange="renderAccView()"><option value="">-- Všechna místa --</option></select>
                         <input type="text" id="filterAccAssignedRoom" placeholder="Hledat pokoj..." onkeyup="renderAccView()">
                         <input type="text" id="filterAccAssignedName" placeholder="Hledat jméno..." onkeyup="renderAccView()">
                     </div>
@@ -362,45 +352,43 @@
 
             <!-- ROZPOČET -->
             <section id="budget" class="card page-view hidden no-print">
-                <h2>💰 Rozpočet</h2>
+                <h2><span class="material-symbols-outlined">account_balance_wallet</span> Rozpočet</h2>
                 
-                <div class="input-form-extended" style="background:#fdf9f9; margin-bottom: 20px;">
-                    <h3 style="font-size: 1rem; color: #666; margin-bottom: 10px;">1. Vytvořit rozpočet (Plán)</h3>
+                <div class="input-form-extended">
+                    <h3 style="font-size: 1rem; margin-bottom: 10px;"><span class="material-symbols-outlined icon-inline">data_exploration</span> 1. Vytvořit rozpočet (Plán)</h3>
                     <div class="row">
                         <input type="text" id="planCategoryName" placeholder="Nová kategorie (např. Hostina, Prstýnky...)">
                         <input type="number" id="planEstimatedAmount" placeholder="Plánovaná částka (Kč)">
-                        <button id="addPlanBtn">Přidat kategorii</button>
+                        <button id="addPlanBtn"><span class="material-symbols-outlined">add</span> Přidat kategorii</button>
                     </div>
                 </div>
 
-                <div class="input-form-extended" style="margin-bottom: 20px;">
-                    <h3 style="font-size: 1rem; color: #666; margin-bottom: 10px;">2. Přidat skutečný výdaj</h3>
+                <div class="input-form-extended" style="margin-bottom: 25px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 10px;"><span class="material-symbols-outlined icon-inline">receipt_long</span> 2. Přidat skutečný výdaj</h3>
                     <div class="row">
                         <input type="date" id="expenseDate">
                         <input type="text" id="expenseName" placeholder="Předmět (např. Dort)">
-                        <select id="expenseCategorySelect">
-                            <option value="">-- Vyberte kategorii --</option>
-                        </select>
+                        <select id="expenseCategorySelect"><option value="">-- Vyberte kategorii --</option></select>
                         <input type="number" id="expenseActualAmount" placeholder="Částka (Kč)">
-                        <button id="addExpenseBtn">Přidat výdaj</button>
+                        <button id="addExpenseBtn"><span class="material-symbols-outlined">add</span> Přidat výdaj</button>
                     </div>
                 </div>
 
-                <div class="stats dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
-                    <div class="stat-box" style="margin:0">Celkem plánováno: <strong id="totalEstimated">0 Kč</strong></div>
+                <div class="stats dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 25px;">
+                    <div class="stat-box" style="margin:0">Celkem plánováno: <strong id="totalEstimated" style="color:#7a6a6a;">0 Kč</strong></div>
                     <div id="totalActualBox" class="stat-box" style="margin:0">Celkem utraceno: <strong id="totalActual">0 Kč</strong></div>
                 </div>
                 
                 <div class="table-container">
-                    <h3>📊 Souhrn podle kategorií (Plán vs Skutečnost)</h3>
+                    <h3 style="padding:15px 15px 5px 15px; margin:0;"><span class="material-symbols-outlined icon-inline">donut_large</span> Souhrn podle kategorií</h3>
                     <table>
                         <thead><tr><th>Kategorie</th><th>Plán</th><th>Skutečnost</th><th>Akce</th></tr></thead>
                         <tbody id="budgetCategorySummaryBody"></tbody>
                     </table>
                 </div>
 
-                <div class="table-container" style="margin-top:20px;">
-                    <h3>💸 Jednotlivé výdaje</h3>
+                <div class="table-container" style="margin-top:25px;">
+                    <h3 style="padding:15px 15px 5px 15px; margin:0;"><span class="material-symbols-outlined icon-inline">list_alt</span> Jednotlivé výdaje</h3>
                     <table>
                         <thead><tr><th>Datum</th><th>Kategorie</th><th>Předmět</th><th>Částka</th><th>Akce</th></tr></thead>
                         <tbody id="budgetExpensesBody"></tbody>
@@ -410,9 +398,8 @@
         </div>
     </main>
 
-    <!-- MODÁLY (Při tisku se schovají) -->
+    <!-- MODÁLY -->
     
-    <!-- Harmonogram Edit -->
     <div id="editScheduleModal" class="modal hidden no-print">
         <div class="modal-content">
             <h3>Upravit položku harmonogramu</h3>
@@ -424,7 +411,6 @@
         </div>
     </div>
 
-    <!-- Úprava nákupní položky -->
     <div id="editShoppingModal" class="modal hidden no-print">
         <div class="modal-content">
             <h3>Upravit položku nákupu</h3>
@@ -435,15 +421,14 @@
         </div>
     </div>
 
-    <!-- Úprava ubytování -->
     <div id="editAccPlaceModal" class="modal hidden no-print">
         <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
             <h3>Úprava ubytování</h3>
             <input type="hidden" id="editAccPlaceId">
             <div class="input-group"><label>Název místa:</label><input type="text" id="editAccPlaceName" placeholder="Např. Hotel Kokořín"></div>
-            <h4 style="margin-top:15px; margin-bottom:5px; font-size:1rem; color:#666;">Seznam pokojů</h4>
+            <h4 style="margin-top:15px; margin-bottom:5px; font-size:1rem; color:#7a6a6a;">Seznam pokojů</h4>
             <div id="editAccRoomsContainer"></div>
-            <button class="btn-small btn-secondary" onclick="addRoomToModal()" style="margin-top:10px; width:100%;">+ Přidat další pokoj</button>
+            <button class="btn-small btn-secondary" onclick="addRoomToModal()" style="margin-top:10px; width:100%;"><span class="material-symbols-outlined btn-icon">add</span> Přidat další pokoj</button>
             <div class="button-group" style="margin-top:20px;">
                 <button onclick="saveAccPlaceEdit()">Uložit změny</button>
                 <button class="btn-secondary" onclick="document.getElementById('editAccPlaceModal').classList.add('hidden')">Zavřít</button>
@@ -451,14 +436,13 @@
         </div>
     </div>
 
-    <!-- Modály pomocníků -->
     <div id="categoryEditModal" class="modal hidden no-print">
         <div class="modal-content">
             <h3>Správa kategorií pomoci</h3>
             <div id="modalCategoryList" style="margin: 15px 0; display: flex; flex-direction: column; gap: 8px;"></div>
             <div class="input-group" style="display:flex; flex-direction:row; gap:10px; margin-bottom:15px;">
                 <input type="text" id="modalNewCatInput" placeholder="Nová kategorie">
-                <button class="btn-small" onclick="addHelperCategoryFromModal()" style="width:auto;">Přidat</button>
+                <button class="btn-small" onclick="addHelperCategoryFromModal()" style="width:auto;"><span class="material-symbols-outlined btn-icon">add</span> Přidat</button>
             </div>
             <div class="button-group"><button class="btn-secondary" onclick="closeCategoryEditModal()" style="width:100%;">Zavřít</button></div>
         </div>
@@ -473,7 +457,6 @@
         </div>
     </div>
 
-    <!-- Modál hosta -->
     <div id="editModal" class="modal hidden no-print">
         <div class="modal-content">
             <h3>Upravit hosta</h3>
@@ -494,7 +477,6 @@
         </div>
     </div>
 
-    <!-- Modály rozpočtu -->
     <div id="editPlanModal" class="modal hidden no-print">
         <div class="modal-content">
             <h3>Upravit rozpočtovou kategorii</h3>
