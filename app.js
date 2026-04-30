@@ -16,10 +16,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const tasksColl = collection(db, "ukoly"), guestsColl = collection(db, "hoste"), accColl = collection(db, "ubytovani_kapacity");
-const budgetPlanColl = collection(db, "rozpocet_plan"), expensesColl = collection(db, "rozpocet_naklady");
+const tasksColl = collection(db, "ukoly");
+const shoppingColl = collection(db, "nakupni_seznam");
+const guestsColl = collection(db, "hoste");
+const accColl = collection(db, "ubytovani_kapacity");
+const budgetPlanColl = collection(db, "rozpocet_plan");
+const expensesColl = collection(db, "rozpocet_naklady");
 
-let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], myUid = null;
+let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], allShoppingData = [], myUid = null;
 let allBudgetPlans = [], allExpenses = [];
 let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
@@ -92,6 +96,11 @@ function initApp(uid) {
         window.renderTasksView();
     }));
 
+    unsubs.push(onSnapshot(query(shoppingColl, where("userId", "==", uid)), snap => {
+        allShoppingData = []; snap.forEach(d => { let s = d.data(); s.id = d.id; allShoppingData.push(s); });
+        window.renderShoppingView();
+    }));
+
     unsubs.push(onSnapshot(query(accColl, where("userId", "==", uid)), snap => {
         accPlacesData = []; snap.forEach(d => { let p = d.data(); p.id = d.id; accPlacesData.push(p); });
         window.renderAccView();
@@ -123,12 +132,15 @@ window.updateDashboardStats = () => {
         if (g.isHelper) { totals.helpers++; if (g.helperStatus === 'pending') totals.pendingHelpers++; }
         if (g.needsAcc) { totals.accGuests++; if (g.accStatus === 'pending') totals.pendingAcc++; }
         
-        if (g.childrenAges && g.childrenAges.length > 0) {
-            g.childrenAges.forEach(age => {
-                if(age.includes('0-3')) totals.child1++;
-                else if(age.includes('4-10')) totals.child2++;
-                else if(age.includes('11+')) totals.child3++;
-            });
+        // Započítat děti POUZE pokud host NEodmítl účast
+        if (g.status !== 'Nezúčastní se') {
+            if (g.childrenAges && g.childrenAges.length > 0) {
+                g.childrenAges.forEach(age => {
+                    if(age.includes('0-3')) totals.child1++;
+                    else if(age.includes('4-10')) totals.child2++;
+                    else if(age.includes('11+')) totals.child3++;
+                });
+            }
         }
     });
     
@@ -164,7 +176,7 @@ window.updateCountdown = () => {
     disp.innerText = diff > 0 ? `Už jen ${diff} dní! 🎉` : (diff === 0 ? `Dnes je ten den! 🎉` : `Svatba už proběhla! ❤️`);
 };
 
-// --- ÚKOLY ---
+// --- ÚKOLY (TO-DO) ---
 const addBtn = document.getElementById('addBtn');
 if(addBtn) {
     addBtn.onclick = () => {
@@ -200,6 +212,64 @@ window.renderTasksView = () => {
             <td><small>${t.note || '-'}</small></td>
             <td><button class="btn-small" onclick="deleteDoc(doc(db, 'ukoly', '${t.id}'))">❌</button></td></tr>`;
     });
+};
+
+// --- NÁKUPNÍ SEZNAM ---
+const addShoppingBtn = document.getElementById('addShoppingBtn');
+if(addShoppingBtn) {
+    addShoppingBtn.onclick = () => {
+        const i = document.getElementById('shoppingInput'), n = document.getElementById('shoppingNoteInput');
+        if(i && i.value) { 
+            addDoc(shoppingColl, { name: i.value, note: n.value, completed: false, userId: myUid }); 
+            i.value=''; n.value=''; 
+        }
+    };
+}
+
+window.renderShoppingView = () => {
+    const list = document.getElementById('shoppingListBody');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    let sorted = [...allShoppingData];
+    sorted.sort((a, b) => {
+        if(a.completed === true && b.completed !== true) return 1;
+        if(a.completed !== true && b.completed === true) return -1;
+        return 0;
+    });
+    
+    sorted.forEach(s => {
+        const textStyle = s.completed ? 'text-decoration: line-through; color: #aaa;' : '';
+        list.innerHTML += `<tr>
+            <td style="width: 50px; text-align: center;">
+                <input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateDoc(doc(db, 'nakupni_seznam', '${s.id}'), {completed: this.checked})" style="width:20px; height:20px; cursor:pointer;">
+            </td>
+            <td><strong style="${textStyle}">${s.name}</strong></td>
+            <td><small style="${textStyle}">${s.note || '-'}</small></td>
+            <td>
+                <button class="btn-small btn-secondary" onclick="openShoppingModal('${s.id}')">✏️</button>
+                <button class="btn-small" onclick="deleteDoc(doc(db, 'nakupni_seznam', '${s.id}'))">❌</button>
+            </td>
+        </tr>`;
+    });
+};
+
+window.openShoppingModal = (id) => {
+    const s = allShoppingData.find(x => x.id === id);
+    if(!s) return;
+    document.getElementById('editShoppingId').value = id;
+    document.getElementById('editShoppingName').value = s.name;
+    document.getElementById('editShoppingNote').value = s.note || '';
+    document.getElementById('editShoppingModal').classList.remove('hidden');
+};
+window.closeShoppingModal = () => document.getElementById('editShoppingModal').classList.add('hidden');
+window.saveShoppingEdit = () => {
+    const id = document.getElementById('editShoppingId').value;
+    updateDoc(doc(db, 'nakupni_seznam', id), {
+        name: document.getElementById('editShoppingName').value,
+        note: document.getElementById('editShoppingNote').value
+    });
+    window.closeShoppingModal();
 };
 
 // --- ROZPOČET ---
@@ -312,7 +382,7 @@ window.saveExpenseEdit = () => {
     window.closeExpenseModal();
 };
 
-// --- HOSTÉ A DĚTI (VČETNĚ ČÍSELNÍKŮ) ---
+// --- HOSTÉ A DĚTI ---
 window.renderAdminChildrenAges = () => {
     const num = document.getElementById('guestChildren').value; const cont = document.getElementById('adminChildrenAgesContainer');
     if(!cont) return; cont.innerHTML = '';
@@ -371,7 +441,11 @@ window.renderGuestsView = () => {
         stats.cities[city] = (stats.cities[city] || 0) + 1;
 
         let childInfo = g.numChildren > 0 ? `<br><small style="color:#d81b60;">👶 ${g.numChildren} dětí (${g.childrenAges?.join(', ') || ''})</small>` : '';
-        if (g.childrenAges) g.childrenAges.forEach(age => { if(stats.children[age] !== undefined) stats.children[age]++; });
+        
+        // Započítat děti do číselníků POUZE pokud host NEodmítl
+        if (g.status !== 'Nezúčastní se' && g.childrenAges) {
+            g.childrenAges.forEach(age => { if(stats.children[age] !== undefined) stats.children[age]++; });
+        }
 
         tbody.innerHTML += `<tr class="${g.side === 'Nevěsta' ? 'side-nevesta' : (g.side === 'Ženich' ? 'side-zenich' : 'side-spolecny')}">
             <td><strong>${g.name}</strong>${childInfo}</td><td>${g.city || '-'}</td><td>${g.side}</td>
@@ -382,10 +456,8 @@ window.renderGuestsView = () => {
     let cityHtml = '<strong>Hosté z měst:</strong><br>';
     for (let [city, count] of Object.entries(stats.cities)) cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
     
-    // OPRAVENO: .innerHTML = cityHtml; (Místo chybného '...ContainerinnerHTML')
     if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainer').innerHTML = cityHtml;
 
-    // VYKRESLENÍ ČÍSELNÍKŮ HOSTŮ
     if(document.getElementById('guestStatsBlock')) {
         document.getElementById('guestStatsBlock').innerHTML = `
             <div class="stat-box" style="background:#e3f2fd;">Zobrazeno (Dospělí): <strong>${stats.total}</strong></div>
@@ -562,14 +634,10 @@ window.closeHelperModal = () => {
 // --- UBYTOVÁNÍ A KAPACITA ---
 function getRoomCapacity(name) {
     let n = name.toLowerCase();
-    if(n.includes('jedno')) return 1; 
-    if(n.includes('dvou') || n.includes('dvoj')) return 2; 
-    if(n.includes('tří') || n.includes('tri') || n.includes('troj')) return 3;
-    if(n.includes('čtyř') || n.includes('ctyr')) return 4; 
-    if(n.includes('pěti') || n.includes('peti')) return 5;
+    if(n.includes('jedno')) return 1; if(n.includes('dvou') || n.includes('dvoj')) return 2; if(n.includes('tří') || n.includes('tri') || n.includes('troj')) return 3;
+    if(n.includes('čtyř') || n.includes('ctyr')) return 4; if(n.includes('pěti') || n.includes('peti')) return 5;
     if(n.includes('šesti') || n.includes('sesti')) return 6;
-    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); 
-    if(m) return parseInt(m[1]); 
+    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); 
     return 2;
 }
 
@@ -655,9 +723,7 @@ window.toggleAccEdit = (id) => {
 
 window.saveAccEdit = (id) => {
     const v = document.getElementById(`edit_sel_${id}`).value.split('|');
-    if(v.length === 2) {
-        updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]});
-    }
+    if(v.length === 2) { updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]}); }
 };
 
 window.openAccPlaceEditModal = (id) => {
@@ -739,6 +805,7 @@ window.deleteMyAccountAndData = async () => {
         const budgetPlanSnap = await getDocs(query(budgetPlanColl, where("userId", "==", uid))); budgetPlanSnap.forEach(d => deleteDoc(d.ref));
         const expensesSnap = await getDocs(query(expensesColl, where("userId", "==", uid))); expensesSnap.forEach(d => deleteDoc(d.ref));
         const accSnap = await getDocs(query(accColl, where("userId", "==", uid))); accSnap.forEach(d => deleteDoc(d.ref));
+        const shopSnap = await getDocs(query(shoppingColl, where("userId", "==", uid))); shopSnap.forEach(d => deleteDoc(d.ref));
         await deleteDoc(doc(db, "nastaveni", uid));
         await deleteUser(user);
         alert("Váš účet a všechna data byla úspěšně a bezpečně smazána.");
