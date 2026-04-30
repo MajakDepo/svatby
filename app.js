@@ -105,7 +105,7 @@ function getRoomCapacity(name) {
     let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); return 2;
 }
 
-// --- 3. EXPORTOVÁNÍ VŠECH FUNKCÍ PRO HTML ---
+// --- 3. EXPORTOVÁNÍ VŠECH FUNKCÍ PRO HTML (Hoisting Zóna) ---
 window.doc = doc; 
 window.db = db; 
 window.deleteDoc = deleteDoc; 
@@ -170,6 +170,7 @@ window.saveWeddingDate = () => {
     if(d && myUid) { setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true }).then(() => window.updateCountdown()); }
 };
 
+// --- NÁPADY ---
 window.renderIdeasView = () => {
     const cont = document.getElementById('ideasContainer');
     if(!cont) return;
@@ -189,6 +190,7 @@ window.renderIdeasView = () => {
     });
 };
 
+// --- HARMONOGRAM ---
 window.addScheduleItem = () => {
     const time = document.getElementById('schedTime').value;
     const title = document.getElementById('schedTitle').value;
@@ -232,6 +234,7 @@ window.saveScheduleEdit = () => {
     window.closeScheduleModal();
 };
 
+// --- ZASEDACÍ POŘÁDEK ---
 window.toggleReception = (checked) => { setDoc(doc(db, "nastaveni", myUid), { hasReception: checked }, { merge: true }); };
 
 window.addSeatGroup = (type) => {
@@ -276,7 +279,7 @@ window.renderSeatingView = () => {
     });
 
     rCont.innerHTML = allTablesData.map(t => {
-        let occ = tableOcc[t.id] || 0; let color = occ > t.capacity ? '#e05e5e' : '#52a372';
+        let occ = tableOcc[t.id] || 0; let color = occ > t.capacity ? '#e05e5e' : '#4fa671';
         let visualSeats = generateVisualSeats(t.capacity, tableGuests[t.id], false);
         return `<div class="seating-box"><h4>${t.name} <button class="btn-small no-print btn-secondary" style="padding:4px; color:#e05e5e;" onclick="deleteDoc(doc(db, 'stoly_hostina', '${t.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></h4><span style="color:${color}; font-weight:bold;">Obsazeno: ${occ}/${t.capacity}</span>${visualSeats}</div>`;
     }).join('');
@@ -311,7 +314,7 @@ window.renderSeatingView = () => {
         }
 
         if (rData.left || rData.right) {
-            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#d18a8a; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div><div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div><div style="width:30px; background:#f2ecec; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div><div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div></div>`;
+            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#b36666; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div><div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div><div style="width:30px; background:#f2ecec; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div><div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div></div>`;
         }
 
         rData.unknown.forEach(r => {
@@ -332,7 +335,11 @@ window.renderSeatingView = () => {
     };
     const hasTable = (tableId) => tableId ? 1 : 0;
 
-    confirmedGuests.sort((a, b) => {
+    // Aplikace filtru strany POUZE na zobrazení v tabulce, nikoliv na kapacity plánků nahoře
+    const sideFilter = document.getElementById('filterSeatingSide')?.value || '';
+    let visibleGuests = confirmedGuests.filter(g => !sideFilter || g.side === sideFilter);
+
+    visibleGuests.sort((a, b) => {
         let aRow = getRowInfo(a.ceremonyRow); let bRow = getRowInfo(b.ceremonyRow);
         let aHasAny = (aRow.hasSeat || (window.hasReception && hasTable(a.receptionTable))) ? 1 : 0;
         let bHasAny = (bRow.hasSeat || (window.hasReception && hasTable(b.receptionTable))) ? 1 : 0;
@@ -347,7 +354,7 @@ window.renderSeatingView = () => {
     let sortedRowsForSelect = [...allRowsData].sort((a, b) => { let aInfo = getRowInfo(a.id); let bInfo = getRowInfo(b.id); if(aInfo.num !== bInfo.num) return aInfo.num - bInfo.num; return aInfo.sideVal - bInfo.sideVal; });
     let rowOpts = `<option value="">-- Nevybráno --</option>` + sortedRowsForSelect.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
-    body.innerHTML = confirmedGuests.map(g => {
+    body.innerHTML = visibleGuests.map(g => {
         let defaultSeated = g.childrenAges ? g.childrenAges.filter(a => !a.includes('0-3')).length : 0;
         let seatedCh = g.seatedChildren !== undefined ? g.seatedChildren : defaultSeated;
         
@@ -377,6 +384,7 @@ window.renderSeatingView = () => {
     }).join('');
 };
 
+// --- ÚKOLY A NÁKUPY ---
 window.renderTasksView = () => {
     const list = document.getElementById('taskList'); if(!list) return; list.innerHTML = '';
     const filterPri = document.getElementById('filterTaskPriority')?.value || ''; const filterStat = document.getElementById('filterTaskStatus')?.value || '';
