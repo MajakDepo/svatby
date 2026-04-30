@@ -37,7 +37,25 @@ window.hasReception = true;
 window.selectedGuests = [];
 window.duplicateIds = [];
 
-// --- 2. POMOCNÉ FUNKCE ---
+// --- 2. POMOCNÉ FUNKCE A VÝCHOZÍ NASTAVENÍ ---
+
+async function checkAndInitDefaults(uid) {
+    const snap = await getDoc(doc(db, "nastaveni", uid));
+    if (!snap.exists()) {
+        await setDoc(doc(db, "nastaveni", uid), {
+            helperCategories: ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'],
+            hasReception: true
+        });
+        
+        const defaultRows = [
+            { name: "1. řada vlevo", capacity: 5 }, { name: "1. řada vpravo", capacity: 5 },
+            { name: "2. řada vlevo", capacity: 5 }, { name: "2. řada vpravo", capacity: 5 },
+            { name: "3. řada vlevo", capacity: 5 }, { name: "3. řada vpravo", capacity: 5 }
+        ];
+        for (let r of defaultRows) { await addDoc(rowsColl, { ...r, userId: uid }); }
+    }
+}
+
 function formatNameForSeat(fullName) {
     let isChild = fullName.includes('(Dítě)');
     let cleanName = fullName.replace('(Dítě)', '').trim();
@@ -86,7 +104,7 @@ function getRoomCapacity(name) {
     let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); return 2;
 }
 
-// --- 3. EXPORTOVÁNÍ VŠECH FUNKCÍ PRO HTML (Hoisting zóna) ---
+// --- 3. EXPORTOVÁNÍ VŠECH FUNKCÍ PRO HTML ---
 window.doc = doc; 
 window.db = db; 
 window.deleteDoc = deleteDoc; 
@@ -241,10 +259,14 @@ window.renderSeatingView = () => {
 
     let ceremonyLayout = {};
     allRowsData.forEach(r => {
-        let n = r.name.toLowerCase(); let m = n.match(/(\d+)/); let rowNum = m ? parseInt(m[1]) : 999;
+        let n = r.name.toLowerCase(); let m = n.match(/(\d+)/); 
+        let rowNum = m ? parseInt(m[1]) : 999;
         let side = n.includes('pravo') ? 'right' : (n.includes('levo') ? 'left' : 'unknown');
+
         if (!ceremonyLayout[rowNum]) ceremonyLayout[rowNum] = { left: null, right: null, unknown: [] };
-        if (side === 'left') ceremonyLayout[rowNum].left = r; else if (side === 'right') ceremonyLayout[rowNum].right = r; else ceremonyLayout[rowNum].unknown.push(r);
+        if (side === 'left') ceremonyLayout[rowNum].left = r;
+        else if (side === 'right') ceremonyLayout[rowNum].right = r;
+        else ceremonyLayout[rowNum].unknown.push(r);
     });
 
     let sortedRows = Object.keys(ceremonyLayout).map(Number).sort((a, b) => a - b);
@@ -257,6 +279,7 @@ window.renderSeatingView = () => {
             let visualSeats = generateVisualSeats(rData.left.capacity, rowGuests[rData.left.id], true, true);
             leftHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;"><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.left.id}'))" title="Smazat">❌</button><div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-end; gap:4px;">${visualSeats}</div></div>`;
         }
+
         let rightHtml = '';
         if (rData.right) {
             let visualSeats = generateVisualSeats(rData.right.capacity, rowGuests[rData.right.id], true, true);
@@ -266,6 +289,7 @@ window.renderSeatingView = () => {
         if (rData.left || rData.right) {
             cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#d81b60; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div><div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div><div style="width:30px; background:#f9f5f6; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div><div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div></div>`;
         }
+
         rData.unknown.forEach(r => {
             let visualSeats = generateVisualSeats(r.capacity, rowGuests[r.id], true, true);
             cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#888; width:25px; text-align:right; flex-shrink:0;">?</div><div style="flex:1; display:flex; justify-content:center; padding-left:10px;"><div style="display:flex; gap:8px; align-items:center;"><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${r.id}'))" title="Smazat">❌</button><span style="font-size:0.7rem; color:#888;">${r.name}:</span><div class="visual-seating-container" style="margin:0; padding:0; border:none; gap:4px;">${visualSeats}</div></div></div></div>`;
@@ -288,6 +312,7 @@ window.renderSeatingView = () => {
         let aRow = getRowInfo(a.ceremonyRow); let bRow = getRowInfo(b.ceremonyRow);
         let aHasAny = (aRow.hasSeat || (window.hasReception && hasTable(a.receptionTable))) ? 1 : 0;
         let bHasAny = (bRow.hasSeat || (window.hasReception && hasTable(b.receptionTable))) ? 1 : 0;
+
         if(aHasAny !== bHasAny) return bHasAny - aHasAny; 
         if(aRow.num !== bRow.num) return aRow.num - bRow.num; 
         if(aRow.sideVal !== bRow.sideVal) return aRow.sideVal - bRow.sideVal; 
@@ -295,6 +320,7 @@ window.renderSeatingView = () => {
     });
 
     let tableOpts = `<option value="">-- Nevybráno --</option>` + allTablesData.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    
     let sortedRowsForSelect = [...allRowsData].sort((a, b) => { let aInfo = getRowInfo(a.id); let bInfo = getRowInfo(b.id); if(aInfo.num !== bInfo.num) return aInfo.num - bInfo.num; return aInfo.sideVal - bInfo.sideVal; });
     let rowOpts = `<option value="">-- Nevybráno --</option>` + sortedRowsForSelect.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
