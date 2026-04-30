@@ -31,7 +31,7 @@ const ideasColl = collection(db, "napady");
 let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], allShoppingData = [], myUid = null;
 let allBudgetPlans = [], allExpenses = [], allScheduleData = [], allTablesData = [], allRowsData = [], allIdeasData = [];
 
-let helperCategories = ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
+let helperCategories = ['Pečení/Dorty', 'Jídlo', 'Fyzická příprava', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba/Program'];
 let activeHelperFilters = [];
 let currentEditAccPlace = null; 
 window.hasReception = true; 
@@ -44,7 +44,7 @@ async function checkAndInitDefaults(uid) {
     const snap = await getDoc(doc(db, "nastaveni", uid));
     if (!snap.exists()) {
         await setDoc(doc(db, "nastaveni", uid), {
-            helperCategories: ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'],
+            helperCategories: ['Pečení / Dorty', 'Jídlo', 'Fyzická příprava', 'Výzdoba', 'Doprava', 'Koordinace', 'Hudba / Program'],
             hasReception: true
         });
         
@@ -80,7 +80,7 @@ function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
     for(let i = 0; i < capacity; i++) {
         if (i < totalOccupied) { 
             let dispName = formatNameForSeat(tooltips[i]);
-            html += `<div class="seat-wrapper"><div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}"></div><div class="seat-label">${dispName}</div></div>`; 
+            html += `<div class="seat-wrapper"><div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}"><span class="material-symbols-outlined" style="font-size:1rem; color:#bda0a0;">favorite</span></div><div class="seat-label">${dispName}</div></div>`; 
         } 
         else { 
             html += `<div class="seat-wrapper"><div class="visual-seat empty ${shapeClass}" title="Volné místo"></div><div class="seat-label"></div></div>`; 
@@ -89,7 +89,7 @@ function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
     if (totalOccupied > capacity) {
         for(let i = capacity; i < totalOccupied; i++) { 
             let dispName = formatNameForSeat(tooltips[i]);
-            html += `<div class="seat-wrapper"><div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})"></div><div class="seat-label" style="color:#c62828">${dispName}</div></div>`; 
+            html += `<div class="seat-wrapper"><div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})"><span class="material-symbols-outlined" style="font-size:1rem;">warning</span></div><div class="seat-label" style="color:#c62828">${dispName}</div></div>`; 
         }
     }
     if (raw) return html; 
@@ -162,7 +162,7 @@ window.updateCountdown = () => {
     const targetDate = new Date(wedInput.value); targetDate.setHours(0, 0, 0, 0);
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const diff = Math.ceil((targetDate - today) / 86400000);
-    disp.innerText = diff > 0 ? `Už jen ${diff} dní! 🎉` : (diff === 0 ? `Dnes je ten den! 🎉` : `Svatba už proběhla! ❤️`);
+    disp.innerText = diff > 0 ? `Už jen ${diff} dní!` : (diff === 0 ? `Dnes je ten den!` : `Svatba už proběhla!`);
 };
 
 window.saveWeddingDate = () => {
@@ -179,12 +179,12 @@ window.renderIdeasView = () => {
     sorted.forEach(idea => {
         let textFormatted = idea.text.replace(/\n/g, '<br>');
         cont.innerHTML += `
-            <div class="card" style="background: #fff9fa; border: 1px solid #fce4ec; margin-bottom: 0;">
+            <div class="card" style="background: #fffdfd; border: 1px solid #f2ecec; margin-bottom: 0;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
-                    <h4 style="margin:0; color:#d81b60;">${idea.title}</h4>
-                    <button class="btn-small" onclick="deleteDoc(doc(db, 'napady', '${idea.id}'))" style="background:transparent; color:#ccc; border:none; padding:0; box-shadow:none;">❌</button>
+                    <h4 style="margin:0; color:#9c7b7b;">${idea.title}</h4>
+                    <button class="btn-small" onclick="deleteDoc(doc(db, 'napady', '${idea.id}'))" style="background:transparent; color:#d0c4c4; border:none; padding:0; box-shadow:none;"><span class="material-symbols-outlined">delete</span></button>
                 </div>
-                <p style="font-size:0.9rem; color:#555; margin:0;">${textFormatted}</p>
+                <p style="font-size:0.9rem; color:#665b5b; margin:0;">${textFormatted}</p>
             </div>
         `;
     });
@@ -212,8 +212,8 @@ window.renderScheduleView = () => {
             <td><strong>${s.title}</strong></td>
             <td>${s.note || '-'}</td>
             <td class="no-print">
-                <button class="btn-small btn-secondary" onclick="openScheduleModal('${s.id}')">✏️</button>
-                <button class="btn-small" onclick="deleteDoc(doc(db, 'harmonogram', '${s.id}'))">❌</button>
+                <button class="btn-small btn-secondary" onclick="openScheduleModal('${s.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button>
+                <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'harmonogram', '${s.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
             </td>
         </tr>`;
     });
@@ -275,9 +275,9 @@ window.renderSeatingView = () => {
     });
 
     rCont.innerHTML = allTablesData.map(t => {
-        let occ = tableOcc[t.id] || 0; let color = occ > t.capacity ? '#c62828' : '#27ae60';
+        let occ = tableOcc[t.id] || 0; let color = occ > t.capacity ? '#c47676' : '#8ba6a2';
         let visualSeats = generateVisualSeats(t.capacity, tableGuests[t.id], false);
-        return `<div class="seating-box"><h4>${t.name} <button class="btn-small no-print" onclick="deleteDoc(doc(db, 'stoly_hostina', '${t.id}'))">❌</button></h4><span style="color:${color}; font-weight:bold;">Obsazeno: ${occ}/${t.capacity}</span>${visualSeats}</div>`;
+        return `<div class="seating-box"><h4>${t.name} <button class="btn-small no-print btn-secondary" style="padding:4px; color:#c47676;" onclick="deleteDoc(doc(db, 'stoly_hostina', '${t.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></h4><span style="color:${color}; font-weight:bold;">Obsazeno: ${occ}/${t.capacity}</span>${visualSeats}</div>`;
     }).join('');
 
     let ceremonyLayout = {};
@@ -300,26 +300,27 @@ window.renderSeatingView = () => {
         let leftHtml = '';
         if (rData.left) {
             let visualSeats = generateVisualSeats(rData.left.capacity, rowGuests[rData.left.id], true, true);
-            leftHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;"><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.left.id}'))" title="Smazat">❌</button><div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-end; gap:4px;">${visualSeats}</div></div>`;
+            leftHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;"><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.left.id}'))" title="Smazat"><span class="material-symbols-outlined">delete</span></button><div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-end; gap:4px;">${visualSeats}</div></div>`;
         }
+
         let rightHtml = '';
         if (rData.right) {
             let visualSeats = generateVisualSeats(rData.right.capacity, rowGuests[rData.right.id], true, true);
-            rightHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-start;"><div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-start; gap:4px;">${visualSeats}</div><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.right.id}'))" title="Smazat">❌</button></div>`;
+            rightHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-start;"><div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-start; gap:4px;">${visualSeats}</div><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.right.id}'))" title="Smazat"><span class="material-symbols-outlined">delete</span></button></div>`;
         }
 
         if (rData.left || rData.right) {
-            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#d81b60; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div><div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div><div style="width:30px; background:#f9f5f6; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div><div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div></div>`;
+            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#bda0a0; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div><div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div><div style="width:30px; background:#f2ecec; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div><div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div></div>`;
         }
 
         rData.unknown.forEach(r => {
             let visualSeats = generateVisualSeats(r.capacity, rowGuests[r.id], true, true);
-            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#888; width:25px; text-align:right; flex-shrink:0;">?</div><div style="flex:1; display:flex; justify-content:center; padding-left:10px;"><div style="display:flex; gap:8px; align-items:center;"><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${r.id}'))" title="Smazat">❌</button><span style="font-size:0.7rem; color:#888;">${r.name}:</span><div class="visual-seating-container" style="margin:0; padding:0; border:none; gap:4px;">${visualSeats}</div></div></div></div>`;
+            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#d0c4c4; width:25px; text-align:right; flex-shrink:0;">?</div><div style="flex:1; display:flex; justify-content:center; padding-left:10px;"><div style="display:flex; gap:8px; align-items:center;"><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${r.id}'))" title="Smazat"><span class="material-symbols-outlined">delete</span></button><span style="font-size:0.7rem; color:#7a6a6a;">${r.name}:</span><div class="visual-seating-container" style="margin:0; padding:0; border:none; gap:4px;">${visualSeats}</div></div></div></div>`;
         });
     });
 
-    if(sortedRows.length === 0) cContHtml = `<div style="text-align:center; color:#888; padding:20px; font-size:0.9rem;">Zatím nejsou vytvořeny žádné řady. Zadejte např. "1. řada vlevo"</div>`;
-    cCont.innerHTML = `<div style="margin-top: 15px; padding-top: 15px; border-top: 2px dashed #fce4ec;">${cContHtml}</div>`;
+    if(sortedRows.length === 0) cContHtml = `<div style="text-align:center; color:#bda0a0; padding:20px; font-size:0.9rem;">Zatím nejsou vytvořeny žádné řady. Zadejte např. "1. řada vlevo"</div>`;
+    cCont.innerHTML = `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #f2ecec;">${cContHtml}</div>`;
 
     const getRowInfo = (rowId) => {
         if(!rowId) return { num: 9999, sideVal: 9, hasSeat: 0 };
@@ -346,7 +347,7 @@ window.renderSeatingView = () => {
     let rowOpts = `<option value="">-- Nevybráno --</option>` + sortedRowsForSelect.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
     body.innerHTML = confirmedGuests.map(g => {
-        let childInfo = g.numChildren > 0 ? ` <small style="color:#d81b60;">(+${g.numChildren} dětí)</small>` : '';
+        let childInfo = g.numChildren > 0 ? ` <small style="color:#bda0a0;">(+${g.numChildren} dětí)</small>` : '';
         let recCell = window.hasReception ? `<td><select onchange="updateDoc(doc(db, 'hoste', '${g.id}'), {receptionTable: this.value})">${tableOpts.replace(`value="${g.receptionTable}"`, `value="${g.receptionTable}" selected`)}</select></td>` : '';
         return `<tr>
             <td><strong>${g.name}</strong>${childInfo}</td>
@@ -366,8 +367,14 @@ window.renderTasksView = () => {
     filtered.sort((a, b) => { if(a.status === 'Hotovo' && b.status !== 'Hotovo') return 1; if(a.status !== 'Hotovo' && b.status === 'Hotovo') return -1; return 0; });
     
     filtered.forEach(t => {
-        const textStyle = t.status === 'Hotovo' ? 'text-decoration: line-through; color: #aaa;' : '';
-        list.innerHTML += `<tr><td><select onchange="updateDoc(doc(db, 'ukoly', '${t.id}'), {status: this.value})"><option value="Není" ${t.status==='Není'?'selected':''}>❌ Není</option><option value="V průběhu" ${t.status==='V průběhu'?'selected':''}>⏳ V průběhu</option><option value="Hotovo" ${t.status==='Hotovo'?'selected':''}>✅ Hotovo</option></select></td><td class="priority-${t.priority}">${t.priority}</td><td><strong style="${textStyle}">${t.text}</strong></td><td><small>${t.note || '-'}</small></td><td class="no-print"><button class="btn-small" onclick="deleteDoc(doc(db, 'ukoly', '${t.id}'))">❌</button></td></tr>`;
+        const textStyle = t.status === 'Hotovo' ? 'text-decoration: line-through; color: #a89b9b;' : '';
+        list.innerHTML += `<tr>
+            <td><select onchange="updateDoc(doc(db, 'ukoly', '${t.id}'), {status: this.value})"><option value="Není" ${t.status==='Není'?'selected':''}>Nevyřešeno</option><option value="V průběhu" ${t.status==='V průběhu'?'selected':''}>V průběhu</option><option value="Hotovo" ${t.status==='Hotovo'?'selected':''}>Hotovo</option></select></td>
+            <td class="priority-${t.priority}">${t.priority}</td>
+            <td><strong style="${textStyle}">${t.text}</strong></td>
+            <td><small>${t.note || '-'}</small></td>
+            <td class="no-print"><button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'ukoly', '${t.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></td>
+        </tr>`;
     });
 };
 
@@ -375,8 +382,16 @@ window.renderShoppingView = () => {
     const list = document.getElementById('shoppingListBody'); if(!list) return; list.innerHTML = '';
     let sorted = [...allShoppingData]; sorted.sort((a, b) => { if(a.completed === true && b.completed !== true) return 1; if(a.completed !== true && b.completed === true) return -1; return 0; });
     sorted.forEach(s => {
-        const textStyle = s.completed ? 'text-decoration: line-through; color: #aaa;' : '';
-        list.innerHTML += `<tr><td style="width: 50px; text-align: center;"><input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateDoc(doc(db, 'nakupni_seznam', '${s.id}'), {completed: this.checked})" style="width:20px; height:20px; cursor:pointer;"></td><td><strong style="${textStyle}">${s.name}</strong></td><td><small style="${textStyle}">${s.note || '-'}</small></td><td class="no-print"><button class="btn-small btn-secondary" onclick="openShoppingModal('${s.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'nakupni_seznam', '${s.id}'))">❌</button></td></tr>`;
+        const textStyle = s.completed ? 'text-decoration: line-through; color: #a89b9b;' : '';
+        list.innerHTML += `<tr>
+            <td style="width: 50px; text-align: center;"><input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateDoc(doc(db, 'nakupni_seznam', '${s.id}'), {completed: this.checked})" style="width:20px; height:20px; cursor:pointer;"></td>
+            <td><strong style="${textStyle}">${s.name}</strong></td>
+            <td><small style="${textStyle}">${s.note || '-'}</small></td>
+            <td class="no-print">
+                <button class="btn-small btn-secondary" onclick="openShoppingModal('${s.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> 
+                <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'nakupni_seznam', '${s.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
+            </td>
+        </tr>`;
     });
 };
 
@@ -400,14 +415,21 @@ window.renderBudgetView = () => {
 
     summaryBody.innerHTML = '';
     for (let [cat, data] of Object.entries(catSums)) {
-        let colorClass = data.act > data.est ? 'budget-negative' : (data.act > 0 ? 'budget-positive' : ''); let actionHtml = data.id ? `<button class="btn-small btn-secondary" onclick="openPlanModal('${data.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_plan', '${data.id}'))">❌</button>` : '';
+        let colorClass = data.act > data.est ? 'budget-negative' : (data.act > 0 ? 'budget-positive' : ''); 
+        let actionHtml = data.id ? `<button class="btn-small btn-secondary" onclick="openPlanModal('${data.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'rozpocet_plan', '${data.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>` : '';
         summaryBody.innerHTML += `<tr><td><strong>${cat}</strong></td><td>${data.est.toLocaleString()} Kč</td><td class="${colorClass}"><strong>${data.act.toLocaleString()} Kč</strong></td><td class="no-print">${actionHtml}</td></tr>`;
     }
     
     expBody.innerHTML = '';
     allExpenses.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
         let dStr = e.date ? new Date(e.date).toLocaleDateString('cs-CZ') : '-';
-        expBody.innerHTML += `<tr><td>${dStr}</td><td>${e.category}</td><td>${e.name}</td><td><strong>${Number(e.amount).toLocaleString()} Kč</strong></td><td class="no-print"><button class="btn-small btn-secondary" onclick="openExpenseModal('${e.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))">❌</button></td></tr>`;
+        expBody.innerHTML += `<tr>
+            <td>${dStr}</td><td>${e.category}</td><td>${e.name}</td><td><strong>${Number(e.amount).toLocaleString()} Kč</strong></td>
+            <td class="no-print">
+                <button class="btn-small btn-secondary" onclick="openExpenseModal('${e.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> 
+                <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
+            </td>
+        </tr>`;
     });
 
     if(document.getElementById('totalEstimated')) document.getElementById('totalEstimated').innerText = estTotal.toLocaleString() + " Kč";
@@ -450,7 +472,7 @@ window.bulkChangeStatus = () => {
 
 window.findDuplicates = () => {
     const btn = document.getElementById('duplicateBtn');
-    if (window.duplicateIds.length > 0) { window.duplicateIds = []; if(btn) btn.innerHTML = "🔍 Najít duplicity"; window.renderGuestsView(); return; }
+    if (window.duplicateIds.length > 0) { window.duplicateIds = []; if(btn) btn.innerHTML = `<span class="material-symbols-outlined btn-icon">search</span> Najít duplicity`; window.renderGuestsView(); return; }
     
     window.duplicateIds = [];
     let nameMap = allGuestsData.map(g => {
@@ -477,7 +499,7 @@ window.findDuplicates = () => {
             }
         }
     }
-    if(window.duplicateIds.length === 0) { alert("Nenalezeny žádné zjevné duplicity."); } else { if(btn) btn.innerHTML = "❌ Zrušit zobrazení duplicit"; }
+    if(window.duplicateIds.length === 0) { alert("Nenalezeny žádné zjevné duplicity."); } else { if(btn) btn.innerHTML = `<span class="material-symbols-outlined btn-icon">close</span> Zrušit zobrazení duplicit`; }
     window.renderGuestsView();
 };
 
@@ -521,19 +543,28 @@ window.renderGuestsView = () => {
         
         let city = g.city ? g.city.trim() : 'Nezadáno'; stats.cities[city] = (stats.cities[city] || 0) + 1;
 
-        let childInfo = g.numChildren > 0 ? `<br><small style="color:#d81b60;">👶 ${g.numChildren} dětí (${g.childrenAges?.join(', ') || ''})</small>` : '';
-        if(g.specialReq) childInfo += `<br><small style="color:#f39c12; display:block; margin-top:3px;">💬 ${g.specialReq}</small>`;
+        let childInfo = g.numChildren > 0 ? `<br><small style="color:#bda0a0;"><span class="material-symbols-outlined icon-inline" style="font-size:1rem;">child_care</span> ${g.numChildren} dětí (${g.childrenAges?.join(', ') || ''})</small>` : '';
+        if(g.specialReq) childInfo += `<br><small style="color:#cca474; display:block; margin-top:3px;"><span class="material-symbols-outlined icon-inline" style="font-size:1rem;">comment</span> ${g.specialReq}</small>`;
         
         if (g.status !== 'Nezúčastní se' && g.childrenAges) { g.childrenAges.forEach(age => { if(stats.children[age] !== undefined) stats.children[age]++; }); }
 
-        let dupStyle = window.duplicateIds.includes(g.id) ? 'background-color: #fff3cd !important; box-shadow: inset 4px 0 0 #f39c12;' : '';
+        let dupStyle = window.duplicateIds.includes(g.id) ? 'background-color: #fdfaf2 !important; box-shadow: inset 4px 0 0 #cca474;' : '';
         let rowClass = g.side === 'Nevěsta' ? 'side-nevesta' : (g.side === 'Ženich' ? 'side-zenich' : 'side-spolecny');
+
+        let statusHtml = '';
+        if(g.status === 'Potvrzeno') statusHtml = `<span style="color:#6b8f79;"><span class="material-symbols-outlined icon-inline">check_circle</span> Potvrzeno</span>`;
+        else if(g.status === 'Nezúčastní se') statusHtml = `<span class="status-declined"><span class="material-symbols-outlined icon-inline">cancel</span> Odmítl/a</span>`;
+        else statusHtml = `<span style="color:#8ba6a2;"><span class="material-symbols-outlined icon-inline">mail</span> Pozváno</span>`;
 
         tbody.innerHTML += `<tr class="${rowClass}" style="${dupStyle}">
             <td style="text-align:center;"><input type="checkbox" class="guest-checkbox" value="${g.id}" ${window.selectedGuests.includes(g.id) ? 'checked' : ''} onchange="toggleGuestSelection('${g.id}', this.checked)"></td>
             <td><strong>${g.name}</strong>${childInfo}</td><td>${g.city || '-'}</td><td>${g.side}</td>
-            <td style="cursor:pointer" onclick="toggleGuest('${g.id}','${g.status}')">${g.status === 'Potvrzeno' ? '✅ Potvrzeno' : (g.status === 'Nezúčastní se' ? '<span class="status-declined">❌ Odmítl/a</span>' : '📩 Pozváno')}</td>
-            <td class="no-print"><button class="btn-small btn-secondary" onclick="openEditModal('${g.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'hoste', '${g.id}'))">❌</button></td></tr>`;
+            <td style="cursor:pointer" onclick="toggleGuest('${g.id}','${g.status}')">${statusHtml}</td>
+            <td class="no-print">
+                <button class="btn-small btn-secondary" onclick="openEditModal('${g.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> 
+                <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'hoste', '${g.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button>
+            </td>
+        </tr>`;
     });
 
     let sortedCities = Object.entries(stats.cities).sort((a, b) => b[1] - a[1]);
@@ -543,15 +574,15 @@ window.renderGuestsView = () => {
 
     if(document.getElementById('guestStatsBlock')) {
         document.getElementById('guestStatsBlock').innerHTML = `
-            <div class="stat-box" style="background:#e3f2fd;">Zobrazeno (Dospělí): <strong>${stats.total}</strong></div>
+            <div class="stat-box" style="background:#f7f9fcf5;">Dospělí: <strong>${stats.total}</strong></div>
             <div class="stat-box">Nevěsta: <strong>${stats.nevesta}</strong></div>
             <div class="stat-box">Ženich: <strong>${stats.zenich}</strong></div>
             <div class="stat-box">Společní: <strong>${stats.spolecny}</strong></div>
-            <div class="stat-box" style="background:#e8f5e9;">Potvrzeno: <strong style="color:#27ae60;">${stats.confirmed}</strong></div>
-            <div class="stat-box" style="background:#ffebee;">Odmítlo: <strong style="color:#c62828;">${stats.declined}</strong></div>
-            <div class="stat-box" style="background:#fff0f5;">Děti (0-3): <strong>${stats.children['Malé (0-3)']}</strong></div>
-            <div class="stat-box" style="background:#fff0f5;">Děti (4-10): <strong>${stats.children['Střední (4-10)']}</strong></div>
-            <div class="stat-box" style="background:#fff0f5;">Děti (11+): <strong>${stats.children['Velké (11+)']}</strong></div>
+            <div class="stat-box" style="background:#f2f7f4;">Potvrzeno: <strong style="color:#6b8f79;">${stats.confirmed}</strong></div>
+            <div class="stat-box" style="background:#fcf4f4;">Odmítlo: <strong style="color:#bd8686;">${stats.declined}</strong></div>
+            <div class="stat-box" style="background:#fffafaf5;">Děti (0-3): <strong>${stats.children['Malé (0-3)']}</strong></div>
+            <div class="stat-box" style="background:#fffafaf5;">Děti (4-10): <strong>${stats.children['Střední (4-10)']}</strong></div>
+            <div class="stat-box" style="background:#fffafaf5;">Děti (11+): <strong>${stats.children['Velké (11+)']}</strong></div>
         `;
     }
 };
@@ -594,12 +625,11 @@ window.saveGuestEdit = () => {
 
 window.toggleGuest = (id, s) => { let n = 'Pozváno'; if (s === 'Pozváno') n = 'Potvrzeno'; else if (s === 'Potvrzeno') n = 'Nezúčastní se'; updateDoc(doc(db, 'hoste', id), { status: n }); };
 
-// --- POMOCNÍCI ---
 window.openCategoryEditModal = () => { window.renderModalCategoryList(); document.getElementById('categoryEditModal').classList.remove('hidden'); };
 window.closeCategoryEditModal = () => document.getElementById('categoryEditModal').classList.add('hidden');
 window.renderModalCategoryList = () => {
     const list = document.getElementById('modalCategoryList'); if(!list) return;
-    list.innerHTML = helperCategories.map(c => `<div style="display:flex; justify-content:space-between; background:#f9f9f9; padding:8px; border-radius:5px; border:1px solid #eee;"><span>${c}</span> <button class="btn-small btn-secondary" onclick="removeHelperCategory('${c}')">❌</button></div>`).join('');
+    list.innerHTML = helperCategories.map(c => `<div style="display:flex; justify-content:space-between; background:#faf8f8; padding:10px; border-radius:6px; border:1px solid #e0d8d8; align-items:center;"><span>${c}</span> <button class="btn-small btn-secondary" style="padding:4px; color:#c47676;" onclick="removeHelperCategory('${c}')"><span class="material-symbols-outlined btn-icon">delete</span></button></div>`).join('');
 };
 
 window.addHelperCategoryFromModal = () => {
@@ -626,7 +656,11 @@ window.renderHelpersView = () => {
 
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
-            hp.innerHTML += `<tr><td><strong>${g.name}</strong><br><small>Z formuláře: ${g.helperTask || 'Nic'}</small></td><td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">📋 Vybrat role</button></td><td><button class="btn-small" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {helperStatus:'assigned'})">✅ Schválit</button></td></tr>`;
+            hp.innerHTML += `<tr>
+                <td><strong>${g.name}</strong><br><small style="color:#cca474;">Z formuláře: ${g.helperTask || 'Nic'}</small></td>
+                <td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')"><span class="material-symbols-outlined btn-icon">format_list_bulleted</span> Vybrat role</button></td>
+                <td><button class="btn-small" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {helperStatus:'assigned'})"><span class="material-symbols-outlined btn-icon">check</span> Schválit</button></td>
+            </tr>`;
         } else {
             let tArray = (g.helperTask ? g.helperTask : 'Nepřiřazeno').split(',').map(s => s.trim()).filter(s => s);
             if(tArray.length === 0) tArray = ['Nepřiřazeno'];
@@ -644,7 +678,7 @@ window.renderHelpersView = () => {
     });
 
     assignedHelpers.forEach(g => {
-        let rowStyle = g.helperAgreed ? 'background-color: #e8f5e9;' : '';
+        let rowStyle = g.helperAgreed ? 'background-color: #f2f7f4;' : '';
         ha.innerHTML += `<tr style="${rowStyle}">
             <td><strong>${g.name}</strong></td>
             <td>${g.helperTask || '-'}</td>
@@ -654,7 +688,7 @@ window.renderHelpersView = () => {
                     Domluveno
                 </label>
             </td>
-            <td class="no-print"><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">✏️</button></td>
+            <td class="no-print"><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button></td>
         </tr>`;
     });
 
@@ -669,7 +703,7 @@ window.renderHelpersView = () => {
 window.openHelperModal = (id) => {
     const g = allGuestsData.find(x => x.id === id); if(!g) return; document.getElementById('modalHelperId').value = id;
     const cont = document.getElementById('modalHelperCheckboxes');
-    if(cont) cont.innerHTML = helperCategories.map(c => `<label style="padding:10px; background:#f9f9f9; border-radius:8px; border:1px solid #eee;"><input type="checkbox" value="${c}" ${(g.helperTask || '').includes(c) ? 'checked' : ''}> ${c}</label>`).join('');
+    if(cont) cont.innerHTML = helperCategories.map(c => `<label style="padding:10px; background:#faf8f8; border-radius:8px; border:1px solid #e0d8d8;"><input type="checkbox" value="${c}" ${(g.helperTask || '').includes(c) ? 'checked' : ''}> ${c}</label>`).join('');
     document.getElementById('helperEditModal').classList.remove('hidden');
 };
 
@@ -681,7 +715,6 @@ window.saveHelperRoles = () => {
 
 window.closeHelperModal = () => { document.getElementById('helperEditModal').classList.add('hidden'); };
 
-// --- UBYTOVÁNÍ A KAPACITA ---
 window.renderAccView = () => {
     const placesCont = document.getElementById('accPlacesContainer'); const aPending = document.getElementById('accPendingTableBody'); const aAssigned = document.getElementById('accAssignedTableBody'); 
     if(!placesCont || !aPending || !aAssigned) return;
@@ -711,11 +744,11 @@ window.renderAccView = () => {
             else if (occ.length >= cap) { classes = 'room-tag full'; title = `PLNĚ OBSAZENO: ${occ.join(', ')}`; }
             rHtml += `<span class="${classes}" title="${title}">${r}</span>`;
         });
-        placesCont.innerHTML += `<div class="acc-place-card"><h4>${p.name} <div class="no-print"><button class="btn-small btn-secondary" onclick="openAccPlaceEditModal('${p.id}')">✏️ Upravit</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))">❌ Smazat</button></div></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
+        placesCont.innerHTML += `<div class="acc-place-card"><h4><span class="material-symbols-outlined icon-inline">apartment</span> ${p.name} <div class="no-print"><button class="btn-small btn-secondary" onclick="openAccPlaceEditModal('${p.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button> <button class="btn-small btn-secondary" style="color:#c47676;" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))"><span class="material-symbols-outlined btn-icon">delete</span></button></div></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
     });
 
     allGuestsData.filter(g => g.needsAcc && g.accStatus === 'pending').forEach(g => {
-        aPending.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accRoom || '-'}</td><td><select id="selPlace_${g.id}" style="width:100%; margin-bottom:5px;" onchange="loadRoomsForSelect('${g.id}', this.value)">${selectPlacesHtml}</select><select id="selRoom_${g.id}" style="width:100%; display:none;"><option value="">-- Nejdřív vyberte místo --</option></select></td><td><button class="btn-small" onclick="approveAcc('${g.id}')">Schválit</button></td></tr>`;
+        aPending.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accRoom || '-'}</td><td><select id="selPlace_${g.id}" style="width:100%; margin-bottom:5px;" onchange="loadRoomsForSelect('${g.id}', this.value)">${selectPlacesHtml}</select><select id="selRoom_${g.id}" style="width:100%; display:none;"><option value="">-- Nejdřív vyberte místo --</option></select></td><td><button class="btn-small" onclick="approveAcc('${g.id}')"><span class="material-symbols-outlined btn-icon">check</span></button></td></tr>`;
     });
 
     const filterSelect = document.getElementById('filterAccAssignedPlace');
@@ -734,7 +767,7 @@ window.renderAccView = () => {
 
         let options = `<option value="">-- Vybrat místo a pokoj --</option>` + accPlacesData.map(p => p.rooms.map(r => `<option value="${p.name}|${r}" ${g.accPlace===p.name && g.accRoom===r ? 'selected':''}>${p.name}: ${r}</option>`).join('')).join('');
         
-        aAssigned.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accPlace}</td><td><div id="disp_room_${g.id}" style="display:flex; justify-content:space-between; align-items:center; gap:10px;"><span>${g.accRoom}</span><button class="btn-small btn-secondary no-print" onclick="toggleAccEdit('${g.id}')">✏️ Upravit</button></div><div id="edit_box_${g.id}" class="hidden no-print" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;"><select id="edit_sel_${g.id}" style="flex:1;">${options}</select><button class="btn-small" onclick="saveAccEdit('${g.id}')">✔ Uložit</button><button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})" title="Vrátit do žádostí">↩️ Do žádostí</button></div></td></tr>`;
+        aAssigned.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accPlace}</td><td><div id="disp_room_${g.id}" style="display:flex; justify-content:space-between; align-items:center; gap:10px;"><span>${g.accRoom}</span><button class="btn-small btn-secondary no-print" onclick="toggleAccEdit('${g.id}')"><span class="material-symbols-outlined btn-icon">edit</span></button></div><div id="edit_box_${g.id}" class="hidden no-print" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;"><select id="edit_sel_${g.id}" style="flex:1;">${options}</select><button class="btn-small" onclick="saveAccEdit('${g.id}')"><span class="material-symbols-outlined btn-icon">check</span></button><button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})" title="Vrátit do žádostí"><span class="material-symbols-outlined btn-icon">undo</span></button></div></td></tr>`;
     });
 };
 
@@ -748,7 +781,7 @@ window.openAccPlaceEditModal = (id) => {
 };
 window.renderModalAccRooms = () => {
     const container = document.getElementById('editAccRoomsContainer'); if(!container) return;
-    container.innerHTML = currentEditAccPlace.rooms.map((r, i) => `<div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" class="editable-input" value="${r}" onchange="currentEditAccPlace.rooms[${i}] = this.value"><button class="btn-small btn-secondary" onclick="removeRoomFromModal(${i})">❌</button></div>`).join('');
+    container.innerHTML = currentEditAccPlace.rooms.map((r, i) => `<div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" class="editable-input" value="${r}" onchange="currentEditAccPlace.rooms[${i}] = this.value"><button class="btn-small btn-secondary" style="color:#c47676;" onclick="removeRoomFromModal(${i})"><span class="material-symbols-outlined btn-icon">delete</span></button></div>`).join('');
 };
 window.addRoomToModal = () => { currentEditAccPlace.rooms.push("Nový pokoj"); window.renderModalAccRooms(); };
 window.removeRoomFromModal = (index) => { currentEditAccPlace.rooms.splice(index, 1); window.renderModalAccRooms(); };
@@ -802,7 +835,7 @@ window.deleteMyAccountAndData = async () => {
     }
 };
 
-// --- 4. HLAVNÍ LOGIKA INICIALIZACE APLIKACE (Zde je srdce programu) ---
+// --- 4. HLAVNÍ LOGIKA INICIALIZACE APLIKACE ---
 
 function initApp(uid) {
     let cp = window.location.pathname;
@@ -818,7 +851,7 @@ function initApp(uid) {
         if (ds.exists()) {
             const data = ds.data();
             if(wedInput) wedInput.value = data.weddingDate || '';
-            if(data.helperCategories && data.helperCategories.length > 0) helperCategories = data.helperCategories;
+            if(data.helperCategories && data.helperCategories.length > 0) helperCategories = data.helperCategories.map(c => c.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim());
             window.hasReception = data.hasReception !== false; 
         } else {
             if(wedInput) wedInput.value = '';
