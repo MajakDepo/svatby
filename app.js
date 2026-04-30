@@ -38,7 +38,7 @@ window.hasReception = true;
 window.selectedGuests = [];
 window.duplicateIds = [];
 
-// --- 2. POMOCNÉ FUNKCE A VÝCHOZÍ NASTAVENÍ ---
+// --- 2. POMOCNÉ INTERNÍ FUNKCE ---
 
 async function checkAndInitDefaults(uid) {
     const snap = await getDoc(doc(db, "nastaveni", uid));
@@ -105,7 +105,7 @@ function getRoomCapacity(name) {
     let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); return 2;
 }
 
-// --- 3. EXPORTOVÁNÍ VŠECH FUNKCÍ PRO HTML ---
+// --- 3. EXPORTOVÁNÍ VŠECH FUNKCÍ PRO HTML (Hoisting Zóna) ---
 window.doc = doc; 
 window.db = db; 
 window.deleteDoc = deleteDoc; 
@@ -170,7 +170,7 @@ window.saveWeddingDate = () => {
     if(d && myUid) { setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true }).then(() => window.updateCountdown()); }
 };
 
-// NÁPADY A BRAINSTORMING
+// --- NÁPADY ---
 window.renderIdeasView = () => {
     const cont = document.getElementById('ideasContainer');
     if(!cont) return;
@@ -190,6 +190,7 @@ window.renderIdeasView = () => {
     });
 };
 
+// --- HARMONOGRAM ---
 window.addScheduleItem = () => {
     const time = document.getElementById('schedTime').value;
     const title = document.getElementById('schedTitle').value;
@@ -233,6 +234,7 @@ window.saveScheduleEdit = () => {
     window.closeScheduleModal();
 };
 
+// --- ZASEDACÍ POŘÁDEK ---
 window.toggleReception = (checked) => { setDoc(doc(db, "nastaveni", myUid), { hasReception: checked }, { merge: true }); };
 
 window.addSeatGroup = (type) => {
@@ -332,6 +334,7 @@ window.renderSeatingView = () => {
         let aRow = getRowInfo(a.ceremonyRow); let bRow = getRowInfo(b.ceremonyRow);
         let aHasAny = (aRow.hasSeat || (window.hasReception && hasTable(a.receptionTable))) ? 1 : 0;
         let bHasAny = (bRow.hasSeat || (window.hasReception && hasTable(b.receptionTable))) ? 1 : 0;
+
         if(aHasAny !== bHasAny) return bHasAny - aHasAny; 
         if(aRow.num !== bRow.num) return aRow.num - bRow.num; 
         if(aRow.sideVal !== bRow.sideVal) return aRow.sideVal - bRow.sideVal; 
@@ -355,6 +358,7 @@ window.renderSeatingView = () => {
     }).join('');
 };
 
+// --- ÚKOLY A NÁKUPY ---
 window.renderTasksView = () => {
     const list = document.getElementById('taskList'); if(!list) return; list.innerHTML = '';
     const filterPri = document.getElementById('filterTaskPriority')?.value || ''; const filterStat = document.getElementById('filterTaskStatus')?.value || '';
@@ -380,6 +384,7 @@ window.openShoppingModal = (id) => { const s = allShoppingData.find(x => x.id ==
 window.closeShoppingModal = () => document.getElementById('editShoppingModal').classList.add('hidden');
 window.saveShoppingEdit = () => { updateDoc(doc(db, 'nakupni_seznam', document.getElementById('editShoppingId').value), { name: document.getElementById('editShoppingName').value, note: document.getElementById('editShoppingNote').value }); window.closeShoppingModal(); };
 
+// --- ROZPOČET ---
 window.renderBudgetView = () => {
     const summaryBody = document.getElementById('budgetCategorySummaryBody'); const expBody = document.getElementById('budgetExpensesBody'); const catSelect = document.getElementById('expenseCategorySelect');
     if(!summaryBody || !expBody || !catSelect) return;
@@ -418,6 +423,7 @@ window.openExpenseModal = (id) => { const e = allExpenses.find(x => x.id === id)
 window.closeExpenseModal = () => document.getElementById('editExpenseModal').classList.add('hidden');
 window.saveExpenseEdit = () => { updateDoc(doc(db, 'rozpocet_naklady', document.getElementById('editExpId').value), { date: document.getElementById('editExpDate').value, name: document.getElementById('editExpName').value, category: document.getElementById('editExpCatSelect').value, amount: Number(document.getElementById('editExpAmount').value) }); window.closeExpenseModal(); };
 
+// --- HOSTÉ A DUPLICITY ---
 window.toggleGuestSelection = (id, checked) => {
     if(checked && !window.selectedGuests.includes(id)) window.selectedGuests.push(id);
     else if(!checked) window.selectedGuests = window.selectedGuests.filter(gid => gid !== id);
@@ -588,6 +594,7 @@ window.saveGuestEdit = () => {
 
 window.toggleGuest = (id, s) => { let n = 'Pozváno'; if (s === 'Pozváno') n = 'Potvrzeno'; else if (s === 'Potvrzeno') n = 'Nezúčastní se'; updateDoc(doc(db, 'hoste', id), { status: n }); };
 
+// --- POMOCNÍCI ---
 window.openCategoryEditModal = () => { window.renderModalCategoryList(); document.getElementById('categoryEditModal').classList.remove('hidden'); };
 window.closeCategoryEditModal = () => document.getElementById('categoryEditModal').classList.add('hidden');
 window.renderModalCategoryList = () => {
@@ -674,6 +681,102 @@ window.saveHelperRoles = () => {
 
 window.closeHelperModal = () => { document.getElementById('helperEditModal').classList.add('hidden'); };
 
+// --- UBYTOVÁNÍ A KAPACITA ---
+window.renderAccView = () => {
+    const placesCont = document.getElementById('accPlacesContainer'); const aPending = document.getElementById('accPendingTableBody'); const aAssigned = document.getElementById('accAssignedTableBody'); 
+    if(!placesCont || !aPending || !aAssigned) return;
+
+    placesCont.innerHTML = ''; aPending.innerHTML = ''; aAssigned.innerHTML = '';
+    let selectPlacesHtml = `<option value="">-- Vyberte místo --</option>`;
+    let occupancy = {};
+
+    allGuestsData.forEach(g => {
+        if(g.needsAcc && g.accStatus === 'assigned' && g.accPlace) {
+            if(!occupancy[g.accPlace]) occupancy[g.accPlace] = {};
+            if(g.accRoom) {
+                if(!occupancy[g.accPlace][g.accRoom]) occupancy[g.accPlace][g.accRoom] = [];
+                occupancy[g.accPlace][g.accRoom].push(g.name);
+            }
+        }
+    });
+
+    accPlacesData.forEach(p => {
+        selectPlacesHtml += `<option value="${p.id}">${p.name}</option>`;
+        let rHtml = '';
+        p.rooms.forEach(r => {
+            let occ = (occupancy[p.name] && occupancy[p.name][r]) ? occupancy[p.name][r] : [];
+            let cap = getRoomCapacity(r);
+            let classes = 'room-tag'; let title = `Kapacita: ${cap}. Volno.`;
+            if (occ.length > 0 && occ.length < cap) { classes = 'room-tag partial'; title = `Obsazeno ${occ.length}/${cap}: ${occ.join(', ')}`; } 
+            else if (occ.length >= cap) { classes = 'room-tag full'; title = `PLNĚ OBSAZENO: ${occ.join(', ')}`; }
+            rHtml += `<span class="${classes}" title="${title}">${r}</span>`;
+        });
+        placesCont.innerHTML += `<div class="acc-place-card"><h4>${p.name} <div class="no-print"><button class="btn-small btn-secondary" onclick="openAccPlaceEditModal('${p.id}')">✏️ Upravit</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))">❌ Smazat</button></div></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
+    });
+
+    allGuestsData.filter(g => g.needsAcc && g.accStatus === 'pending').forEach(g => {
+        aPending.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accRoom || '-'}</td><td><select id="selPlace_${g.id}" style="width:100%; margin-bottom:5px;" onchange="loadRoomsForSelect('${g.id}', this.value)">${selectPlacesHtml}</select><select id="selRoom_${g.id}" style="width:100%; display:none;"><option value="">-- Nejdřív vyberte místo --</option></select></td><td><button class="btn-small" onclick="approveAcc('${g.id}')">Schválit</button></td></tr>`;
+    });
+
+    const filterSelect = document.getElementById('filterAccAssignedPlace');
+    if(filterSelect && filterSelect.options.length <= 1 && accPlacesData.length > 0) {
+        let opts = '<option value="">-- Všechna místa --</option>'; accPlacesData.forEach(p => opts += `<option value="${p.name}">${p.name}</option>`); filterSelect.innerHTML = opts;
+    }
+
+    const selFilterPlace = document.getElementById('filterAccAssignedPlace')?.value || '';
+    const selFilterRoom = (document.getElementById('filterAccAssignedRoom')?.value || '').toLowerCase();
+    const selFilterName = (document.getElementById('filterAccAssignedName')?.value || '').toLowerCase();
+
+    allGuestsData.filter(g => g.needsAcc && g.accStatus === 'assigned').forEach(g => {
+        if(selFilterPlace && g.accPlace !== selFilterPlace) return;
+        if(selFilterRoom && !(g.accRoom || '').toLowerCase().includes(selFilterRoom)) return;
+        if(selFilterName && !g.name.toLowerCase().includes(selFilterName)) return;
+
+        let options = `<option value="">-- Vybrat místo a pokoj --</option>` + accPlacesData.map(p => p.rooms.map(r => `<option value="${p.name}|${r}" ${g.accPlace===p.name && g.accRoom===r ? 'selected':''}>${p.name}: ${r}</option>`).join('')).join('');
+        
+        aAssigned.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accPlace}</td><td><div id="disp_room_${g.id}" style="display:flex; justify-content:space-between; align-items:center; gap:10px;"><span>${g.accRoom}</span><button class="btn-small btn-secondary no-print" onclick="toggleAccEdit('${g.id}')">✏️ Upravit</button></div><div id="edit_box_${g.id}" class="hidden no-print" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;"><select id="edit_sel_${g.id}" style="flex:1;">${options}</select><button class="btn-small" onclick="saveAccEdit('${g.id}')">✔ Uložit</button><button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})" title="Vrátit do žádostí">↩️ Do žádostí</button></div></td></tr>`;
+    });
+};
+
+window.toggleAccEdit = (id) => { document.getElementById(`disp_room_${id}`).classList.add('hidden'); document.getElementById(`edit_box_${id}`).classList.remove('hidden'); };
+window.saveAccEdit = (id) => { const v = document.getElementById(`edit_sel_${id}`).value.split('|'); if(v.length === 2) { updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]}); } };
+
+window.openAccPlaceEditModal = (id) => {
+    const place = accPlacesData.find(p => p.id === id); if (!place) return; currentEditAccPlace = JSON.parse(JSON.stringify(place));
+    document.getElementById('editAccPlaceId').value = id; document.getElementById('editAccPlaceName').value = currentEditAccPlace.name;
+    window.renderModalAccRooms(); document.getElementById('editAccPlaceModal').classList.remove('hidden');
+};
+window.renderModalAccRooms = () => {
+    const container = document.getElementById('editAccRoomsContainer'); if(!container) return;
+    container.innerHTML = currentEditAccPlace.rooms.map((r, i) => `<div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" class="editable-input" value="${r}" onchange="currentEditAccPlace.rooms[${i}] = this.value"><button class="btn-small btn-secondary" onclick="removeRoomFromModal(${i})">❌</button></div>`).join('');
+};
+window.addRoomToModal = () => { currentEditAccPlace.rooms.push("Nový pokoj"); window.renderModalAccRooms(); };
+window.removeRoomFromModal = (index) => { currentEditAccPlace.rooms.splice(index, 1); window.renderModalAccRooms(); };
+
+window.saveAccPlaceEdit = () => {
+    const id = document.getElementById('editAccPlaceId').value; const newName = document.getElementById('editAccPlaceName').value;
+    updateDoc(doc(db, 'ubytovani_kapacity', id), { name: newName, rooms: currentEditAccPlace.rooms.filter(r => r.trim() !== '') });
+    document.getElementById('editAccPlaceModal').classList.add('hidden');
+};
+
+window.addAccPlace = () => {
+    const name = document.getElementById('newPlaceName').value.trim(); const roomsInput = document.getElementById('newPlaceRooms').value.trim(); if(!name) return;
+    let generatedRooms = [];
+    if(roomsInput) { roomsInput.split(',').forEach(part => { const match = part.trim().match(/^(\d+)[xX]\s+(.+)$/); if(match) { for(let i=1; i<=parseInt(match[1]); i++) generatedRooms.push(`${match[2]} ${i}`); } else if(part.trim() !== '') generatedRooms.push(part.trim()); }); }
+    addDoc(accColl, { name: name, rooms: generatedRooms, userId: myUid }); document.getElementById('newPlaceName').value = ''; document.getElementById('newPlaceRooms').value = '';
+};
+
+window.loadRoomsForSelect = (guestId, placeId) => {
+    const roomSelect = document.getElementById(`selRoom_${guestId}`); if(!placeId || !roomSelect) { if(roomSelect) roomSelect.style.display = 'none'; return; }
+    const place = accPlacesData.find(p => p.id === placeId);
+    if(place) { roomSelect.innerHTML = `<option value="">-- Vyberte pokoj --</option>` + place.rooms.map(r => `<option value="${r}">${r}</option>`).join(''); roomSelect.style.display = 'block'; }
+};
+
+window.approveAcc = (guestId) => {
+    const placeId = document.getElementById(`selPlace_${guestId}`).value; const room = document.getElementById(`selRoom_${guestId}`).value;
+    if(!placeId) { alert("Musíte vybrat místo!"); return; } updateDoc(doc(db, 'hoste', guestId), { accPlace: accPlacesData.find(p => p.id === placeId).name, accRoom: room || '', accStatus: 'assigned' });
+};
+
 window.deleteMyAccountAndData = async () => {
     const user = auth.currentUser; if (!user) return;
     const confirmDelete = confirm("Opravdu chcete nenávratně smazat svůj účet a VŠECHNA svá data ze svatby? Tuto akci nelze vzít zpět."); if (!confirmDelete) return;
@@ -699,7 +802,7 @@ window.deleteMyAccountAndData = async () => {
     }
 };
 
-// --- 4. HLAVNÍ LOGIKA INICIALIZACE ---
+// --- 4. HLAVNÍ LOGIKA INICIALIZACE APLIKACE (Zde je srdce programu) ---
 
 function initApp(uid) {
     let cp = window.location.pathname;
