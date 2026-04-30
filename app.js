@@ -542,27 +542,42 @@ window.findDuplicates = () => {
     window.duplicateIds = [];
     let nameMap = allGuestsData.map(g => {
         let norm = g.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        let words = norm.split(/[\s,]+/).filter(w => w.length > 2);
+        let words = norm.split(/[\s,]+/).filter(w => w.length > 1);
         return { id: g.id, words: words, original: norm };
     });
+
+    const isSimilar = (w1, w2) => {
+        if (!w1 || !w2 || w1[0] !== w2[0]) return false; 
+        let matches = 0; let arr2 = w2.split('');
+        for (let char of w1) {
+            let idx = arr2.indexOf(char);
+            if (idx !== -1) { matches++; arr2.splice(idx, 1); }
+        }
+        return (matches / Math.min(w1.length, w2.length)) >= 0.65;
+    };
 
     for(let i=0; i<nameMap.length; i++) {
         for(let j=i+1; j<nameMap.length; j++) {
             let w1 = nameMap[i].words; let w2 = nameMap[j].words;
-            let exactMatch = nameMap[i].original === nameMap[j].original;
-            let sharedWords = w1.filter(w => w2.includes(w));
-            let multiWordMatch = sharedWords.length >= 2;
-            let str1 = nameMap[i].original; let str2 = nameMap[j].original;
-            let isSubstr = (str1.includes(str2) && str2.length >= 5) || (str2.includes(str1) && str1.length >= 5);
+            let matchCount = 0;
+            
+            for (let wordA of w1) {
+                for (let wordB of w2) {
+                    if (wordA === wordB || isSimilar(wordA, wordB)) { matchCount++; break; }
+                }
+            }
+            
+            let isSubstr = (nameMap[i].original.includes(nameMap[j].original) && nameMap[j].original.length >= 5) || 
+                           (nameMap[j].original.includes(nameMap[i].original) && nameMap[i].original.length >= 5);
 
-            if(exactMatch || multiWordMatch || isSubstr) {
+            if(matchCount >= 2 || isSubstr) {
                 if(!window.duplicateIds.includes(nameMap[i].id)) window.duplicateIds.push(nameMap[i].id);
                 if(!window.duplicateIds.includes(nameMap[j].id)) window.duplicateIds.push(nameMap[j].id);
             }
         }
     }
     
-    if(window.duplicateIds.length === 0) { alert("Nenalezeny žádné zjevné duplicity (algoritmus ignoruje shodu pouze v příjmení)."); } 
+    if(window.duplicateIds.length === 0) { alert("Nenalezeny žádné zjevné duplicity."); } 
     else { if(btn) btn.innerHTML = "❌ Zrušit zobrazení duplicit"; }
     window.renderGuestsView();
 };
@@ -594,7 +609,7 @@ window.renderGuestsView = () => {
     filtered.sort((a, b) => {
         let aDup = window.duplicateIds.includes(a.id) ? 1 : 0;
         let bDup = window.duplicateIds.includes(b.id) ? 1 : 0;
-        if (aDup !== bDup) return bDup - aDup;
+        if (aDup !== bDup) return bDup - aDup; 
 
         if (sortType === 'name') return a.name.localeCompare(b.name);
         let dateA = a.submittedDate ? new Date(a.submittedDate).getTime() : 0;
