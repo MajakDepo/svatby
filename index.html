@@ -47,10 +47,10 @@
             <!-- DASHBOARD -->
             <section id="dashboard" class="page-view no-print">
                 <div class="dashboard-grid">
-                    <div class="card text-center" style="grid-column: 1 / -1; background: #fffafb; border: 1px solid #f2ecec;">
-                        <h2 style="border-bottom: none; margin-bottom: 5px; justify-content:center;"><span class="material-symbols-outlined">hourglass_empty</span> Odpočet do svatby</h2>
-                        <input type="date" id="weddingDateInput" onchange="saveWeddingDate()" style="margin-bottom: 10px; max-width:200px; text-align:center;">
-                        <div id="countdownDisplay" style="font-size: 2rem; font-family: 'Playfair Display', serif; color: #b36666;">Načítám...</div>
+                    <div class="card dash-card" style="display:flex; flex-direction:column; justify-content:center; align-items:center; background: #fffafb; border: 1px solid #f2ecec; padding: 25px;">
+                        <h3 style="margin-bottom: 10px;"><span class="material-symbols-outlined icon-inline">hourglass_empty</span> Odpočet do svatby</h3>
+                        <input type="date" id="weddingDateInput" onchange="saveWeddingDate()" style="margin-bottom: 15px; max-width:160px; text-align:center; padding: 8px;">
+                        <div id="countdownDisplay" style="font-size: 1.8rem; font-family: 'Playfair Display', serif; color: #b36666; font-weight:bold;">Načítám...</div>
                     </div>
                     <div class="card dash-card" onclick="showPage('guests')">
                         <h3><span class="material-symbols-outlined icon-inline">group</span> Hosté a Děti</h3>
@@ -296,13 +296,20 @@
                         <button class="btn-small btn-secondary" onclick="toggleAllGuests()"><span class="material-symbols-outlined btn-icon">done_all</span> Vybrat vše</button>
                         <button class="btn-small" style="background:#e05e5e;" onclick="deleteSelectedGuests()"><span class="material-symbols-outlined btn-icon">delete</span> Smazat vybrané</button>
                         <span style="color:#d0c4c4; margin: 0 5px;">|</span>
-                        <select id="bulkStatusSelect" class="btn-small" style="background:#fff; border:1px solid #e0d8d8; max-width: 150px; padding: 6px;">
-                            <option value="">Hromadná změna...</option>
+                        
+                        <select id="bulkSideSelect" class="btn-small" style="background:#fff; border:1px solid #e0d8d8; max-width: 140px; padding: 6px;">
+                            <option value="">Změnit stranu...</option>
+                            <option value="Nevěsta">Nevěsta</option>
+                            <option value="Ženich">Ženich</option>
+                            <option value="Společný">Společný</option>
+                        </select>
+                        <select id="bulkStatusSelect" class="btn-small" style="background:#fff; border:1px solid #e0d8d8; max-width: 140px; padding: 6px;">
+                            <option value="">Změnit stav...</option>
                             <option value="Pozváno">Pozváno</option>
                             <option value="Potvrzeno">Potvrzeno</option>
                             <option value="Nezúčastní se">Nezúčastní se</option>
                         </select>
-                        <button class="btn-small btn-secondary" onclick="bulkChangeStatus()">Potvrdit</button>
+                        <button class="btn-small btn-secondary" onclick="bulkChange()">Potvrdit změny</button>
                     </div>
                     <button id="duplicateBtn" class="btn-small" style="background:#eda03b; font-size: 0.9rem;" onclick="findDuplicates()"><span class="material-symbols-outlined btn-icon">search</span> Najít duplicity</button>
                 </div>
@@ -372,7 +379,7 @@
                     <div class="row">
                         <input type="text" id="planCategoryName" placeholder="Nová kategorie (např. Hostina, Prstýnky...)">
                         <input type="number" id="planEstimatedAmount" placeholder="Plánovaná částka (Kč)">
-                        <button id="addPlanBtn"><span class="material-symbols-outlined">add</span> Přidat kategorii</button>
+                        <button id="addPlanBtn"><span class="material-symbols-outlined">add</span> Přidat</button>
                     </div>
                 </div>
 
