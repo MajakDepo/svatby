@@ -31,12 +31,11 @@ let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], allS
 let allBudgetPlans = [], allExpenses = [];
 let allScheduleData = [], allTablesData = [], allRowsData = [];
 
-let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
+let helperCategories = ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
 let currentEditAccPlace = null; 
 window.hasReception = true; 
 
-// Globální pole pro hromadné akce a duplicity
 window.selectedGuests = [];
 window.duplicateIds = [];
 
@@ -82,7 +81,7 @@ async function checkAndInitDefaults(uid) {
     const snap = await getDoc(doc(db, "nastaveni", uid));
     if (!snap.exists()) {
         await setDoc(doc(db, "nastaveni", uid), {
-            helperCategories: ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'],
+            helperCategories: ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'],
             hasReception: true
         });
         
@@ -412,7 +411,6 @@ window.renderSeatingView = () => {
 
     let tableOpts = `<option value="">-- Nevybráno --</option>` + allTablesData.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
     
-    // Setřídění řad do roletky stejně jako logicky ve vizualizaci
     let sortedRowsForSelect = [...allRowsData].sort((a, b) => {
         let aInfo = getRowInfo(a.id);
         let bInfo = getRowInfo(b.id);
@@ -617,7 +615,7 @@ window.renderGuestsView = () => {
     filtered.sort((a, b) => {
         let aDup = window.duplicateIds.includes(a.id) ? 1 : 0;
         let bDup = window.duplicateIds.includes(b.id) ? 1 : 0;
-        if (aDup !== bDup) return bDup - aDup;
+        if (aDup !== bDup) return bDup - aDup; 
 
         if (sortType === 'name') return a.name.localeCompare(b.name);
         let dateA = a.submittedDate ? new Date(a.submittedDate).getTime() : 0;
@@ -633,6 +631,7 @@ window.renderGuestsView = () => {
         if(g.status === 'Potvrzeno') stats.confirmed++;
         if(g.status === 'Nezúčastní se') stats.declined++;
         if(g.side === 'Nevěsta') stats.nevesta++; else if(g.side === 'Ženich') stats.zenich++; else stats.spolecny++;
+        
         let city = g.city ? g.city.trim() : 'Nezadáno';
         stats.cities[city] = (stats.cities[city] || 0) + 1;
 
@@ -653,8 +652,11 @@ window.renderGuestsView = () => {
             <td><button class="btn-small btn-secondary" onclick="openEditModal('${g.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'hoste', '${g.id}'))">❌</button></td></tr>`;
     });
 
+    let sortedCities = Object.entries(stats.cities).sort((a, b) => b[1] - a[1]);
     let cityHtml = '<strong>Hosté z měst:</strong><br>';
-    for (let [city, count] of Object.entries(stats.cities)) cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
+    for (let [city, count] of sortedCities) {
+        cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
+    }
     if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainer').innerHTML = cityHtml;
 
     if(document.getElementById('guestStatsBlock')) {
