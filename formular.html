@@ -36,12 +36,14 @@
             </div>
             <button type="button" class="btn-secondary" onclick="addGuestRow()" style="width: 100%; margin-bottom: 20px;">+ Přidat dalšího dospělého</button>
 
+            <!-- SEKCE DĚTI -->
             <div class="input-form" style="background: #fff8f9; border: 1px solid #fce4ec; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <label><strong>Berete s sebou děti?</strong></label>
                 <input type="number" id="numChildren" value="0" min="0" onchange="renderChildrenAges()" style="width: 80px; margin-bottom: 10px;">
                 <div id="childrenAgesContainer"></div>
             </div>
 
+            <!-- Ubytování -->
             <div class="input-form" style="background: #fafafa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <label><strong>Potřebujete ubytování?</strong></label>
                 <select id="needsAcc" onchange="document.getElementById('roomsDiv').style.display = this.value === 'ano' ? 'block' : 'none'">
@@ -54,11 +56,19 @@
                 </div>
             </div>
 
-            <div style="background: #fdf9f9; padding: 15px; border-radius: 8px; border: 1px solid #fce4ec;">
+            <!-- Pomoc -->
+            <div style="background: #fdf9f9; padding: 15px; border-radius: 8px; border: 1px solid #fce4ec; margin-bottom: 15px;">
                 <label><strong>Jste ochotni nám s něčím pomoci?</strong></label>
                 <div class="help-grid" id="dynamicHelpGrid">
                     <em>Načítám možnosti...</em>
                 </div>
+            </div>
+
+            <!-- Speciální požadavky (NOVÉ) -->
+            <div class="input-form" style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee;">
+                <label><strong>Speciální požadavky nebo vzkaz:</strong></label>
+                <p style="font-size: 0.85rem; color: #666; margin-top: 0;">Máte nějaké diety, alergie, nebo nám chcete cokoliv vzkázat?</p>
+                <textarea id="specialRequests" placeholder="Sem napište svůj požadavek..." style="width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; margin-top: 10px;"></textarea>
             </div>
 
             <button type="submit" style="width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 20px;">Odeslat potvrzení</button>
@@ -104,7 +114,6 @@
             cats.forEach(c => grid.innerHTML += `<label class="help-card"><input type="checkbox" name="help" value="${c}" onchange="toggleCard(this)"> ${c}</label>`);
         }
         
-        // Spustíme načtení po startu
         loadCategories();
 
         window.toggleCard = (checkbox) => {
@@ -150,6 +159,7 @@
             const roomDetails = document.getElementById('roomDetails').value || '';
             const numChildren = document.getElementById('numChildren').value;
             const childAges = Array.from(document.querySelectorAll('.child-age-select')).map(s => s.value);
+            const specialReq = document.getElementById('specialRequests').value || '';
             
             const allNames = [mainName];
             document.querySelectorAll('.add-name').forEach(input => { if(input.value) allNames.push(input.value); });
@@ -165,6 +175,7 @@
                         isHelper: helpValues.length > 0,
                         helperTask: helpValues.join(", "),
                         helperStatus: helpValues.length > 0 ? 'pending' : '',
+                        helperAgreed: false,
                         needsAcc: needsAcc,
                         accPlace: '',
                         accRoom: needsAcc ? (i === 0 ? `Požadavek: ${roomDetails}` : 'Skupina s ' + mainName) : '',
@@ -172,7 +183,8 @@
                         userId: ownerUid,
                         submittedDate: todayISO,
                         numChildren: i === 0 ? Number(numChildren) : 0,
-                        childrenAges: i === 0 ? childAges : []
+                        childrenAges: i === 0 ? childAges : [],
+                        specialReq: i === 0 ? specialReq : ''
                     });
                 }
                 document.getElementById('formConfig').classList.add('hidden');
