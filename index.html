@@ -27,6 +27,7 @@
             <nav class="app-nav no-print">
                 <ul>
                     <li><a href="#" onclick="showPage('dashboard')">🏠 Nástěnka</a></li>
+                    <li><a href="#" onclick="showPage('ideas')">💡 Nápady</a></li>
                     <li><a href="#" onclick="showPage('schedule')">⏱️ Harmonogram</a></li>
                     <li><a href="#" onclick="showPage('todo')">✅ Úkoly a Nákupy</a></li>
                     <li><a href="#" onclick="showPage('guests')">👥 Hosté</a></li>
@@ -64,6 +65,24 @@
                         <p>Osob: <strong id="dashTotalAcc">0</strong></p>
                         <p>K rozřazení: <strong id="dashPendingAcc" style="color: #f39c12;">0</strong></p>
                     </div>
+                </div>
+            </section>
+
+            <!-- NÁPADY / BRAINSTORMING -->
+            <section id="ideas" class="card page-view hidden no-print">
+                <h2>💡 Brainstorming a Nápady</h2>
+                <p style="margin-bottom: 15px; color: #666;">Zapište si všechny nápady, odkazy na inspiraci, barevné palety nebo cokoliv, co vás napadne.</p>
+                <div class="input-form-extended" style="background:#fffcfc;">
+                    <div class="row">
+                        <input type="text" id="ideaTitle" placeholder="Předmět / Název (např. Květinová výzdoba, Odkaz na šaty...)">
+                    </div>
+                    <div class="row">
+                        <textarea id="ideaText" placeholder="Vaše poznámky, myšlenky, odkazy..." style="width:100%; min-height:80px;"></textarea>
+                    </div>
+                    <button id="addIdeaBtn">Uložit nápad</button>
+                </div>
+                <div id="ideasContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px;">
+                    <!-- Zde se vygenerují lístečky s nápady -->
                 </div>
             </section>
 
