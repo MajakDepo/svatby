@@ -28,8 +28,7 @@ const tablesColl = collection(db, "stoly_hostina");
 const rowsColl = collection(db, "rady_obrad");
 
 let unsubs = [], allGuestsData = [], accPlacesData = [], allTasksData = [], allShoppingData = [], myUid = null;
-let allBudgetPlans = [], allExpenses = [];
-let allScheduleData = [], allTablesData = [], allRowsData = [];
+let allBudgetPlans = [], allExpenses = [], allScheduleData = [], allTablesData = [], allRowsData = [];
 
 let helperCategories = ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
@@ -38,7 +37,22 @@ window.hasReception = true;
 window.selectedGuests = [];
 window.duplicateIds = [];
 
-// --- 2. VŠECHNY FUNKCE (Definované bezpečně předem) ---
+// Globální utility pro HTML onclick
+window.doc = doc; 
+window.db = db; 
+window.deleteDoc = deleteDoc; 
+window.updateDoc = updateDoc;
+
+window.copyShareUrl = () => { 
+    const copyText = document.getElementById("shareUrlInput"); 
+    if(copyText) { 
+        copyText.select(); 
+        navigator.clipboard.writeText(copyText.value); 
+        alert("Odkaz zkopírován!"); 
+    } 
+};
+
+// --- 2. VYKRESLOVACÍ A LOGICKÉ FUNKCE ---
 
 window.showPage = (pageId) => {
     document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
@@ -55,14 +69,12 @@ window.updateDashboardStats = () => {
         if (g.isHelper) { totals.helpers++; if (g.helperStatus === 'pending') totals.pendingHelpers++; }
         if (g.needsAcc) { totals.accGuests++; if (g.accStatus === 'pending') totals.pendingAcc++; }
         
-        if (g.status !== 'Nezúčastní se') {
-            if (g.childrenAges && g.childrenAges.length > 0) {
-                g.childrenAges.forEach(age => {
-                    if(age.includes('0-3')) totals.child1++;
-                    else if(age.includes('4-10')) totals.child2++;
-                    else if(age.includes('11+')) totals.child3++;
-                });
-            }
+        if (g.status !== 'Nezúčastní se' && g.childrenAges && g.childrenAges.length > 0) {
+            g.childrenAges.forEach(age => {
+                if(age.includes('0-3')) totals.child1++;
+                else if(age.includes('4-10')) totals.child2++;
+                else if(age.includes('11+')) totals.child3++;
+            });
         }
     });
     
@@ -96,7 +108,7 @@ window.updateCountdown = () => {
     disp.innerText = diff > 0 ? `Už jen ${diff} dní! 🎉` : (diff === 0 ? `Dnes je ten den! 🎉` : `Svatba už proběhla! ❤️`);
 };
 
-// --- HARMONOGRAM FUNKCE ---
+// HARMONOGRAM
 window.addScheduleItem = () => {
     const time = document.getElementById('schedTime').value;
     const title = document.getElementById('schedTitle').value;
@@ -111,12 +123,9 @@ window.addScheduleItem = () => {
 
 window.renderScheduleView = () => {
     const body = document.getElementById('scheduleTableBody');
-    if(!body) return;
-    body.innerHTML = '';
-    
+    if(!body) return; body.innerHTML = '';
     let sorted = [...allScheduleData];
     sorted.sort((a,b) => a.time.localeCompare(b.time)); 
-    
     sorted.forEach(s => {
         body.innerHTML += `<tr>
             <td class="timeline-time">${s.time}</td>
@@ -131,8 +140,7 @@ window.renderScheduleView = () => {
 };
 
 window.openScheduleModal = (id) => {
-    const s = allScheduleData.find(x => x.id === id);
-    if(!s) return;
+    const s = allScheduleData.find(x => x.id === id); if(!s) return;
     document.getElementById('editSchedId').value = id;
     document.getElementById('editSchedTime').value = s.time;
     document.getElementById('editSchedTitle').value = s.title;
@@ -150,7 +158,7 @@ window.saveScheduleEdit = () => {
     window.closeScheduleModal();
 };
 
-// --- ZASEDACÍ POŘÁDEK FUNKCE ---
+// ZASEDACÍ POŘÁDEK
 window.toggleReception = (checked) => { setDoc(doc(db, "nastaveni", myUid), { hasReception: checked }, { merge: true }); };
 
 window.addSeatGroup = (type) => {
@@ -168,9 +176,7 @@ function formatNameForSeat(fullName) {
     let cleanName = fullName.replace('(Dítě)', '').trim();
     let parts = cleanName.split(' ');
     let shortName = parts[0];
-    if (parts.length > 1) {
-        shortName += ' ' + parts[parts.length - 1].charAt(0) + '.';
-    }
+    if (parts.length > 1) shortName += ' ' + parts[parts.length - 1].charAt(0) + '.';
     return shortName + (isChild ? ' <small>(dítě)</small>' : '');
 }
 
@@ -206,12 +212,10 @@ window.renderSeatingView = () => {
     const recTh = document.getElementById('receptionTableHeader');
     
     if(!rCont || !cCont || !body) return;
-
     if (recSection) recSection.style.display = window.hasReception ? 'flex' : 'none';
     if (recTh) recTh.style.display = window.hasReception ? 'table-cell' : 'none';
 
     let tableOcc = {}, rowOcc = {}; let tableGuests = {}, rowGuests = {}; 
-
     let confirmedGuests = allGuestsData.filter(g => g.status === 'Potvrzeno');
 
     confirmedGuests.forEach(g => {
@@ -256,7 +260,6 @@ window.renderSeatingView = () => {
             let visualSeats = generateVisualSeats(rData.left.capacity, rowGuests[rData.left.id], true, true);
             leftHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;"><button class="delete-row-btn no-print" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.left.id}'))" title="Smazat">❌</button><div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-end; gap:4px;">${visualSeats}</div></div>`;
         }
-
         let rightHtml = '';
         if (rData.right) {
             let visualSeats = generateVisualSeats(rData.right.capacity, rowGuests[rData.right.id], true, true);
@@ -322,7 +325,7 @@ window.renderSeatingView = () => {
     }).join('');
 };
 
-// --- ÚKOLY A NÁKUPY FUNKCE ---
+// ÚKOLY A NÁKUPY
 window.renderTasksView = () => {
     const list = document.getElementById('taskList');
     if(!list) return; list.innerHTML = '';
@@ -350,7 +353,7 @@ window.openShoppingModal = (id) => { const s = allShoppingData.find(x => x.id ==
 window.closeShoppingModal = () => document.getElementById('editShoppingModal').classList.add('hidden');
 window.saveShoppingEdit = () => { updateDoc(doc(db, 'nakupni_seznam', document.getElementById('editShoppingId').value), { name: document.getElementById('editShoppingName').value, note: document.getElementById('editShoppingNote').value }); window.closeShoppingModal(); };
 
-// --- ROZPOČET FUNKCE ---
+// ROZPOČET
 window.renderBudgetView = () => {
     const summaryBody = document.getElementById('budgetCategorySummaryBody'); const expBody = document.getElementById('budgetExpensesBody'); const catSelect = document.getElementById('expenseCategorySelect');
     if(!summaryBody || !expBody || !catSelect) return;
@@ -389,7 +392,7 @@ window.openExpenseModal = (id) => { const e = allExpenses.find(x => x.id === id)
 window.closeExpenseModal = () => document.getElementById('editExpenseModal').classList.add('hidden');
 window.saveExpenseEdit = () => { updateDoc(doc(db, 'rozpocet_naklady', document.getElementById('editExpId').value), { date: document.getElementById('editExpDate').value, name: document.getElementById('editExpName').value, category: document.getElementById('editExpCatSelect').value, amount: Number(document.getElementById('editExpAmount').value) }); window.closeExpenseModal(); };
 
-// --- HOSTÉ A DUPLICITY FUNKCE ---
+// HOSTÉ A DUPLICITY
 window.toggleGuestSelection = (id, checked) => {
     if(checked && !window.selectedGuests.includes(id)) window.selectedGuests.push(id);
     else if(!checked) window.selectedGuests = window.selectedGuests.filter(gid => gid !== id);
@@ -425,7 +428,6 @@ window.findDuplicates = () => {
         window.renderGuestsView();
         return;
     }
-    
     window.duplicateIds = [];
     let nameMap = allGuestsData.map(g => {
         let norm = g.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -445,18 +447,9 @@ window.findDuplicates = () => {
 
     for(let i=0; i<nameMap.length; i++) {
         for(let j=i+1; j<nameMap.length; j++) {
-            let w1 = nameMap[i].words; let w2 = nameMap[j].words;
-            let matchCount = 0;
-            
-            for (let wordA of w1) {
-                for (let wordB of w2) {
-                    if (wordA === wordB || isSimilar(wordA, wordB)) { matchCount++; break; }
-                }
-            }
-            
-            let isSubstr = (nameMap[i].original.includes(nameMap[j].original) && nameMap[j].original.length >= 5) || 
-                           (nameMap[j].original.includes(nameMap[i].original) && nameMap[i].original.length >= 5);
-
+            let w1 = nameMap[i].words; let w2 = nameMap[j].words; let matchCount = 0;
+            for (let wordA of w1) { for (let wordB of w2) { if (wordA === wordB || isSimilar(wordA, wordB)) { matchCount++; break; } } }
+            let isSubstr = (nameMap[i].original.includes(nameMap[j].original) && nameMap[j].original.length >= 5) || (nameMap[j].original.includes(nameMap[i].original) && nameMap[i].original.length >= 5);
             if(matchCount >= 2 || isSubstr) {
                 if(!window.duplicateIds.includes(nameMap[i].id)) window.duplicateIds.push(nameMap[i].id);
                 if(!window.duplicateIds.includes(nameMap[j].id)) window.duplicateIds.push(nameMap[j].id);
@@ -535,9 +528,7 @@ window.renderGuestsView = () => {
 
     let sortedCities = Object.entries(stats.cities).sort((a, b) => b[1] - a[1]);
     let cityHtml = '<strong>Hosté z měst:</strong><br>';
-    for (let [city, count] of sortedCities) {
-        cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
-    }
+    for (let [city, count] of sortedCities) { cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`; }
     if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainer').innerHTML = cityHtml;
 
     if(document.getElementById('guestStatsBlock')) {
@@ -593,7 +584,7 @@ window.saveGuestEdit = () => {
 
 window.toggleGuest = (id, s) => { let n = 'Pozváno'; if (s === 'Pozváno') n = 'Potvrzeno'; else if (s === 'Potvrzeno') n = 'Nezúčastní se'; updateDoc(doc(db, 'hoste', id), { status: n }); };
 
-// --- POMOCNÍCI FUNKCE ---
+// POMOCNÍCI
 window.openCategoryEditModal = () => { window.renderModalCategoryList(); document.getElementById('categoryEditModal').classList.remove('hidden'); };
 window.closeCategoryEditModal = () => document.getElementById('categoryEditModal').classList.add('hidden');
 window.renderModalCategoryList = () => {
@@ -621,7 +612,6 @@ window.renderHelpersView = () => {
     if(!hp || !ha) return; hp.innerHTML = ''; ha.innerHTML = '';
     
     let tasksStats = {}; helperCategories.forEach(c => tasksStats[c] = 0); 
-
     let assignedHelpers = [];
 
     allGuestsData.filter(g => g.isHelper).forEach(g => {
@@ -682,7 +672,7 @@ window.saveHelperRoles = () => {
 
 window.closeHelperModal = () => { document.getElementById('helperEditModal').classList.add('hidden'); };
 
-// --- UBYTOVÁNÍ A KAPACITA FUNKCE ---
+// UBYTOVÁNÍ
 function getRoomCapacity(name) {
     let n = name.toLowerCase();
     if(n.includes('jedno')) return 1; if(n.includes('dvou') || n.includes('dvoj')) return 2; 
@@ -721,7 +711,7 @@ window.renderAccView = () => {
             else if (occ.length >= cap) { classes = 'room-tag full'; title = `PLNĚ OBSAZENO: ${occ.join(', ')}`; }
             rHtml += `<span class="${classes}" title="${title}">${r}</span>`;
         });
-        placesCont.innerHTML += `<div class="acc-place-card"><h4>${p.name} <div><button class="btn-small btn-secondary" onclick="openAccPlaceEditModal('${p.id}')">✏️ Upravit</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))">❌ Smazat</button></div></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
+        placesCont.innerHTML += `<div class="acc-place-card"><h4>${p.name} <div class="no-print"><button class="btn-small btn-secondary" onclick="openAccPlaceEditModal('${p.id}')">✏️ Upravit</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'ubytovani_kapacity', '${p.id}'))">❌ Smazat</button></div></h4><div>${rHtml || '<i>Žádné pokoje</i>'}</div></div>`;
     });
 
     allGuestsData.filter(g => g.needsAcc && g.accStatus === 'pending').forEach(g => {
@@ -811,28 +801,97 @@ window.deleteMyAccountAndData = async () => {
     }
 };
 
-window.doc = doc; window.db = db; window.deleteDoc = deleteDoc; window.updateDoc = updateDoc;
-window.copyShareUrl = () => { const copyText = document.getElementById("shareUrlInput"); if(copyText) { copyText.select(); navigator.clipboard.writeText(copyText.value); alert("Odkaz zkopírován!"); } };
+// --- 3. DOM EVENT LISTENERS ---
 
-// --- 3. DOM EVENT LISTENERS (Vkládáme po definování funkcí) ---
-const addGuestBtnElement = document.getElementById('addGuestBtn');
-if(addGuestBtnElement) addGuestBtnElement.onclick = window.addGuestBtn ? window.addGuestBtn.onclick : null;
+const loginBtn = document.getElementById('loginBtn');
+if(loginBtn) {
+    loginBtn.onclick = () => {
+        signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value)
+        .catch((e) => {
+            const errDiv = document.getElementById('authError');
+            if(!errDiv) return;
+            if(e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') errDiv.innerText = "❌ Špatný e-mail nebo heslo.";
+            else errDiv.innerText = "❌ Chyba: " + e.message;
+        });
+    };
+}
 
-const addPlanBtnElement = document.getElementById('addPlanBtn');
-if(addPlanBtnElement) addPlanBtnElement.onclick = window.addPlanBtn ? window.addPlanBtn.onclick : null;
+const regBtn = document.getElementById('registerBtn');
+if(regBtn) {
+    regBtn.onclick = () => {
+        createUserWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value)
+        .catch((e) => {
+            const errDiv = document.getElementById('authError');
+            if(!errDiv) return;
+            if(e.code === 'auth/email-already-in-use') errDiv.innerText = "❌ Tento e-mail je již zaregistrovaný. Použijte tlačítko 'Přihlásit se'.";
+            else if(e.code === 'auth/weak-password') errDiv.innerText = "❌ Heslo musí mít alespoň 6 znaků.";
+            else errDiv.innerText = "❌ Chyba: " + e.message;
+        });
+    };
+}
 
-const addExpenseBtnElement = document.getElementById('addExpenseBtn');
-if(addExpenseBtnElement) addExpenseBtnElement.onclick = window.addExpenseBtn ? window.addExpenseBtn.onclick : null;
+const logOutBtn = document.getElementById('logoutBtn');
+if(logOutBtn) logOutBtn.onclick = () => signOut(auth);
 
-const addShoppingBtnElement = document.getElementById('addShoppingBtn');
-if(addShoppingBtnElement) addShoppingBtnElement.onclick = window.addShoppingBtn ? window.addShoppingBtn.onclick : null;
+const addGuestBtn = document.getElementById('addGuestBtn');
+if(addGuestBtn) {
+    addGuestBtn.onclick = () => {
+        const name = document.getElementById('guestName').value; const numChild = Number(document.getElementById('guestChildren').value) || 0;
+        const childAges = Array.from(document.querySelectorAll('.admin-child-age-select')).map(s => s.value);
+        const isH = document.getElementById('isHelper') ? document.getElementById('isHelper').checked : false;
+        const needsA = document.getElementById('needsAcc') ? document.getElementById('needsAcc').checked : false;
+        const sReq = document.getElementById('guestReq') ? document.getElementById('guestReq').value : '';
 
-const addBtnElement = document.getElementById('addBtn');
-if (addBtnElement) {
-    addBtnElement.onclick = () => {
+        if(name) {
+            addDoc(guestsColl, { 
+                name, city: document.getElementById('guestCity').value, side: document.getElementById('guestSide').value, 
+                isHelper: isH, needsAcc: needsA, status: 'Pozváno', helperTask: '', helperStatus: isH ? 'pending' : '', helperAgreed: false, accPlace: '', accRoom: '', accStatus: needsA ? 'pending' : '', 
+                userId: myUid, submittedDate: new Date().toISOString(), numChildren: numChild, childrenAges: childAges, specialReq: sReq
+            });
+            document.getElementById('guestName').value = ''; document.getElementById('guestCity').value = ''; document.getElementById('guestChildren').value = '';
+            if(document.getElementById('guestReq')) document.getElementById('guestReq').value = '';
+            if(document.getElementById('adminChildrenAgesContainer')) document.getElementById('adminChildrenAgesContainer').innerHTML = '';
+            if(document.getElementById('isHelper')) document.getElementById('isHelper').checked = false;
+            if(document.getElementById('needsAcc')) document.getElementById('needsAcc').checked = false;
+        }
+    };
+}
+
+const addBtn = document.getElementById('addBtn');
+if(addBtn) {
+    addBtn.onclick = () => {
         const i = document.getElementById('taskInput'), n = document.getElementById('taskNoteInput'), p = document.getElementById('taskPriority');
         if(i && i.value) { addDoc(tasksColl, { text: i.value, note: n.value, priority: p.value, status: 'Není', userId: myUid }); i.value=''; n.value=''; }
     };
 }
 
-// --- 4. ZÁVĚREČNÁ INICIALIZACE ---
+const addPlanBtn = document.getElementById('addPlanBtn');
+if(addPlanBtn) {
+    addPlanBtn.onclick = () => {
+        const cat = document.getElementById('planCategoryName').value; const est = document.getElementById('planEstimatedAmount').value;
+        if(cat && est) { addDoc(budgetPlanColl, { category: cat, estimated: Number(est), userId: myUid }); document.getElementById('planCategoryName').value = ''; document.getElementById('planEstimatedAmount').value = ''; }
+    };
+}
+
+const addExpenseBtn = document.getElementById('addExpenseBtn');
+if(addExpenseBtn) {
+    addExpenseBtn.onclick = () => {
+        const d = document.getElementById('expenseDate').value, n = document.getElementById('expenseName').value; const c = document.getElementById('expenseCategorySelect').value, a = document.getElementById('expenseActualAmount').value;
+        if(n && a) { addDoc(expensesColl, { date: d, name: n, category: c, amount: Number(a), userId: myUid }); document.getElementById('expenseDate').value = ''; document.getElementById('expenseName').value = ''; document.getElementById('expenseCategorySelect').value = ''; document.getElementById('expenseActualAmount').value = ''; }
+    };
+}
+
+// --- 4. AUTH STATE & SPUŠTĚNÍ ---
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        myUid = user.uid;
+        const authSec = document.getElementById('authSection'); if(authSec) authSec.classList.add('hidden');
+        const appSec = document.getElementById('appSection'); if(appSec) appSec.classList.remove('hidden');
+        showPage('dashboard');
+        initApp(user.uid);
+    } else {
+        const authSec = document.getElementById('authSection'); if(authSec) authSec.classList.remove('hidden');
+        const appSec = document.getElementById('appSection'); if(appSec) appSec.classList.add('hidden');
+    }
+});
