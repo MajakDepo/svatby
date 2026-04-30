@@ -75,11 +75,19 @@ th { background: #fafafa; color: #888; text-transform: uppercase; font-size: 0.8
 .room-tag.partial { background: #fff8e1; color: #f57f17; border-color: #ffe082; }
 .room-tag.full { background: #ffebee; color: #b71c1c; text-decoration: line-through; border-color: #ffcdd2; }
 
-/* NOVÉ STYLY PRO HARMONOGRAM A ZASEDACÍ POŘÁDEK */
 .timeline-time { font-size: 1.2rem; font-weight: bold; color: #d81b60; }
 .seating-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 20px; }
 .seating-box { background: #fffcfc; border: 1px solid #fce4ec; border-radius: 8px; padding: 15px; }
 .seating-box h4 { color: #d81b60; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f9f5f6; padding-bottom: 5px;}
+
+/* VIZUÁLNÍ MÍSTA (ŽIDLE/LAVICE) */
+.visual-seating-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee;}
+.visual-seat { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ddd; background: #f5f5f5; cursor: help; transition: 0.2s; position: relative;}
+.visual-seat.ceremony-seat { border-radius: 4px; } /* Pro obřad chceme čtverečky (lavice) */
+.visual-seat.occupied { background: #e5b2b2; border-color: #d49595; }
+.visual-seat.overcap { background: #e74c3c; border-color: #c0392b; animation: pulse 1s infinite; }
+.visual-seat:hover { transform: scale(1.3); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; }
