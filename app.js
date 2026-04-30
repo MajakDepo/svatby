@@ -248,7 +248,7 @@ window.saveScheduleEdit = () => {
     window.closeScheduleModal();
 };
 
-// --- ZASEDACÍ POŘÁDEK S VIZUALIZACÍ ---
+// --- ZASEDACÍ POŘÁDEK S GRAFICKOU VIZUALIZACÍ (OBŘAD) ---
 window.addSeatGroup = (type) => {
     if(type === 'reception') {
         const name = document.getElementById('newTableName').value;
@@ -267,13 +267,11 @@ window.addSeatGroup = (type) => {
     }
 };
 
-// Pomocná funkce pro vygenerování vizuálních teček (sedadel)
-function generateVisualSeats(capacity, guestsArray, isCeremony) {
+function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
     let html = '';
     let tooltips = [];
     let totalOccupied = 0;
 
-    // Rozložení jmen pro tooltopy
     if (guestsArray) {
         guestsArray.forEach(g => {
             for(let i=0; i < g.count; i++) {
@@ -286,7 +284,6 @@ function generateVisualSeats(capacity, guestsArray, isCeremony) {
 
     const shapeClass = isCeremony ? 'ceremony-seat' : '';
 
-    // Standardní místa
     for(let i = 0; i < capacity; i++) {
         if (i < totalOccupied) {
             html += `<div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}"></div>`;
@@ -295,13 +292,13 @@ function generateVisualSeats(capacity, guestsArray, isCeremony) {
         }
     }
 
-    // Pokud je kapacita přesažena
     if (totalOccupied > capacity) {
         for(let i = capacity; i < totalOccupied; i++) {
             html += `<div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})"></div>`;
         }
     }
 
+    if (raw) return html; // Pro obřad vracíme čisté čtverečky bez rámečku
     return `<div class="visual-seating-container">${html}</div>`;
 }
 
@@ -312,7 +309,7 @@ window.renderSeatingView = () => {
     if(!rCont || !cCont || !body) return;
 
     let tableOcc = {}, rowOcc = {};
-    let tableGuests = {}, rowGuests = {}; // Objekty pro uchování jmen k daným stolům
+    let tableGuests = {}, rowGuests = {}; 
 
     let confirmedGuests = allGuestsData.filter(g => g.status === 'Potvrzeno');
 
@@ -331,6 +328,7 @@ window.renderSeatingView = () => {
         }
     });
 
+    // 1. VYKRESLENÍ STOLŮ NA HOSTINU (Starý dobrý způsob v boxech)
     rCont.innerHTML = allTablesData.map(t => {
         let occ = tableOcc[t.id] || 0;
         let color = occ > t.capacity ? '#c62828' : '#27ae60';
@@ -343,18 +341,81 @@ window.renderSeatingView = () => {
         </div>`;
     }).join('');
 
-    cCont.innerHTML = allRowsData.map(r => {
-        let occ = rowOcc[r.id] || 0;
-        let color = occ > r.capacity ? '#c62828' : '#27ae60';
-        let visualSeats = generateVisualSeats(r.capacity, rowGuests[r.id], true);
+    // 2. VYKRESLENÍ ŘAD NA OBŘAD (Nový ptačí pohled - mapka)
+    let ceremonyLayout = {};
+    allRowsData.forEach(r => {
+        let n = r.name.toLowerCase();
+        let m = n.match(/(\d+)/); // Najde jakékoliv číslo
+        let rowNum = m ? parseInt(m[1]) : 999;
+        let side = n.includes('pravo') ? 'right' : (n.includes('levo') ? 'left' : 'unknown');
 
-        return `<div class="seating-box">
-            <h4>${r.name} <button class="btn-small" onclick="deleteDoc(doc(db, 'rady_obrad', '${r.id}'))">❌</button></h4>
-            <span style="color:${color}; font-weight:bold;">Obsazeno: ${occ}/${r.capacity}</span>
-            ${visualSeats}
-        </div>`;
-    }).join('');
+        if (!ceremonyLayout[rowNum]) ceremonyLayout[rowNum] = { left: null, right: null, unknown: [] };
 
+        if (side === 'left') ceremonyLayout[rowNum].left = r;
+        else if (side === 'right') ceremonyLayout[rowNum].right = r;
+        else ceremonyLayout[rowNum].unknown.push(r);
+    });
+
+    let sortedRows = Object.keys(ceremonyLayout).map(Number).sort((a, b) => a - b);
+    let cContHtml = '';
+
+    sortedRows.forEach(rowNum => {
+        let rData = ceremonyLayout[rowNum];
+        let rowLabel = rowNum === 999 ? '?' : `${rowNum}.`;
+
+        let leftHtml = '';
+        if (rData.left) {
+            let visualSeats = generateVisualSeats(rData.left.capacity, rowGuests[rData.left.id], true, true);
+            leftHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+                            <button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.left.id}'))" title="Smazat">❌</button>
+                            <div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-end; gap:4px;">${visualSeats}</div>
+                        </div>`;
+        }
+
+        let rightHtml = '';
+        if (rData.right) {
+            let visualSeats = generateVisualSeats(rData.right.capacity, rowGuests[rData.right.id], true, true);
+            rightHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-start;">
+                            <div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-start; gap:4px;">${visualSeats}</div>
+                            <button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.right.id}'))" title="Smazat">❌</button>
+                        </div>`;
+        }
+
+        if (rData.left || rData.right) {
+            cContHtml += `
+                <div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;">
+                    <div style="font-weight:bold; color:#d81b60; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div>
+                    <div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div>
+                    <div style="width:30px; background:#f9f5f6; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div>
+                    <div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div>
+                </div>
+            `;
+        }
+
+        // Pokud to uživatel pojmenoval bez vlevo/vpravo (např. Zadní stání, Pod balkonem)
+        rData.unknown.forEach(r => {
+            let visualSeats = generateVisualSeats(r.capacity, rowGuests[r.id], true, true);
+            cContHtml += `
+                <div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;">
+                    <div style="font-weight:bold; color:#888; width:25px; text-align:right; flex-shrink:0;">?</div>
+                    <div style="flex:1; display:flex; justify-content:center; padding-left:10px;">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${r.id}'))" title="Smazat">❌</button>
+                            <span style="font-size:0.7rem; color:#888;">${r.name}:</span>
+                            <div class="visual-seating-container" style="margin:0; padding:0; border:none; gap:4px;">${visualSeats}</div>
+                        </div>
+                    </div>
+                </div>`;
+        });
+    });
+
+    if(sortedRows.length === 0) {
+        cContHtml = `<div style="text-align:center; color:#888; padding:20px; font-size:0.9rem;">Zatím nejsou vytvořeny žádné řady. Zadejte např. "1. řada vlevo"</div>`;
+    }
+
+    cCont.innerHTML = `<div style="margin-top: 15px; padding-top: 15px; border-top: 2px dashed #fce4ec;">${cContHtml}</div>`;
+
+    // 3. TABULKA PRO PŘIŘAZOVÁNÍ (Select boxy)
     let tableOpts = `<option value="">-- Nevybráno --</option>` + allTablesData.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
     let rowOpts = `<option value="">-- Nevybráno --</option>` + allRowsData.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
