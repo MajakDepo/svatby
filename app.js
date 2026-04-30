@@ -37,7 +37,7 @@ window.hasReception = true;
 window.selectedGuests = [];
 window.duplicateIds = [];
 
-// Globální utility pro HTML onclick
+// Globální utility pro HTML
 window.doc = doc; 
 window.db = db; 
 window.deleteDoc = deleteDoc; 
@@ -45,20 +45,112 @@ window.updateDoc = updateDoc;
 
 window.copyShareUrl = () => { 
     const copyText = document.getElementById("shareUrlInput"); 
-    if(copyText) { 
-        copyText.select(); 
-        navigator.clipboard.writeText(copyText.value); 
-        alert("Odkaz zkopírován!"); 
-    } 
+    if(copyText) { copyText.select(); navigator.clipboard.writeText(copyText.value); alert("Odkaz zkopírován!"); } 
 };
-
-// --- 2. VYKRESLOVACÍ A LOGICKÉ FUNKCE ---
 
 window.showPage = (pageId) => {
     document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
     const page = document.getElementById(pageId);
     if(page) page.classList.remove('hidden');
 };
+
+// --- 2. NAČÍTÁNÍ Z DATABÁZE (Chybějící funkce initApp) ---
+
+async function checkAndInitDefaults(uid) {
+    const snap = await getDoc(doc(db, "nastaveni", uid));
+    if (!snap.exists()) {
+        await setDoc(doc(db, "nastaveni", uid), {
+            helperCategories: ['🎂 Pečení/Dorty', '🍲 Jídlo', '💪 Fyzická příprava', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'],
+            hasReception: true
+        });
+        
+        const defaultRows = [
+            { name: "1. řada vlevo", capacity: 5 }, { name: "1. řada vpravo", capacity: 5 },
+            { name: "2. řada vlevo", capacity: 5 }, { name: "2. řada vpravo", capacity: 5 },
+            { name: "3. řada vlevo", capacity: 5 }, { name: "3. řada vpravo", capacity: 5 }
+        ];
+        for (let r of defaultRows) { await addDoc(rowsColl, { ...r, userId: uid }); }
+    }
+}
+
+function initApp(uid) {
+    let cp = window.location.pathname;
+    if (cp.endsWith('index.html')) cp = cp.replace('index.html', '');
+    if (!cp.endsWith('/')) cp += '/';
+    const shareInput = document.getElementById('shareUrlInput');
+    if(shareInput) shareInput.value = window.location.origin + cp + 'formular.html?uid=' + uid;
+
+    checkAndInitDefaults(uid);
+
+    unsubs.push(onSnapshot(doc(db, "nastaveni", uid), (ds) => {
+        if (ds.exists()) {
+            const data = ds.data();
+            if(data.weddingDate) {
+                const wedInput = document.getElementById('weddingDateInput');
+                if(wedInput) wedInput.value = data.weddingDate;
+            }
+            if(data.helperCategories && data.helperCategories.length > 0) {
+                helperCategories = data.helperCategories;
+            }
+            window.hasReception = data.hasReception !== false; 
+        } else {
+            window.hasReception = true;
+        }
+        const recCheck = document.getElementById('hasReceptionCheck');
+        if(recCheck) recCheck.checked = window.hasReception;
+        window.updateCountdown();
+        window.renderModalCategoryList(); 
+        window.renderHelpersView();
+        window.renderSeatingView();
+    }));
+
+    unsubs.push(onSnapshot(query(tasksColl, where("userId", "==", uid)), snap => {
+        allTasksData = []; snap.forEach(d => { let t = d.data(); t.id = d.id; allTasksData.push(t); });
+        window.renderTasksView();
+    }));
+
+    unsubs.push(onSnapshot(query(shoppingColl, where("userId", "==", uid)), snap => {
+        allShoppingData = []; snap.forEach(d => { let s = d.data(); s.id = d.id; allShoppingData.push(s); });
+        window.renderShoppingView();
+    }));
+
+    unsubs.push(onSnapshot(query(accColl, where("userId", "==", uid)), snap => {
+        accPlacesData = []; snap.forEach(d => { let p = d.data(); p.id = d.id; accPlacesData.push(p); });
+        window.renderAccView();
+    }));
+
+    unsubs.push(onSnapshot(query(scheduleColl, where("userId", "==", uid)), snap => {
+        allScheduleData = []; snap.forEach(d => { let s = d.data(); s.id = d.id; allScheduleData.push(s); });
+        window.renderScheduleView();
+    }));
+
+    unsubs.push(onSnapshot(query(tablesColl, where("userId", "==", uid)), snap => {
+        allTablesData = []; snap.forEach(d => { let s = d.data(); s.id = d.id; allTablesData.push(s); });
+        window.renderSeatingView();
+    }));
+
+    unsubs.push(onSnapshot(query(rowsColl, where("userId", "==", uid)), snap => {
+        allRowsData = []; snap.forEach(d => { let s = d.data(); s.id = d.id; allRowsData.push(s); });
+        window.renderSeatingView();
+    }));
+
+    unsubs.push(onSnapshot(query(guestsColl, where("userId", "==", uid)), snap => {
+        allGuestsData = []; snap.forEach(d => { let g = d.data(); g.id = d.id; allGuestsData.push(g); });
+        window.updateDashboardStats(); window.renderGuestsView(); window.renderHelpersView(); window.renderAccView(); window.renderSeatingView();
+    }));
+
+    unsubs.push(onSnapshot(query(budgetPlanColl, where("userId", "==", uid)), snap => {
+        allBudgetPlans = []; snap.forEach(d => { let b = d.data(); b.id = d.id; allBudgetPlans.push(b); });
+        window.renderBudgetView();
+    }));
+
+    unsubs.push(onSnapshot(query(expensesColl, where("userId", "==", uid)), snap => {
+        allExpenses = []; snap.forEach(d => { let e = d.data(); e.id = d.id; allExpenses.push(e); });
+        window.renderBudgetView();
+    }));
+}
+
+// --- 3. VYKRESLOVACÍ FUNKCE (Zbytek aplikace) ---
 
 window.updateDashboardStats = () => {
     let totals = { guests: 0, confirmed: 0, declined: 0, helpers: 0, pendingHelpers: 0, accGuests: 0, pendingAcc: 0, child1: 0, child2: 0, child3: 0 };
@@ -91,11 +183,6 @@ window.updateDashboardStats = () => {
     if(document.getElementById('dashPendingAcc')) document.getElementById('dashPendingAcc').innerText = totals.pendingAcc;
 };
 
-window.saveWeddingDate = () => {
-    const d = document.getElementById('weddingDateInput');
-    if(d && myUid) { setDoc(doc(db, "nastaveni", myUid), { weddingDate: d.value }, { merge: true }).then(() => window.updateCountdown()); }
-};
-
 window.updateCountdown = () => {
     const wedInput = document.getElementById('weddingDateInput');
     const disp = document.getElementById('countdownDisplay');
@@ -109,23 +196,9 @@ window.updateCountdown = () => {
 };
 
 // HARMONOGRAM
-window.addScheduleItem = () => {
-    const time = document.getElementById('schedTime').value;
-    const title = document.getElementById('schedTitle').value;
-    const note = document.getElementById('schedNote').value;
-    if(time && title) {
-        addDoc(scheduleColl, { time, title, note, userId: myUid });
-        document.getElementById('schedTime').value = '';
-        document.getElementById('schedTitle').value = '';
-        document.getElementById('schedNote').value = '';
-    }
-};
-
 window.renderScheduleView = () => {
-    const body = document.getElementById('scheduleTableBody');
-    if(!body) return; body.innerHTML = '';
-    let sorted = [...allScheduleData];
-    sorted.sort((a,b) => a.time.localeCompare(b.time)); 
+    const body = document.getElementById('scheduleTableBody'); if(!body) return; body.innerHTML = '';
+    let sorted = [...allScheduleData]; sorted.sort((a,b) => a.time.localeCompare(b.time)); 
     sorted.forEach(s => {
         body.innerHTML += `<tr>
             <td class="timeline-time">${s.time}</td>
@@ -138,29 +211,19 @@ window.renderScheduleView = () => {
         </tr>`;
     });
 };
-
 window.openScheduleModal = (id) => {
     const s = allScheduleData.find(x => x.id === id); if(!s) return;
-    document.getElementById('editSchedId').value = id;
-    document.getElementById('editSchedTime').value = s.time;
-    document.getElementById('editSchedTitle').value = s.title;
-    document.getElementById('editSchedNote').value = s.note || '';
-    document.getElementById('editScheduleModal').classList.remove('hidden');
+    document.getElementById('editSchedId').value = id; document.getElementById('editSchedTime').value = s.time; document.getElementById('editSchedTitle').value = s.title; document.getElementById('editSchedNote').value = s.note || ''; document.getElementById('editScheduleModal').classList.remove('hidden');
 };
 window.closeScheduleModal = () => document.getElementById('editScheduleModal').classList.add('hidden');
 window.saveScheduleEdit = () => {
     const id = document.getElementById('editSchedId').value;
-    updateDoc(doc(db, 'harmonogram', id), {
-        time: document.getElementById('editSchedTime').value,
-        title: document.getElementById('editSchedTitle').value,
-        note: document.getElementById('editSchedNote').value
-    });
+    updateDoc(doc(db, 'harmonogram', id), { time: document.getElementById('editSchedTime').value, title: document.getElementById('editSchedTitle').value, note: document.getElementById('editSchedNote').value });
     window.closeScheduleModal();
 };
 
 // ZASEDACÍ POŘÁDEK
 window.toggleReception = (checked) => { setDoc(doc(db, "nastaveni", myUid), { hasReception: checked }, { merge: true }); };
-
 window.addSeatGroup = (type) => {
     if(type === 'reception') {
         const name = document.getElementById('newTableName').value; const cap = document.getElementById('newTableCap').value;
@@ -172,11 +235,8 @@ window.addSeatGroup = (type) => {
 };
 
 function formatNameForSeat(fullName) {
-    let isChild = fullName.includes('(Dítě)');
-    let cleanName = fullName.replace('(Dítě)', '').trim();
-    let parts = cleanName.split(' ');
-    let shortName = parts[0];
-    if (parts.length > 1) shortName += ' ' + parts[parts.length - 1].charAt(0) + '.';
+    let isChild = fullName.includes('(Dítě)'); let cleanName = fullName.replace('(Dítě)', '').trim(); let parts = cleanName.split(' ');
+    let shortName = parts[0]; if (parts.length > 1) shortName += ' ' + parts[parts.length - 1].charAt(0) + '.';
     return shortName + (isChild ? ' <small>(dítě)</small>' : '');
 }
 
@@ -191,15 +251,12 @@ function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
     const shapeClass = isCeremony ? 'ceremony-seat' : '';
     for(let i = 0; i < capacity; i++) {
         if (i < totalOccupied) { 
-            let dispName = formatNameForSeat(tooltips[i]);
-            html += `<div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}">${dispName}</div>`; 
-        } 
-        else { html += `<div class="visual-seat empty ${shapeClass}" title="Volné místo"></div>`; }
+            let dispName = formatNameForSeat(tooltips[i]); html += `<div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}">${dispName}</div>`; 
+        } else { html += `<div class="visual-seat empty ${shapeClass}" title="Volné místo"></div>`; }
     }
     if (totalOccupied > capacity) {
         for(let i = capacity; i < totalOccupied; i++) { 
-            let dispName = formatNameForSeat(tooltips[i]);
-            html += `<div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})">${dispName}</div>`; 
+            let dispName = formatNameForSeat(tooltips[i]); html += `<div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})">${dispName}</div>`; 
         }
     }
     if (raw) return html; 
@@ -208,10 +265,9 @@ function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
 
 window.renderSeatingView = () => {
     const rCont = document.getElementById('receptionTablesContainer'); const cCont = document.getElementById('ceremonyRowsContainer');
-    const body = document.getElementById('seatingGuestsBody'); const recSection = document.getElementById('receptionSetupSection');
-    const recTh = document.getElementById('receptionTableHeader');
-    
+    const body = document.getElementById('seatingGuestsBody'); const recSection = document.getElementById('receptionSetupSection'); const recTh = document.getElementById('receptionTableHeader');
     if(!rCont || !cCont || !body) return;
+
     if (recSection) recSection.style.display = window.hasReception ? 'flex' : 'none';
     if (recTh) recTh.style.display = window.hasReception ? 'table-cell' : 'none';
 
@@ -240,14 +296,10 @@ window.renderSeatingView = () => {
 
     let ceremonyLayout = {};
     allRowsData.forEach(r => {
-        let n = r.name.toLowerCase(); let m = n.match(/(\d+)/); 
-        let rowNum = m ? parseInt(m[1]) : 999;
+        let n = r.name.toLowerCase(); let m = n.match(/(\d+)/); let rowNum = m ? parseInt(m[1]) : 999;
         let side = n.includes('pravo') ? 'right' : (n.includes('levo') ? 'left' : 'unknown');
-
         if (!ceremonyLayout[rowNum]) ceremonyLayout[rowNum] = { left: null, right: null, unknown: [] };
-        if (side === 'left') ceremonyLayout[rowNum].left = r;
-        else if (side === 'right') ceremonyLayout[rowNum].right = r;
-        else ceremonyLayout[rowNum].unknown.push(r);
+        if (side === 'left') ceremonyLayout[rowNum].left = r; else if (side === 'right') ceremonyLayout[rowNum].right = r; else ceremonyLayout[rowNum].unknown.push(r);
     });
 
     let sortedRows = Object.keys(ceremonyLayout).map(Number).sort((a, b) => a - b);
@@ -281,11 +333,8 @@ window.renderSeatingView = () => {
 
     const getRowInfo = (rowId) => {
         if(!rowId) return { num: 9999, sideVal: 9, hasSeat: 0 };
-        let row = allRowsData.find(r => r.id === rowId);
-        if(!row) return { num: 9999, sideVal: 9, hasSeat: 0 };
-        let n = row.name.toLowerCase();
-        let m = n.match(/(\d+)/);
-        let num = m ? parseInt(m[1]) : 999;
+        let row = allRowsData.find(r => r.id === rowId); if(!row) return { num: 9999, sideVal: 9, hasSeat: 0 };
+        let n = row.name.toLowerCase(); let m = n.match(/(\d+)/); let num = m ? parseInt(m[1]) : 999;
         let sideVal = n.includes('levo') ? 1 : (n.includes('pravo') ? 2 : 3);
         return { num, sideVal, hasSeat: 1 };
     };
@@ -295,7 +344,6 @@ window.renderSeatingView = () => {
         let aRow = getRowInfo(a.ceremonyRow); let bRow = getRowInfo(b.ceremonyRow);
         let aHasAny = (aRow.hasSeat || (window.hasReception && hasTable(a.receptionTable))) ? 1 : 0;
         let bHasAny = (bRow.hasSeat || (window.hasReception && hasTable(b.receptionTable))) ? 1 : 0;
-
         if(aHasAny !== bHasAny) return bHasAny - aHasAny; 
         if(aRow.num !== bRow.num) return aRow.num - bRow.num; 
         if(aRow.sideVal !== bRow.sideVal) return aRow.sideVal - bRow.sideVal; 
@@ -303,13 +351,7 @@ window.renderSeatingView = () => {
     });
 
     let tableOpts = `<option value="">-- Nevybráno --</option>` + allTablesData.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-    
-    let sortedRowsForSelect = [...allRowsData].sort((a, b) => {
-        let aInfo = getRowInfo(a.id);
-        let bInfo = getRowInfo(b.id);
-        if(aInfo.num !== bInfo.num) return aInfo.num - bInfo.num;
-        return aInfo.sideVal - bInfo.sideVal;
-    });
+    let sortedRowsForSelect = [...allRowsData].sort((a, b) => { let aInfo = getRowInfo(a.id); let bInfo = getRowInfo(b.id); if(aInfo.num !== bInfo.num) return aInfo.num - bInfo.num; return aInfo.sideVal - bInfo.sideVal; });
     let rowOpts = `<option value="">-- Nevybráno --</option>` + sortedRowsForSelect.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
     body.innerHTML = confirmedGuests.map(g => {
@@ -327,10 +369,8 @@ window.renderSeatingView = () => {
 
 // ÚKOLY A NÁKUPY
 window.renderTasksView = () => {
-    const list = document.getElementById('taskList');
-    if(!list) return; list.innerHTML = '';
+    const list = document.getElementById('taskList'); if(!list) return; list.innerHTML = '';
     const filterPri = document.getElementById('filterTaskPriority')?.value || ''; const filterStat = document.getElementById('filterTaskStatus')?.value || '';
-    
     let filtered = allTasksData.filter(t => (!filterPri || t.priority === filterPri) && (!filterStat || t.status === filterStat));
     filtered.sort((a, b) => { if(a.status === 'Hotovo' && b.status !== 'Hotovo') return 1; if(a.status !== 'Hotovo' && b.status === 'Hotovo') return -1; return 0; });
     
@@ -523,7 +563,7 @@ window.renderGuestsView = () => {
             <td style="text-align:center;"><input type="checkbox" class="guest-checkbox" value="${g.id}" ${window.selectedGuests.includes(g.id) ? 'checked' : ''} onchange="toggleGuestSelection('${g.id}', this.checked)"></td>
             <td><strong>${g.name}</strong>${childInfo}</td><td>${g.city || '-'}</td><td>${g.side}</td>
             <td style="cursor:pointer" onclick="toggleGuest('${g.id}','${g.status}')">${g.status === 'Potvrzeno' ? '✅ Potvrzeno' : (g.status === 'Nezúčastní se' ? '<span class="status-declined">❌ Odmítl/a</span>' : '📩 Pozváno')}</td>
-            <td><button class="btn-small btn-secondary" onclick="openEditModal('${g.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'hoste', '${g.id}'))">❌</button></td></tr>`;
+            <td class="no-print"><button class="btn-small btn-secondary" onclick="openEditModal('${g.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'hoste', '${g.id}'))">❌</button></td></tr>`;
     });
 
     let sortedCities = Object.entries(stats.cities).sort((a, b) => b[1] - a[1]);
@@ -645,7 +685,7 @@ window.renderHelpersView = () => {
                     Domluveno
                 </label>
             </td>
-            <td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">✏️</button></td>
+            <td class="no-print"><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">✏️</button></td>
         </tr>`;
     });
 
@@ -734,7 +774,7 @@ window.renderAccView = () => {
 
         let options = `<option value="">-- Vybrat místo a pokoj --</option>` + accPlacesData.map(p => p.rooms.map(r => `<option value="${p.name}|${r}" ${g.accPlace===p.name && g.accRoom===r ? 'selected':''}>${p.name}: ${r}</option>`).join('')).join('');
         
-        aAssigned.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accPlace}</td><td><div id="disp_room_${g.id}" style="display:flex; justify-content:space-between; align-items:center; gap:10px;"><span>${g.accRoom}</span><button class="btn-small btn-secondary" onclick="toggleAccEdit('${g.id}')">✏️ Upravit</button></div><div id="edit_box_${g.id}" class="hidden" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;"><select id="edit_sel_${g.id}" style="flex:1;">${options}</select><button class="btn-small" onclick="saveAccEdit('${g.id}')">✔ Uložit</button><button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})" title="Vrátit do žádostí">↩️ Do žádostí</button></div></td></tr>`;
+        aAssigned.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accPlace}</td><td><div id="disp_room_${g.id}" style="display:flex; justify-content:space-between; align-items:center; gap:10px;"><span>${g.accRoom}</span><button class="btn-small btn-secondary no-print" onclick="toggleAccEdit('${g.id}')">✏️ Upravit</button></div><div id="edit_box_${g.id}" class="hidden no-print" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;"><select id="edit_sel_${g.id}" style="flex:1;">${options}</select><button class="btn-small" onclick="saveAccEdit('${g.id}')">✔ Uložit</button><button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})" title="Vrátit do žádostí">↩️ Do žádostí</button></div></td></tr>`;
     });
 };
 
@@ -833,9 +873,9 @@ if(regBtn) {
 const logOutBtn = document.getElementById('logoutBtn');
 if(logOutBtn) logOutBtn.onclick = () => signOut(auth);
 
-const addGuestBtn = document.getElementById('addGuestBtn');
-if(addGuestBtn) {
-    addGuestBtn.onclick = () => {
+const addGuestBtnElement = document.getElementById('addGuestBtn');
+if(addGuestBtnElement) {
+    addGuestBtnElement.onclick = () => {
         const name = document.getElementById('guestName').value; const numChild = Number(document.getElementById('guestChildren').value) || 0;
         const childAges = Array.from(document.querySelectorAll('.admin-child-age-select')).map(s => s.value);
         const isH = document.getElementById('isHelper') ? document.getElementById('isHelper').checked : false;
@@ -857,27 +897,35 @@ if(addGuestBtn) {
     };
 }
 
-const addBtn = document.getElementById('addBtn');
-if(addBtn) {
-    addBtn.onclick = () => {
+const addBtnElement = document.getElementById('addBtn');
+if (addBtnElement) {
+    addBtnElement.onclick = () => {
         const i = document.getElementById('taskInput'), n = document.getElementById('taskNoteInput'), p = document.getElementById('taskPriority');
         if(i && i.value) { addDoc(tasksColl, { text: i.value, note: n.value, priority: p.value, status: 'Není', userId: myUid }); i.value=''; n.value=''; }
     };
 }
 
-const addPlanBtn = document.getElementById('addPlanBtn');
-if(addPlanBtn) {
-    addPlanBtn.onclick = () => {
+const addPlanBtnElement = document.getElementById('addPlanBtn');
+if(addPlanBtnElement) {
+    addPlanBtnElement.onclick = () => {
         const cat = document.getElementById('planCategoryName').value; const est = document.getElementById('planEstimatedAmount').value;
         if(cat && est) { addDoc(budgetPlanColl, { category: cat, estimated: Number(est), userId: myUid }); document.getElementById('planCategoryName').value = ''; document.getElementById('planEstimatedAmount').value = ''; }
     };
 }
 
-const addExpenseBtn = document.getElementById('addExpenseBtn');
-if(addExpenseBtn) {
-    addExpenseBtn.onclick = () => {
+const addExpenseBtnElement = document.getElementById('addExpenseBtn');
+if(addExpenseBtnElement) {
+    addExpenseBtnElement.onclick = () => {
         const d = document.getElementById('expenseDate').value, n = document.getElementById('expenseName').value; const c = document.getElementById('expenseCategorySelect').value, a = document.getElementById('expenseActualAmount').value;
         if(n && a) { addDoc(expensesColl, { date: d, name: n, category: c, amount: Number(a), userId: myUid }); document.getElementById('expenseDate').value = ''; document.getElementById('expenseName').value = ''; document.getElementById('expenseCategorySelect').value = ''; document.getElementById('expenseActualAmount').value = ''; }
+    };
+}
+
+const addShoppingBtnElement = document.getElementById('addShoppingBtn');
+if(addShoppingBtnElement) {
+    addShoppingBtnElement.onclick = () => {
+        const i = document.getElementById('shoppingInput'), n = document.getElementById('shoppingNoteInput'); 
+        if(i && i.value) { addDoc(shoppingColl, { name: i.value, note: n.value, completed: false, userId: myUid }); i.value=''; n.value=''; } 
     };
 }
 
