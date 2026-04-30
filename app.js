@@ -34,7 +34,11 @@ let allScheduleData = [], allTablesData = [], allRowsData = [];
 let helperCategories = ['🎂 Pečení/Dorty', '🎀 Výzdoba', '🚗 Doprava', '📋 Koordinace', '🎵 Hudba/Program'];
 let activeHelperFilters = [];
 let currentEditAccPlace = null; 
-window.hasReception = true; // Globální stav pro Zasedací pořádek
+window.hasReception = true; 
+
+// Globální pole pro hromadné akce a duplicity
+window.selectedGuests = [];
+window.duplicateIds = [];
 
 // --- NAVIGACE A AUTH ---
 window.showPage = (pageId) => {
@@ -74,7 +78,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// Funkce pro nastavení výchozích dat novému uživateli
 async function checkAndInitDefaults(uid) {
     const snap = await getDoc(doc(db, "nastaveni", uid));
     if (!snap.exists()) {
@@ -83,15 +86,12 @@ async function checkAndInitDefaults(uid) {
             hasReception: true
         });
         
-        // Předdefinované řady obřadu
         const defaultRows = [
             { name: "1. řada vlevo", capacity: 5 }, { name: "1. řada vpravo", capacity: 5 },
             { name: "2. řada vlevo", capacity: 5 }, { name: "2. řada vpravo", capacity: 5 },
             { name: "3. řada vlevo", capacity: 5 }, { name: "3. řada vpravo", capacity: 5 }
         ];
-        for (let r of defaultRows) {
-            await addDoc(rowsColl, { ...r, userId: uid });
-        }
+        for (let r of defaultRows) { await addDoc(rowsColl, { ...r, userId: uid }); }
     }
 }
 
@@ -115,14 +115,12 @@ function initApp(uid) {
             if(data.helperCategories && data.helperCategories.length > 0) {
                 helperCategories = data.helperCategories;
             }
-            window.hasReception = data.hasReception !== false; // Výchozí je true
+            window.hasReception = data.hasReception !== false; 
         } else {
             window.hasReception = true;
         }
-
         const recCheck = document.getElementById('hasReceptionCheck');
         if(recCheck) recCheck.checked = window.hasReception;
-
         window.updateCountdown();
         window.renderModalCategoryList(); 
         window.renderHelpersView();
@@ -280,69 +278,42 @@ window.saveScheduleEdit = () => {
     window.closeScheduleModal();
 };
 
-// --- ZASEDACÍ POŘÁDEK S GRAFICKOU VIZUALIZACÍ A MOŽNOSTÍ HOSTINY ---
-window.toggleReception = (checked) => {
-    setDoc(doc(db, "nastaveni", myUid), { hasReception: checked }, { merge: true });
-};
+// --- ZASEDACÍ POŘÁDEK ---
+window.toggleReception = (checked) => { setDoc(doc(db, "nastaveni", myUid), { hasReception: checked }, { merge: true }); };
 
 window.addSeatGroup = (type) => {
     if(type === 'reception') {
-        const name = document.getElementById('newTableName').value;
-        const cap = document.getElementById('newTableCap').value;
-        if(name && cap) {
-            addDoc(tablesColl, { name, capacity: Number(cap), userId: myUid });
-            document.getElementById('newTableName').value = ''; document.getElementById('newTableCap').value = '';
-        }
+        const name = document.getElementById('newTableName').value; const cap = document.getElementById('newTableCap').value;
+        if(name && cap) { addDoc(tablesColl, { name, capacity: Number(cap), userId: myUid }); document.getElementById('newTableName').value = ''; document.getElementById('newTableCap').value = ''; }
     } else if (type === 'ceremony') {
-        const name = document.getElementById('newRowName').value;
-        const cap = document.getElementById('newRowCap').value;
-        if(name && cap) {
-            addDoc(rowsColl, { name, capacity: Number(cap), userId: myUid });
-            document.getElementById('newRowName').value = ''; document.getElementById('newRowCap').value = '';
-        }
+        const name = document.getElementById('newRowName').value; const cap = document.getElementById('newRowCap').value;
+        if(name && cap) { addDoc(rowsColl, { name, capacity: Number(cap), userId: myUid }); document.getElementById('newRowName').value = ''; document.getElementById('newRowCap').value = ''; }
     }
 };
 
 function generateVisualSeats(capacity, guestsArray, isCeremony, raw = false) {
-    let html = '';
-    let tooltips = [];
-    let totalOccupied = 0;
-
+    let html = ''; let tooltips = []; let totalOccupied = 0;
     if (guestsArray) {
         guestsArray.forEach(g => {
-            for(let i=0; i < g.count; i++) {
-                if (i === 0) tooltips.push(g.name);
-                else tooltips.push(`${g.name} (Dítě)`);
-            }
+            for(let i=0; i < g.count; i++) { if (i === 0) tooltips.push(g.name); else tooltips.push(`${g.name} (Dítě)`); }
             totalOccupied += g.count;
         });
     }
-
     const shapeClass = isCeremony ? 'ceremony-seat' : '';
-
     for(let i = 0; i < capacity; i++) {
-        if (i < totalOccupied) {
-            html += `<div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}"></div>`;
-        } else {
-            html += `<div class="visual-seat empty ${shapeClass}" title="Volné místo"></div>`;
-        }
+        if (i < totalOccupied) { html += `<div class="visual-seat occupied ${shapeClass}" title="Obsazeno: ${tooltips[i]}"></div>`; } 
+        else { html += `<div class="visual-seat empty ${shapeClass}" title="Volné místo"></div>`; }
     }
-
     if (totalOccupied > capacity) {
-        for(let i = capacity; i < totalOccupied; i++) {
-            html += `<div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})"></div>`;
-        }
+        for(let i = capacity; i < totalOccupied; i++) { html += `<div class="visual-seat overcap ${shapeClass}" title="MÍSTO NAVÍC! (${tooltips[i]})"></div>`; }
     }
-
     if (raw) return html; 
     return `<div class="visual-seating-container">${html}</div>`;
 }
 
 window.renderSeatingView = () => {
-    const rCont = document.getElementById('receptionTablesContainer');
-    const cCont = document.getElementById('ceremonyRowsContainer');
-    const body = document.getElementById('seatingGuestsBody');
-    const recSection = document.getElementById('receptionSetupSection');
+    const rCont = document.getElementById('receptionTablesContainer'); const cCont = document.getElementById('ceremonyRowsContainer');
+    const body = document.getElementById('seatingGuestsBody'); const recSection = document.getElementById('receptionSetupSection');
     const recTh = document.getElementById('receptionTableHeader');
     
     if(!rCont || !cCont || !body) return;
@@ -350,14 +321,12 @@ window.renderSeatingView = () => {
     if (recSection) recSection.style.display = window.hasReception ? 'flex' : 'none';
     if (recTh) recTh.style.display = window.hasReception ? 'table-cell' : 'none';
 
-    let tableOcc = {}, rowOcc = {};
-    let tableGuests = {}, rowGuests = {}; 
+    let tableOcc = {}, rowOcc = {}; let tableGuests = {}, rowGuests = {}; 
 
     let confirmedGuests = allGuestsData.filter(g => g.status === 'Potvrzeno');
 
     confirmedGuests.forEach(g => {
         let headcount = 1 + Number(g.numChildren || 0);
-        
         if(g.receptionTable && window.hasReception) {
             tableOcc[g.receptionTable] = (tableOcc[g.receptionTable] || 0) + headcount;
             if(!tableGuests[g.receptionTable]) tableGuests[g.receptionTable] = [];
@@ -370,29 +339,19 @@ window.renderSeatingView = () => {
         }
     });
 
-    // 1. VYKRESLENÍ STOLŮ NA HOSTINU
     rCont.innerHTML = allTablesData.map(t => {
-        let occ = tableOcc[t.id] || 0;
-        let color = occ > t.capacity ? '#c62828' : '#27ae60';
+        let occ = tableOcc[t.id] || 0; let color = occ > t.capacity ? '#c62828' : '#27ae60';
         let visualSeats = generateVisualSeats(t.capacity, tableGuests[t.id], false);
-
-        return `<div class="seating-box">
-            <h4>${t.name} <button class="btn-small" onclick="deleteDoc(doc(db, 'stoly_hostina', '${t.id}'))">❌</button></h4>
-            <span style="color:${color}; font-weight:bold;">Obsazeno: ${occ}/${t.capacity}</span>
-            ${visualSeats}
-        </div>`;
+        return `<div class="seating-box"><h4>${t.name} <button class="btn-small" onclick="deleteDoc(doc(db, 'stoly_hostina', '${t.id}'))">❌</button></h4><span style="color:${color}; font-weight:bold;">Obsazeno: ${occ}/${t.capacity}</span>${visualSeats}</div>`;
     }).join('');
 
-    // 2. VYKRESLENÍ ŘAD NA OBŘAD
     let ceremonyLayout = {};
     allRowsData.forEach(r => {
-        let n = r.name.toLowerCase();
-        let m = n.match(/(\d+)/); 
+        let n = r.name.toLowerCase(); let m = n.match(/(\d+)/); 
         let rowNum = m ? parseInt(m[1]) : 999;
         let side = n.includes('pravo') ? 'right' : (n.includes('levo') ? 'left' : 'unknown');
 
         if (!ceremonyLayout[rowNum]) ceremonyLayout[rowNum] = { left: null, right: null, unknown: [] };
-
         if (side === 'left') ceremonyLayout[rowNum].left = r;
         else if (side === 'right') ceremonyLayout[rowNum].right = r;
         else ceremonyLayout[rowNum].unknown.push(r);
@@ -402,61 +361,58 @@ window.renderSeatingView = () => {
     let cContHtml = '';
 
     sortedRows.forEach(rowNum => {
-        let rData = ceremonyLayout[rowNum];
-        let rowLabel = rowNum === 999 ? '?' : `${rowNum}.`;
-
+        let rData = ceremonyLayout[rowNum]; let rowLabel = rowNum === 999 ? '?' : `${rowNum}.`;
         let leftHtml = '';
         if (rData.left) {
             let visualSeats = generateVisualSeats(rData.left.capacity, rowGuests[rData.left.id], true, true);
-            leftHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
-                            <button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.left.id}'))" title="Smazat">❌</button>
-                            <div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-end; gap:4px;">${visualSeats}</div>
-                        </div>`;
+            leftHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;"><button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.left.id}'))" title="Smazat">❌</button><div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-end; gap:4px;">${visualSeats}</div></div>`;
         }
 
         let rightHtml = '';
         if (rData.right) {
             let visualSeats = generateVisualSeats(rData.right.capacity, rowGuests[rData.right.id], true, true);
-            rightHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-start;">
-                            <div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-start; gap:4px;">${visualSeats}</div>
-                            <button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.right.id}'))" title="Smazat">❌</button>
-                        </div>`;
+            rightHtml = `<div style="display:flex; gap:8px; align-items:center; justify-content:flex-start;"><div class="visual-seating-container" style="margin:0; padding:0; border:none; justify-content:flex-start; gap:4px;">${visualSeats}</div><button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${rData.right.id}'))" title="Smazat">❌</button></div>`;
         }
 
         if (rData.left || rData.right) {
-            cContHtml += `
-                <div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;">
-                    <div style="font-weight:bold; color:#d81b60; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div>
-                    <div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div>
-                    <div style="width:30px; background:#f9f5f6; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div>
-                    <div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div>
-                </div>
-            `;
+            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#d81b60; width:25px; text-align:right; flex-shrink:0;">${rowLabel}</div><div style="flex:1; display:flex; justify-content:flex-end; padding-right:10px;">${leftHtml}</div><div style="width:30px; background:#f9f5f6; height:100%; min-height: 25px; border-radius:4px; opacity:0.6; flex-shrink:0;" title="Ulička"></div><div style="flex:1; display:flex; justify-content:flex-start; padding-left:10px;">${rightHtml}</div></div>`;
         }
 
         rData.unknown.forEach(r => {
             let visualSeats = generateVisualSeats(r.capacity, rowGuests[r.id], true, true);
-            cContHtml += `
-                <div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;">
-                    <div style="font-weight:bold; color:#888; width:25px; text-align:right; flex-shrink:0;">?</div>
-                    <div style="flex:1; display:flex; justify-content:center; padding-left:10px;">
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${r.id}'))" title="Smazat">❌</button>
-                            <span style="font-size:0.7rem; color:#888;">${r.name}:</span>
-                            <div class="visual-seating-container" style="margin:0; padding:0; border:none; gap:4px;">${visualSeats}</div>
-                        </div>
-                    </div>
-                </div>`;
+            cContHtml += `<div style="display:flex; align-items:center; width:100%; margin-bottom: 8px;"><div style="font-weight:bold; color:#888; width:25px; text-align:right; flex-shrink:0;">?</div><div style="flex:1; display:flex; justify-content:center; padding-left:10px;"><div style="display:flex; gap:8px; align-items:center;"><button class="delete-row-btn" onclick="deleteDoc(doc(db, 'rady_obrad', '${r.id}'))" title="Smazat">❌</button><span style="font-size:0.7rem; color:#888;">${r.name}:</span><div class="visual-seating-container" style="margin:0; padding:0; border:none; gap:4px;">${visualSeats}</div></div></div></div>`;
         });
     });
 
-    if(sortedRows.length === 0) {
-        cContHtml = `<div style="text-align:center; color:#888; padding:20px; font-size:0.9rem;">Zatím nejsou vytvořeny žádné řady. Zadejte např. "1. řada vlevo"</div>`;
-    }
-
+    if(sortedRows.length === 0) cContHtml = `<div style="text-align:center; color:#888; padding:20px; font-size:0.9rem;">Zatím nejsou vytvořeny žádné řady. Zadejte např. "1. řada vlevo"</div>`;
     cCont.innerHTML = `<div style="margin-top: 15px; padding-top: 15px; border-top: 2px dashed #fce4ec;">${cContHtml}</div>`;
 
-    // 3. TABULKA PRO PŘIŘAZOVÁNÍ 
+    // ŘAZENÍ DO TABULKY (Nejdřív ti, co mají místo, podle řady vlevo -> vpravo)
+    const getRowInfo = (rowId) => {
+        if(!rowId) return { num: 9999, sideVal: 9, hasSeat: 0 };
+        let row = allRowsData.find(r => r.id === rowId);
+        if(!row) return { num: 9999, sideVal: 9, hasSeat: 0 };
+        let n = row.name.toLowerCase();
+        let m = n.match(/(\d+)/);
+        let num = m ? parseInt(m[1]) : 999;
+        let sideVal = n.includes('levo') ? 1 : (n.includes('pravo') ? 2 : 3);
+        return { num, sideVal, hasSeat: 1 };
+    };
+
+    const hasTable = (tableId) => tableId ? 1 : 0;
+
+    confirmedGuests.sort((a, b) => {
+        let aRow = getRowInfo(a.ceremonyRow);
+        let bRow = getRowInfo(b.ceremonyRow);
+        let aHasAny = (aRow.hasSeat || (window.hasReception && hasTable(a.receptionTable))) ? 1 : 0;
+        let bHasAny = (bRow.hasSeat || (window.hasReception && hasTable(b.receptionTable))) ? 1 : 0;
+
+        if(aHasAny !== bHasAny) return bHasAny - aHasAny; 
+        if(aRow.num !== bRow.num) return aRow.num - bRow.num; 
+        if(aRow.sideVal !== bRow.sideVal) return aRow.sideVal - bRow.sideVal; 
+        return a.name.localeCompare(b.name);
+    });
+
     let tableOpts = `<option value="">-- Nevybráno --</option>` + allTablesData.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
     let rowOpts = `<option value="">-- Nevybráno --</option>` + allRowsData.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
@@ -473,222 +429,144 @@ window.renderSeatingView = () => {
     }).join('');
 };
 
-// --- ÚKOLY ---
+// --- ÚKOLY A NÁKUPY ---
 window.renderTasksView = () => {
     const list = document.getElementById('taskList');
-    if(!list) return;
-    list.innerHTML = '';
-    const filterPri = document.getElementById('filterTaskPriority')?.value || '';
-    const filterStat = document.getElementById('filterTaskStatus')?.value || '';
+    if(!list) return; list.innerHTML = '';
+    const filterPri = document.getElementById('filterTaskPriority')?.value || ''; const filterStat = document.getElementById('filterTaskStatus')?.value || '';
     
     let filtered = allTasksData.filter(t => (!filterPri || t.priority === filterPri) && (!filterStat || t.status === filterStat));
-    filtered.sort((a, b) => {
-        if(a.status === 'Hotovo' && b.status !== 'Hotovo') return 1;
-        if(a.status !== 'Hotovo' && b.status === 'Hotovo') return -1;
-        return 0;
-    });
+    filtered.sort((a, b) => { if(a.status === 'Hotovo' && b.status !== 'Hotovo') return 1; if(a.status !== 'Hotovo' && b.status === 'Hotovo') return -1; return 0; });
     
     filtered.forEach(t => {
         const textStyle = t.status === 'Hotovo' ? 'text-decoration: line-through; color: #aaa;' : '';
-        list.innerHTML += `<tr>
-            <td><select onchange="updateDoc(doc(db, 'ukoly', '${t.id}'), {status: this.value})">
-                <option value="Není" ${t.status==='Není'?'selected':''}>❌ Není</option>
-                <option value="V průběhu" ${t.status==='V průběhu'?'selected':''}>⏳ V průběhu</option>
-                <option value="Hotovo" ${t.status==='Hotovo'?'selected':''}>✅ Hotovo</option>
-            </select></td>
-            <td class="priority-${t.priority}">${t.priority}</td>
-            <td><strong style="${textStyle}">${t.text}</strong></td>
-            <td><small>${t.note || '-'}</small></td>
-            <td><button class="btn-small" onclick="deleteDoc(doc(db, 'ukoly', '${t.id}'))">❌</button></td></tr>`;
+        list.innerHTML += `<tr><td><select onchange="updateDoc(doc(db, 'ukoly', '${t.id}'), {status: this.value})"><option value="Není" ${t.status==='Není'?'selected':''}>❌ Není</option><option value="V průběhu" ${t.status==='V průběhu'?'selected':''}>⏳ V průběhu</option><option value="Hotovo" ${t.status==='Hotovo'?'selected':''}>✅ Hotovo</option></select></td><td class="priority-${t.priority}">${t.priority}</td><td><strong style="${textStyle}">${t.text}</strong></td><td><small>${t.note || '-'}</small></td><td><button class="btn-small" onclick="deleteDoc(doc(db, 'ukoly', '${t.id}'))">❌</button></td></tr>`;
     });
 };
 
-// --- NÁKUPNÍ SEZNAM ---
 const addShoppingBtn = document.getElementById('addShoppingBtn');
-if(addShoppingBtn) {
-    addShoppingBtn.onclick = () => {
-        const i = document.getElementById('shoppingInput'), n = document.getElementById('shoppingNoteInput');
-        if(i && i.value) { 
-            addDoc(shoppingColl, { name: i.value, note: n.value, completed: false, userId: myUid }); 
-            i.value=''; n.value=''; 
-        }
-    };
-}
+if(addShoppingBtn) { addShoppingBtn.onclick = () => { const i = document.getElementById('shoppingInput'), n = document.getElementById('shoppingNoteInput'); if(i && i.value) { addDoc(shoppingColl, { name: i.value, note: n.value, completed: false, userId: myUid }); i.value=''; n.value=''; } }; }
 
 window.renderShoppingView = () => {
-    const list = document.getElementById('shoppingListBody');
-    if(!list) return;
-    list.innerHTML = '';
-    
-    let sorted = [...allShoppingData];
-    sorted.sort((a, b) => {
-        if(a.completed === true && b.completed !== true) return 1;
-        if(a.completed !== true && b.completed === true) return -1;
-        return 0;
-    });
-    
+    const list = document.getElementById('shoppingListBody'); if(!list) return; list.innerHTML = '';
+    let sorted = [...allShoppingData]; sorted.sort((a, b) => { if(a.completed === true && b.completed !== true) return 1; if(a.completed !== true && b.completed === true) return -1; return 0; });
     sorted.forEach(s => {
         const textStyle = s.completed ? 'text-decoration: line-through; color: #aaa;' : '';
-        list.innerHTML += `<tr>
-            <td style="width: 50px; text-align: center;">
-                <input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateDoc(doc(db, 'nakupni_seznam', '${s.id}'), {completed: this.checked})" style="width:20px; height:20px; cursor:pointer;">
-            </td>
-            <td><strong style="${textStyle}">${s.name}</strong></td>
-            <td><small style="${textStyle}">${s.note || '-'}</small></td>
-            <td>
-                <button class="btn-small btn-secondary" onclick="openShoppingModal('${s.id}')">✏️</button>
-                <button class="btn-small" onclick="deleteDoc(doc(db, 'nakupni_seznam', '${s.id}'))">❌</button>
-            </td>
-        </tr>`;
+        list.innerHTML += `<tr><td style="width: 50px; text-align: center;"><input type="checkbox" ${s.completed ? 'checked' : ''} onchange="updateDoc(doc(db, 'nakupni_seznam', '${s.id}'), {completed: this.checked})" style="width:20px; height:20px; cursor:pointer;"></td><td><strong style="${textStyle}">${s.name}</strong></td><td><small style="${textStyle}">${s.note || '-'}</small></td><td><button class="btn-small btn-secondary" onclick="openShoppingModal('${s.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'nakupni_seznam', '${s.id}'))">❌</button></td></tr>`;
     });
 };
 
-window.openShoppingModal = (id) => {
-    const s = allShoppingData.find(x => x.id === id);
-    if(!s) return;
-    document.getElementById('editShoppingId').value = id;
-    document.getElementById('editShoppingName').value = s.name;
-    document.getElementById('editShoppingNote').value = s.note || '';
-    document.getElementById('editShoppingModal').classList.remove('hidden');
-};
+window.openShoppingModal = (id) => { const s = allShoppingData.find(x => x.id === id); if(!s) return; document.getElementById('editShoppingId').value = id; document.getElementById('editShoppingName').value = s.name; document.getElementById('editShoppingNote').value = s.note || ''; document.getElementById('editShoppingModal').classList.remove('hidden'); };
 window.closeShoppingModal = () => document.getElementById('editShoppingModal').classList.add('hidden');
-window.saveShoppingEdit = () => {
-    const id = document.getElementById('editShoppingId').value;
-    updateDoc(doc(db, 'nakupni_seznam', id), {
-        name: document.getElementById('editShoppingName').value,
-        note: document.getElementById('editShoppingNote').value
-    });
-    window.closeShoppingModal();
-};
+window.saveShoppingEdit = () => { updateDoc(doc(db, 'nakupni_seznam', document.getElementById('editShoppingId').value), { name: document.getElementById('editShoppingName').value, note: document.getElementById('editShoppingNote').value }); window.closeShoppingModal(); };
 
 // --- ROZPOČET ---
 window.renderBudgetView = () => {
-    const summaryBody = document.getElementById('budgetCategorySummaryBody'); 
-    const expBody = document.getElementById('budgetExpensesBody');
-    const catSelect = document.getElementById('expenseCategorySelect');
+    const summaryBody = document.getElementById('budgetCategorySummaryBody'); const expBody = document.getElementById('budgetExpensesBody'); const catSelect = document.getElementById('expenseCategorySelect');
     if(!summaryBody || !expBody || !catSelect) return;
 
     let estTotal = 0, actTotal = 0, catSums = {};
-
-    allBudgetPlans.forEach(p => {
-        estTotal += Number(p.estimated);
-        catSums[p.category] = { est: Number(p.estimated), act: 0, id: p.id };
-    });
+    allBudgetPlans.forEach(p => { estTotal += Number(p.estimated); catSums[p.category] = { est: Number(p.estimated), act: 0, id: p.id }; });
 
     let selHtml = '<option value="">-- Vyberte kategorii z plánu --</option>';
     allBudgetPlans.forEach(p => { selHtml += `<option value="${p.category}">${p.category}</option>`; });
     catSelect.innerHTML = selHtml;
 
-    const txtFilter = (document.getElementById('filterBudgetText')?.value || '').toLowerCase();
-    const catFilter = (document.getElementById('filterBudgetCat')?.value || '').toLowerCase();
-
-    allExpenses.forEach(e => {
-        let cat = e.category || 'Nezařazeno';
-        let amt = Number(e.amount || 0);
-        actTotal += amt;
-        if(!catSums[cat]) catSums[cat] = { est: 0, act: 0, id: null };
-        catSums[cat].act += amt;
-    });
+    allExpenses.forEach(e => { let cat = e.category || 'Nezařazeno'; let amt = Number(e.amount || 0); actTotal += amt; if(!catSums[cat]) catSums[cat] = { est: 0, act: 0, id: null }; catSums[cat].act += amt; });
 
     summaryBody.innerHTML = '';
     for (let [cat, data] of Object.entries(catSums)) {
-        let colorClass = data.act > data.est ? 'budget-negative' : (data.act > 0 ? 'budget-positive' : '');
-        let actionHtml = data.id ? `<button class="btn-small btn-secondary" onclick="openPlanModal('${data.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_plan', '${data.id}'))">❌</button>` : '';
+        let colorClass = data.act > data.est ? 'budget-negative' : (data.act > 0 ? 'budget-positive' : ''); let actionHtml = data.id ? `<button class="btn-small btn-secondary" onclick="openPlanModal('${data.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_plan', '${data.id}'))">❌</button>` : '';
         summaryBody.innerHTML += `<tr><td><strong>${cat}</strong></td><td>${data.est.toLocaleString()} Kč</td><td class="${colorClass}"><strong>${data.act.toLocaleString()} Kč</strong></td><td>${actionHtml}</td></tr>`;
     }
     
     expBody.innerHTML = '';
     allExpenses.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
-        if (txtFilter && !(e.name||'').toLowerCase().includes(txtFilter)) return;
-        if (catFilter && !(e.category||'').toLowerCase().includes(catFilter)) return;
         let dStr = e.date ? new Date(e.date).toLocaleDateString('cs-CZ') : '-';
-        expBody.innerHTML += `<tr><td>${dStr}</td><td>${e.category}</td><td>${e.name}</td><td><strong>${Number(e.amount).toLocaleString()} Kč</strong></td>
-            <td><button class="btn-small btn-secondary" onclick="openExpenseModal('${e.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))">❌</button></td></tr>`;
+        expBody.innerHTML += `<tr><td>${dStr}</td><td>${e.category}</td><td>${e.name}</td><td><strong>${Number(e.amount).toLocaleString()} Kč</strong></td><td><button class="btn-small btn-secondary" onclick="openExpenseModal('${e.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'rozpocet_naklady', '${e.id}'))">❌</button></td></tr>`;
     });
 
     if(document.getElementById('totalEstimated')) document.getElementById('totalEstimated').innerText = estTotal.toLocaleString() + " Kč";
     if(document.getElementById('totalActual')) document.getElementById('totalActual').innerText = actTotal.toLocaleString() + " Kč";
-    const actBox = document.getElementById('totalActualBox');
-    if(actBox) { actBox.className = actTotal > estTotal ? 'stat-box stat-negative' : (actTotal > 0 ? 'stat-box stat-positive' : 'stat-box'); }
+    const actBox = document.getElementById('totalActualBox'); if(actBox) { actBox.className = actTotal > estTotal ? 'stat-box stat-negative' : (actTotal > 0 ? 'stat-box stat-positive' : 'stat-box'); }
 };
 
 const addPlanBtn = document.getElementById('addPlanBtn');
-if(addPlanBtn) {
-    addPlanBtn.onclick = () => {
-        const cat = document.getElementById('planCategoryName').value; const est = document.getElementById('planEstimatedAmount').value;
-        if(cat && est) {
-            addDoc(budgetPlanColl, { category: cat, estimated: Number(est), userId: myUid });
-            document.getElementById('planCategoryName').value = ''; document.getElementById('planEstimatedAmount').value = '';
-        }
-    };
-}
+if(addPlanBtn) { addPlanBtn.onclick = () => { const cat = document.getElementById('planCategoryName').value; const est = document.getElementById('planEstimatedAmount').value; if(cat && est) { addDoc(budgetPlanColl, { category: cat, estimated: Number(est), userId: myUid }); document.getElementById('planCategoryName').value = ''; document.getElementById('planEstimatedAmount').value = ''; } }; }
 
 const addExpenseBtn = document.getElementById('addExpenseBtn');
-if(addExpenseBtn) {
-    addExpenseBtn.onclick = () => {
-        const d = document.getElementById('expenseDate').value, n = document.getElementById('expenseName').value;
-        const c = document.getElementById('expenseCategorySelect').value, a = document.getElementById('expenseActualAmount').value;
-        if(n && a) {
-            addDoc(expensesColl, { date: d, name: n, category: c, amount: Number(a), userId: myUid });
-            document.getElementById('expenseDate').value = ''; document.getElementById('expenseName').value = '';
-            document.getElementById('expenseCategorySelect').value = ''; document.getElementById('expenseActualAmount').value = '';
-        }
-    };
-}
+if(addExpenseBtn) { addExpenseBtn.onclick = () => { const d = document.getElementById('expenseDate').value, n = document.getElementById('expenseName').value; const c = document.getElementById('expenseCategorySelect').value, a = document.getElementById('expenseActualAmount').value; if(n && a) { addDoc(expensesColl, { date: d, name: n, category: c, amount: Number(a), userId: myUid }); document.getElementById('expenseDate').value = ''; document.getElementById('expenseName').value = ''; document.getElementById('expenseCategorySelect').value = ''; document.getElementById('expenseActualAmount').value = ''; } }; }
 
-window.openPlanModal = (id) => {
-    const p = allBudgetPlans.find(x => x.id === id);
-    if (!p) return;
-    document.getElementById('editPlanId').value = id;
-    document.getElementById('editPlanCatName').value = p.category;
-    document.getElementById('editPlanAmount').value = p.estimated;
-    document.getElementById('editPlanModal').classList.remove('hidden');
-};
+window.openPlanModal = (id) => { const p = allBudgetPlans.find(x => x.id === id); if (!p) return; document.getElementById('editPlanId').value = id; document.getElementById('editPlanCatName').value = p.category; document.getElementById('editPlanAmount').value = p.estimated; document.getElementById('editPlanModal').classList.remove('hidden'); };
 window.closePlanModal = () => document.getElementById('editPlanModal').classList.add('hidden');
-window.savePlanEdit = () => {
-    updateDoc(doc(db, 'rozpocet_plan', document.getElementById('editPlanId').value), { category: document.getElementById('editPlanCatName').value, estimated: Number(document.getElementById('editPlanAmount').value) });
-    window.closePlanModal();
-};
+window.savePlanEdit = () => { updateDoc(doc(db, 'rozpocet_plan', document.getElementById('editPlanId').value), { category: document.getElementById('editPlanCatName').value, estimated: Number(document.getElementById('editPlanAmount').value) }); window.closePlanModal(); };
 
-window.openExpenseModal = (id) => {
-    const e = allExpenses.find(x => x.id === id);
-    if (!e) return;
-    document.getElementById('editExpId').value = id;
-    document.getElementById('editExpDate').value = e.date || '';
-    document.getElementById('editExpName').value = e.name;
-    const sel = document.getElementById('editExpCatSelect');
-    sel.innerHTML = '<option value="">-- Vyberte kategorii z plánu --</option>' + allBudgetPlans.map(p => `<option value="${p.category}">${p.category}</option>`).join('');
-    sel.value = e.category || '';
-    document.getElementById('editExpAmount').value = e.amount;
-    document.getElementById('editExpenseModal').classList.remove('hidden');
-};
+window.openExpenseModal = (id) => { const e = allExpenses.find(x => x.id === id); if (!e) return; document.getElementById('editExpId').value = id; document.getElementById('editExpDate').value = e.date || ''; document.getElementById('editExpName').value = e.name; const sel = document.getElementById('editExpCatSelect'); sel.innerHTML = '<option value="">-- Vyberte kategorii z plánu --</option>' + allBudgetPlans.map(p => `<option value="${p.category}">${p.category}</option>`).join(''); sel.value = e.category || ''; document.getElementById('editExpAmount').value = e.amount; document.getElementById('editExpenseModal').classList.remove('hidden'); };
 window.closeExpenseModal = () => document.getElementById('editExpenseModal').classList.add('hidden');
-window.saveExpenseEdit = () => {
-    updateDoc(doc(db, 'rozpocet_naklady', document.getElementById('editExpId').value), {
-        date: document.getElementById('editExpDate').value, name: document.getElementById('editExpName').value,
-        category: document.getElementById('editExpCatSelect').value, amount: Number(document.getElementById('editExpAmount').value)
+window.saveExpenseEdit = () => { updateDoc(doc(db, 'rozpocet_naklady', document.getElementById('editExpId').value), { date: document.getElementById('editExpDate').value, name: document.getElementById('editExpName').value, category: document.getElementById('editExpCatSelect').value, amount: Number(document.getElementById('editExpAmount').value) }); window.closeExpenseModal(); };
+
+
+// --- HOSTÉ A DUPLICITY (NOVÉ) ---
+window.toggleGuestSelection = (id, checked) => {
+    if(checked && !window.selectedGuests.includes(id)) window.selectedGuests.push(id);
+    else if(!checked) window.selectedGuests = window.selectedGuests.filter(gid => gid !== id);
+};
+
+window.toggleAllGuests = () => {
+    const checkboxes = document.querySelectorAll('.guest-checkbox');
+    let allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => { cb.checked = !allChecked; window.toggleGuestSelection(cb.value, !allChecked); });
+};
+
+window.deleteSelectedGuests = () => {
+    if(window.selectedGuests.length === 0) return alert("Vyberte alespoň jednoho hosta.");
+    if(confirm(`Opravdu chcete smazat ${window.selectedGuests.length} vybraných hostů?`)) {
+        window.selectedGuests.forEach(id => deleteDoc(doc(db, 'hoste', id)));
+        window.selectedGuests = []; 
+    }
+};
+
+window.bulkChangeStatus = () => {
+    const val = document.getElementById('bulkStatusSelect').value;
+    if(!val) return;
+    if(window.selectedGuests.length === 0) return alert("Vyberte alespoň jednoho hosta.");
+    window.selectedGuests.forEach(id => updateDoc(doc(db, 'hoste', id), { status: val }));
+    window.selectedGuests = []; document.getElementById('bulkStatusSelect').value = '';
+};
+
+window.findDuplicates = () => {
+    const btn = document.getElementById('duplicateBtn');
+    if (window.duplicateIds.length > 0) {
+        window.duplicateIds = []; 
+        if(btn) btn.innerHTML = "🔍 Najít duplicity";
+        window.renderGuestsView();
+        return;
+    }
+    
+    window.duplicateIds = [];
+    let nameMap = allGuestsData.map(g => {
+        let norm = g.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let words = norm.split(/[\s,]+/).filter(w => w.length > 2); 
+        return { id: g.id, words: words };
     });
-    window.closeExpenseModal();
+
+    for(let i=0; i<nameMap.length; i++) {
+        for(let j=i+1; j<nameMap.length; j++) {
+            let match = nameMap[i].words.some(w => nameMap[j].words.includes(w));
+            if(match) {
+                if(!window.duplicateIds.includes(nameMap[i].id)) window.duplicateIds.push(nameMap[i].id);
+                if(!window.duplicateIds.includes(nameMap[j].id)) window.duplicateIds.push(nameMap[j].id);
+            }
+        }
+    }
+    
+    if(window.duplicateIds.length === 0) { alert("Nenalezeny žádné zjevné duplicity (podobná jména)."); } 
+    else { if(btn) btn.innerHTML = "❌ Zrušit zobrazení duplicit"; }
+    window.renderGuestsView();
 };
 
-// --- HOSTÉ A DĚTI ---
-window.renderAdminChildrenAges = () => {
-    const num = document.getElementById('guestChildren').value; const cont = document.getElementById('adminChildrenAgesContainer');
-    if(!cont) return; cont.innerHTML = '';
-    for(let i=0; i<num; i++) {
-        cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
-                <select class="admin-child-age-select" style="padding:5px;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`;
-    }
-};
-
-window.renderEditModalChildrenAges = () => {
-    const num = document.getElementById('editNumChildren').value; const cont = document.getElementById('editModalChildrenAgesContainer');
-    if(!cont) return; cont.innerHTML = '';
-    for(let i=0; i<num; i++) {
-        cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label>
-                <select class="edit-child-age-select" style="padding:5px;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`;
-    }
-};
+window.renderAdminChildrenAges = () => { const num = document.getElementById('guestChildren').value; const cont = document.getElementById('adminChildrenAgesContainer'); if(!cont) return; cont.innerHTML = ''; for(let i=0; i<num; i++) { cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label><select class="admin-child-age-select" style="padding:5px;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`; } };
+window.renderEditModalChildrenAges = () => { const num = document.getElementById('editNumChildren').value; const cont = document.getElementById('editModalChildrenAgesContainer'); if(!cont) return; cont.innerHTML = ''; for(let i=0; i<num; i++) { cont.innerHTML += `<div style="margin-top:5px; display:flex; gap:10px; align-items:center;"><label style="font-size:0.85rem;">Věk dítěte ${i+1}:</label><select class="edit-child-age-select" style="padding:5px;"><option value="Malé (0-3)">Malé (0-3 roky)</option><option value="Střední (4-10)">Střední (4-10 let)</option><option value="Velké (11+)">Velké (11+ let)</option></select></div>`; } };
 
 window.renderGuestsView = () => {
     const tbody = document.getElementById('guestTableBody'); 
@@ -712,6 +590,10 @@ window.renderGuestsView = () => {
     });
 
     filtered.sort((a, b) => {
+        let aDup = window.duplicateIds.includes(a.id) ? 1 : 0;
+        let bDup = window.duplicateIds.includes(b.id) ? 1 : 0;
+        if (aDup !== bDup) return bDup - aDup; // Duplicity nahoru
+
         if (sortType === 'name') return a.name.localeCompare(b.name);
         let dateA = a.submittedDate ? new Date(a.submittedDate).getTime() : 0;
         let dateB = b.submittedDate ? new Date(b.submittedDate).getTime() : 0;
@@ -735,7 +617,11 @@ window.renderGuestsView = () => {
             g.childrenAges.forEach(age => { if(stats.children[age] !== undefined) stats.children[age]++; });
         }
 
-        tbody.innerHTML += `<tr class="${g.side === 'Nevěsta' ? 'side-nevesta' : (g.side === 'Ženich' ? 'side-zenich' : 'side-spolecny')}">
+        let dupStyle = window.duplicateIds.includes(g.id) ? 'background-color: #fff3cd !important; box-shadow: inset 4px 0 0 #f39c12;' : '';
+        let rowClass = g.side === 'Nevěsta' ? 'side-nevesta' : (g.side === 'Ženich' ? 'side-zenich' : 'side-spolecny');
+
+        tbody.innerHTML += `<tr class="${rowClass}" style="${dupStyle}">
+            <td style="text-align:center;"><input type="checkbox" class="guest-checkbox" value="${g.id}" ${window.selectedGuests.includes(g.id) ? 'checked' : ''} onchange="toggleGuestSelection('${g.id}', this.checked)"></td>
             <td><strong>${g.name}</strong>${childInfo}</td><td>${g.city || '-'}</td><td>${g.side}</td>
             <td style="cursor:pointer" onclick="toggleGuest('${g.id}','${g.status}')">${g.status === 'Potvrzeno' ? '✅ Potvrzeno' : (g.status === 'Nezúčastní se' ? '<span class="status-declined">❌ Odmítl/a</span>' : '📩 Pozváno')}</td>
             <td><button class="btn-small btn-secondary" onclick="openEditModal('${g.id}')">✏️</button> <button class="btn-small" onclick="deleteDoc(doc(db, 'hoste', '${g.id}'))">❌</button></td></tr>`;
@@ -743,7 +629,6 @@ window.renderGuestsView = () => {
 
     let cityHtml = '<strong>Hosté z měst:</strong><br>';
     for (let [city, count] of Object.entries(stats.cities)) cityHtml += `<div class="city-badge">${city} <span>(${count}x)</span></div>`;
-    
     if(document.getElementById('cityBadgesContainer')) document.getElementById('cityBadgesContainer').innerHTML = cityHtml;
 
     if(document.getElementById('guestStatsBlock')) {
@@ -784,8 +669,7 @@ if(addGuestBtn) {
 }
 
 window.openEditModal = (id) => {
-    const guest = allGuestsData.find(g => g.id === id);
-    if (!guest) return;
+    const guest = allGuestsData.find(g => g.id === id); if (!guest) return;
     document.getElementById('editGuestId').value = id; document.getElementById('editGuestName').value = guest.name;
     document.getElementById('editGuestCity').value = guest.city || ''; document.getElementById('editGuestSide').value = guest.side || 'Nevěsta';
     document.getElementById('editNumChildren').value = guest.numChildren || 0;
@@ -798,7 +682,6 @@ window.openEditModal = (id) => {
     if(document.getElementById('editNeedsAcc')) document.getElementById('editNeedsAcc').checked = guest.needsAcc || false;
     const m = document.getElementById('editModal'); if(m) m.classList.remove('hidden');
 };
-
 window.closeModal = () => { const m = document.getElementById('editModal'); if(m) m.classList.add('hidden'); };
 
 window.saveGuestEdit = () => {
@@ -824,24 +707,14 @@ window.toggleGuest = (id, s) => { let n = 'Pozváno'; if (s === 'Pozváno') n = 
 // --- POMOCNÍCI ---
 window.openCategoryEditModal = () => { window.renderModalCategoryList(); document.getElementById('categoryEditModal').classList.remove('hidden'); };
 window.closeCategoryEditModal = () => document.getElementById('categoryEditModal').classList.add('hidden');
-
 window.renderModalCategoryList = () => {
-    const list = document.getElementById('modalCategoryList');
-    if(!list) return;
-    list.innerHTML = helperCategories.map(c => `
-        <div style="display:flex; justify-content:space-between; background:#f9f9f9; padding:8px; border-radius:5px; border:1px solid #eee;">
-            <span>${c}</span> <button class="btn-small btn-secondary" onclick="removeHelperCategory('${c}')">❌</button>
-        </div>`).join('');
+    const list = document.getElementById('modalCategoryList'); if(!list) return;
+    list.innerHTML = helperCategories.map(c => `<div style="display:flex; justify-content:space-between; background:#f9f9f9; padding:8px; border-radius:5px; border:1px solid #eee;"><span>${c}</span> <button class="btn-small btn-secondary" onclick="removeHelperCategory('${c}')">❌</button></div>`).join('');
 };
 
 window.addHelperCategoryFromModal = () => {
-    const input = document.getElementById('modalNewCatInput');
-    if(!input) return;
-    const v = input.value.trim();
-    if(v && !helperCategories.includes(v)) { 
-        helperCategories.push(v); 
-        setDoc(doc(db, "nastaveni", myUid), {helperCategories}, {merge:true}).then(() => { input.value = ''; window.renderModalCategoryList(); window.renderHelpersView(); });
-    }
+    const input = document.getElementById('modalNewCatInput'); if(!input) return; const v = input.value.trim();
+    if(v && !helperCategories.includes(v)) { helperCategories.push(v); setDoc(doc(db, "nastaveni", myUid), {helperCategories}, {merge:true}).then(() => { input.value = ''; window.renderModalCategoryList(); window.renderHelpersView(); }); }
 };
 
 window.removeHelperCategory = (cat) => {
@@ -850,36 +723,26 @@ window.removeHelperCategory = (cat) => {
 };
 
 window.toggleHelperFilter = (cat) => {
-    if(activeHelperFilters.includes(cat)) activeHelperFilters = activeHelperFilters.filter(c => c !== cat);
-    else activeHelperFilters.push(cat);
+    if(activeHelperFilters.includes(cat)) activeHelperFilters = activeHelperFilters.filter(c => c !== cat); else activeHelperFilters.push(cat);
     window.renderHelpersView();
 };
 
 window.renderHelpersView = () => {
-    const hp = document.getElementById('helperPendingTableBody'); 
-    const ha = document.getElementById('helperAssignedTableBody'); 
-    if(!hp || !ha) return;
-    hp.innerHTML = ''; ha.innerHTML = '';
+    const hp = document.getElementById('helperPendingTableBody'); const ha = document.getElementById('helperAssignedTableBody'); 
+    if(!hp || !ha) return; hp.innerHTML = ''; ha.innerHTML = '';
     
-    let tasksStats = {};
-    helperCategories.forEach(c => tasksStats[c] = 0); 
+    let tasksStats = {}; helperCategories.forEach(c => tasksStats[c] = 0); 
 
     allGuestsData.filter(g => g.isHelper).forEach(g => {
         if (g.helperStatus === 'pending') {
-            hp.innerHTML += `<tr><td><strong>${g.name}</strong><br><small>Z formuláře: ${g.helperTask || 'Nic'}</small></td>
-                <td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">📋 Vybrat role</button></td>
-                <td><button class="btn-small" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {helperStatus:'assigned'})">✅ Schválit</button></td></tr>`;
+            hp.innerHTML += `<tr><td><strong>${g.name}</strong><br><small>Z formuláře: ${g.helperTask || 'Nic'}</small></td><td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">📋 Vybrat role</button></td><td><button class="btn-small" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {helperStatus:'assigned'})">✅ Schválit</button></td></tr>`;
         } else {
             let tArray = (g.helperTask ? g.helperTask : 'Nepřiřazeno').split(',').map(s => s.trim()).filter(s => s);
             if(tArray.length === 0) tArray = ['Nepřiřazeno'];
-            
             tArray.forEach(t => { if (tasksStats[t] === undefined) tasksStats[t] = 0; tasksStats[t] += 1; });
 
             let showRow = activeHelperFilters.length === 0 || activeHelperFilters.some(f => tArray.includes(f));
-            if(showRow) {
-                ha.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.helperTask || '-'}</td>
-                    <td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">✏️ Upravit</button></td></tr>`;
-            }
+            if(showRow) ha.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.helperTask || '-'}</td><td><button class="btn-small btn-secondary" onclick="openHelperModal('${g.id}')">✏️ Upravit</button></td></tr>`;
         }
     });
 
@@ -892,32 +755,19 @@ window.renderHelpersView = () => {
 };
 
 window.openHelperModal = (id) => {
-    const g = allGuestsData.find(x => x.id === id);
-    if(!g) return;
-    document.getElementById('modalHelperId').value = id;
+    const g = allGuestsData.find(x => x.id === id); if(!g) return; document.getElementById('modalHelperId').value = id;
     const cont = document.getElementById('modalHelperCheckboxes');
-    if(cont) {
-        cont.innerHTML = helperCategories.map(c => `
-            <label style="padding:10px; background:#f9f9f9; border-radius:8px; border:1px solid #eee;">
-                <input type="checkbox" value="${c}" ${(g.helperTask || '').includes(c) ? 'checked' : ''}> ${c}
-            </label>
-        `).join('');
-    }
-    const modal = document.getElementById('helperEditModal');
-    if(modal) modal.classList.remove('hidden');
+    if(cont) cont.innerHTML = helperCategories.map(c => `<label style="padding:10px; background:#f9f9f9; border-radius:8px; border:1px solid #eee;"><input type="checkbox" value="${c}" ${(g.helperTask || '').includes(c) ? 'checked' : ''}> ${c}</label>`).join('');
+    document.getElementById('helperEditModal').classList.remove('hidden');
 };
 
 window.saveHelperRoles = () => {
     const id = document.getElementById('modalHelperId').value;
     const roles = Array.from(document.querySelectorAll('#modalHelperCheckboxes input:checked')).map(cb => cb.value).join(', ');
-    updateDoc(doc(db, 'hoste', id), { helperTask: roles });
-    window.closeHelperModal();
+    updateDoc(doc(db, 'hoste', id), { helperTask: roles }); window.closeHelperModal();
 };
 
-window.closeHelperModal = () => {
-    const m = document.getElementById('helperEditModal');
-    if(m) m.classList.add('hidden');
-};
+window.closeHelperModal = () => { document.getElementById('helperEditModal').classList.add('hidden'); };
 
 // --- UBYTOVÁNÍ A KAPACITA ---
 function getRoomCapacity(name) {
@@ -926,14 +776,11 @@ function getRoomCapacity(name) {
     if(n.includes('tří') || n.includes('tri') || n.includes('troj')) return 3;
     if(n.includes('čtyř') || n.includes('ctyr')) return 4; if(n.includes('pěti') || n.includes('peti')) return 5;
     if(n.includes('šesti') || n.includes('sesti')) return 6;
-    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); 
-    return 2;
+    let m = n.match(/(\d+)(?=-?lůž|-?luz)/); if(m) return parseInt(m[1]); return 2;
 }
 
 window.renderAccView = () => {
-    const placesCont = document.getElementById('accPlacesContainer'); 
-    const aPending = document.getElementById('accPendingTableBody'); 
-    const aAssigned = document.getElementById('accAssignedTableBody'); 
+    const placesCont = document.getElementById('accPlacesContainer'); const aPending = document.getElementById('accPendingTableBody'); const aAssigned = document.getElementById('accAssignedTableBody'); 
     if(!placesCont || !aPending || !aAssigned) return;
 
     placesCont.innerHTML = ''; aPending.innerHTML = ''; aAssigned.innerHTML = '';
@@ -970,9 +817,7 @@ window.renderAccView = () => {
 
     const filterSelect = document.getElementById('filterAccAssignedPlace');
     if(filterSelect && filterSelect.options.length <= 1 && accPlacesData.length > 0) {
-        let opts = '<option value="">-- Všechna místa --</option>';
-        accPlacesData.forEach(p => opts += `<option value="${p.name}">${p.name}</option>`);
-        filterSelect.innerHTML = opts;
+        let opts = '<option value="">-- Všechna místa --</option>'; accPlacesData.forEach(p => opts += `<option value="${p.name}">${p.name}</option>`); filterSelect.innerHTML = opts;
     }
 
     const selFilterPlace = document.getElementById('filterAccAssignedPlace')?.value || '';
@@ -986,104 +831,53 @@ window.renderAccView = () => {
 
         let options = `<option value="">-- Vybrat místo a pokoj --</option>` + accPlacesData.map(p => p.rooms.map(r => `<option value="${p.name}|${r}" ${g.accPlace===p.name && g.accRoom===r ? 'selected':''}>${p.name}: ${r}</option>`).join('')).join('');
         
-        aAssigned.innerHTML += `
-            <tr>
-                <td><strong>${g.name}</strong></td>
-                <td>${g.accPlace}</td>
-                <td>
-                    <div id="disp_room_${g.id}" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                        <span>${g.accRoom}</span>
-                        <button class="btn-small btn-secondary" onclick="toggleAccEdit('${g.id}')">✏️ Upravit</button>
-                    </div>
-                    <div id="edit_box_${g.id}" class="hidden" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;">
-                        <select id="edit_sel_${g.id}" style="flex:1;">${options}</select>
-                        <button class="btn-small" onclick="saveAccEdit('${g.id}')">✔ Uložit</button>
-                        <button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})" title="Vrátit do žádostí">↩️ Do žádostí</button>
-                    </div>
-                </td>
-            </tr>`;
+        aAssigned.innerHTML += `<tr><td><strong>${g.name}</strong></td><td>${g.accPlace}</td><td><div id="disp_room_${g.id}" style="display:flex; justify-content:space-between; align-items:center; gap:10px;"><span>${g.accRoom}</span><button class="btn-small btn-secondary" onclick="toggleAccEdit('${g.id}')">✏️ Upravit</button></div><div id="edit_box_${g.id}" class="hidden" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;"><select id="edit_sel_${g.id}" style="flex:1;">${options}</select><button class="btn-small" onclick="saveAccEdit('${g.id}')">✔ Uložit</button><button class="btn-small btn-secondary" onclick="updateDoc(doc(db, 'hoste', '${g.id}'), {accStatus: 'pending'})" title="Vrátit do žádostí">↩️ Do žádostí</button></div></td></tr>`;
     });
 };
 
-window.toggleAccEdit = (id) => {
-    document.getElementById(`disp_room_${id}`).classList.add('hidden');
-    document.getElementById(`edit_box_${id}`).classList.remove('hidden');
-};
-
-window.saveAccEdit = (id) => {
-    const v = document.getElementById(`edit_sel_${id}`).value.split('|');
-    if(v.length === 2) { updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]}); }
-};
+window.toggleAccEdit = (id) => { document.getElementById(`disp_room_${id}`).classList.add('hidden'); document.getElementById(`edit_box_${id}`).classList.remove('hidden'); };
+window.saveAccEdit = (id) => { const v = document.getElementById(`edit_sel_${id}`).value.split('|'); if(v.length === 2) { updateDoc(doc(db, 'hoste', id), {accPlace: v[0], accRoom: v[1]}); } };
 
 window.openAccPlaceEditModal = (id) => {
-    const place = accPlacesData.find(p => p.id === id);
-    if (!place) return;
-    currentEditAccPlace = JSON.parse(JSON.stringify(place));
-    document.getElementById('editAccPlaceId').value = id;
-    document.getElementById('editAccPlaceName').value = currentEditAccPlace.name;
-    window.renderModalAccRooms();
-    document.getElementById('editAccPlaceModal').classList.remove('hidden');
+    const place = accPlacesData.find(p => p.id === id); if (!place) return; currentEditAccPlace = JSON.parse(JSON.stringify(place));
+    document.getElementById('editAccPlaceId').value = id; document.getElementById('editAccPlaceName').value = currentEditAccPlace.name;
+    window.renderModalAccRooms(); document.getElementById('editAccPlaceModal').classList.remove('hidden');
 };
-
 window.renderModalAccRooms = () => {
-    const container = document.getElementById('editAccRoomsContainer');
-    if(!container) return;
-    container.innerHTML = currentEditAccPlace.rooms.map((r, i) => `
-        <div style="display:flex; gap:5px; margin-bottom:5px;">
-            <input type="text" class="editable-input" value="${r}" onchange="currentEditAccPlace.rooms[${i}] = this.value">
-            <button class="btn-small btn-secondary" onclick="removeRoomFromModal(${i})">❌</button>
-        </div>
-    `).join('');
+    const container = document.getElementById('editAccRoomsContainer'); if(!container) return;
+    container.innerHTML = currentEditAccPlace.rooms.map((r, i) => `<div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" class="editable-input" value="${r}" onchange="currentEditAccPlace.rooms[${i}] = this.value"><button class="btn-small btn-secondary" onclick="removeRoomFromModal(${i})">❌</button></div>`).join('');
 };
-
 window.addRoomToModal = () => { currentEditAccPlace.rooms.push("Nový pokoj"); window.renderModalAccRooms(); };
 window.removeRoomFromModal = (index) => { currentEditAccPlace.rooms.splice(index, 1); window.renderModalAccRooms(); };
 
 window.saveAccPlaceEdit = () => {
-    const id = document.getElementById('editAccPlaceId').value;
-    const newName = document.getElementById('editAccPlaceName').value;
+    const id = document.getElementById('editAccPlaceId').value; const newName = document.getElementById('editAccPlaceName').value;
     updateDoc(doc(db, 'ubytovani_kapacity', id), { name: newName, rooms: currentEditAccPlace.rooms.filter(r => r.trim() !== '') });
     document.getElementById('editAccPlaceModal').classList.add('hidden');
 };
 
 window.addAccPlace = () => {
-    const name = document.getElementById('newPlaceName').value.trim();
-    const roomsInput = document.getElementById('newPlaceRooms').value.trim();
-    if(!name) return;
+    const name = document.getElementById('newPlaceName').value.trim(); const roomsInput = document.getElementById('newPlaceRooms').value.trim(); if(!name) return;
     let generatedRooms = [];
-    if(roomsInput) {
-        roomsInput.split(',').forEach(part => {
-            const match = part.trim().match(/^(\d+)[xX]\s+(.+)$/);
-            if(match) { for(let i=1; i<=parseInt(match[1]); i++) generatedRooms.push(`${match[2]} ${i}`); } 
-            else if(part.trim() !== '') generatedRooms.push(part.trim());
-        });
-    }
-    addDoc(accColl, { name: name, rooms: generatedRooms, userId: myUid });
-    document.getElementById('newPlaceName').value = ''; document.getElementById('newPlaceRooms').value = '';
+    if(roomsInput) { roomsInput.split(',').forEach(part => { const match = part.trim().match(/^(\d+)[xX]\s+(.+)$/); if(match) { for(let i=1; i<=parseInt(match[1]); i++) generatedRooms.push(`${match[2]} ${i}`); } else if(part.trim() !== '') generatedRooms.push(part.trim()); }); }
+    addDoc(accColl, { name: name, rooms: generatedRooms, userId: myUid }); document.getElementById('newPlaceName').value = ''; document.getElementById('newPlaceRooms').value = '';
 };
 
 window.loadRoomsForSelect = (guestId, placeId) => {
-    const roomSelect = document.getElementById(`selRoom_${guestId}`);
-    if(!placeId || !roomSelect) { if(roomSelect) roomSelect.style.display = 'none'; return; }
+    const roomSelect = document.getElementById(`selRoom_${guestId}`); if(!placeId || !roomSelect) { if(roomSelect) roomSelect.style.display = 'none'; return; }
     const place = accPlacesData.find(p => p.id === placeId);
-    if(place) {
-        roomSelect.innerHTML = `<option value="">-- Vyberte pokoj --</option>` + place.rooms.map(r => `<option value="${r}">${r}</option>`).join('');
-        roomSelect.style.display = 'block';
-    }
+    if(place) { roomSelect.innerHTML = `<option value="">-- Vyberte pokoj --</option>` + place.rooms.map(r => `<option value="${r}">${r}</option>`).join(''); roomSelect.style.display = 'block'; }
 };
 
 window.approveAcc = (guestId) => {
-    const placeId = document.getElementById(`selPlace_${guestId}`).value;
-    const room = document.getElementById(`selRoom_${guestId}`).value;
-    if(!placeId) { alert("Musíte vybrat místo!"); return; }
-    updateDoc(doc(db, 'hoste', guestId), { accPlace: accPlacesData.find(p => p.id === placeId).name, accRoom: room || '', accStatus: 'assigned' });
+    const placeId = document.getElementById(`selPlace_${guestId}`).value; const room = document.getElementById(`selRoom_${guestId}`).value;
+    if(!placeId) { alert("Musíte vybrat místo!"); return; } updateDoc(doc(db, 'hoste', guestId), { accPlace: accPlacesData.find(p => p.id === placeId).name, accRoom: room || '', accStatus: 'assigned' });
 };
 
+// --- SMAZÁNÍ ÚČTU ---
 window.deleteMyAccountAndData = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const confirmDelete = confirm("Opravdu chcete nenávratně smazat svůj účet a VŠECHNA svá data ze svatby? Tuto akci nelze vzít zpět.");
-    if (!confirmDelete) return;
+    const user = auth.currentUser; if (!user) return;
+    const confirmDelete = confirm("Opravdu chcete nenávratně smazat svůj účet a VŠECHNA svá data ze svatby? Tuto akci nelze vzít zpět."); if (!confirmDelete) return;
 
     const uid = user.uid;
     try {
@@ -1100,8 +894,7 @@ window.deleteMyAccountAndData = async () => {
         await deleteUser(user);
         alert("Váš účet a všechna data byla úspěšně a bezpečně smazána.");
     } catch (error) {
-        if(error.code === 'auth/requires-recent-login') alert("Z bezpečnostních důvodů se prosím odhlaste, znovu přihlaste a zkuste to znovu.");
-        else alert("Chyba při mazání dat: " + error.message);
+        if(error.code === 'auth/requires-recent-login') alert("Z bezpečnostních důvodů se prosím odhlaste, znovu přihlaste a zkuste to znovu."); else alert("Chyba při mazání dat: " + error.message);
     }
 };
 
