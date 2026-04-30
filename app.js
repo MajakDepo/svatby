@@ -387,7 +387,6 @@ window.renderSeatingView = () => {
     if(sortedRows.length === 0) cContHtml = `<div style="text-align:center; color:#888; padding:20px; font-size:0.9rem;">Zatím nejsou vytvořeny žádné řady. Zadejte např. "1. řada vlevo"</div>`;
     cCont.innerHTML = `<div style="margin-top: 15px; padding-top: 15px; border-top: 2px dashed #fce4ec;">${cContHtml}</div>`;
 
-    // ŘAZENÍ DO TABULKY (Nejdřív ti, co mají místo, podle řady vlevo -> vpravo)
     const getRowInfo = (rowId) => {
         if(!rowId) return { num: 9999, sideVal: 9, hasSeat: 0 };
         let row = allRowsData.find(r => r.id === rowId);
@@ -398,12 +397,10 @@ window.renderSeatingView = () => {
         let sideVal = n.includes('levo') ? 1 : (n.includes('pravo') ? 2 : 3);
         return { num, sideVal, hasSeat: 1 };
     };
-
     const hasTable = (tableId) => tableId ? 1 : 0;
 
     confirmedGuests.sort((a, b) => {
-        let aRow = getRowInfo(a.ceremonyRow);
-        let bRow = getRowInfo(b.ceremonyRow);
+        let aRow = getRowInfo(a.ceremonyRow); let bRow = getRowInfo(b.ceremonyRow);
         let aHasAny = (aRow.hasSeat || (window.hasReception && hasTable(a.receptionTable))) ? 1 : 0;
         let bHasAny = (bRow.hasSeat || (window.hasReception && hasTable(b.receptionTable))) ? 1 : 0;
 
@@ -505,8 +502,7 @@ window.openExpenseModal = (id) => { const e = allExpenses.find(x => x.id === id)
 window.closeExpenseModal = () => document.getElementById('editExpenseModal').classList.add('hidden');
 window.saveExpenseEdit = () => { updateDoc(doc(db, 'rozpocet_naklady', document.getElementById('editExpId').value), { date: document.getElementById('editExpDate').value, name: document.getElementById('editExpName').value, category: document.getElementById('editExpCatSelect').value, amount: Number(document.getElementById('editExpAmount').value) }); window.closeExpenseModal(); };
 
-
-// --- HOSTÉ A DUPLICITY (NOVÉ) ---
+// --- HOSTÉ A DUPLICITY ---
 window.toggleGuestSelection = (id, checked) => {
     if(checked && !window.selectedGuests.includes(id)) window.selectedGuests.push(id);
     else if(!checked) window.selectedGuests = window.selectedGuests.filter(gid => gid !== id);
@@ -545,22 +541,28 @@ window.findDuplicates = () => {
     
     window.duplicateIds = [];
     let nameMap = allGuestsData.map(g => {
-        let norm = g.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        let words = norm.split(/[\s,]+/).filter(w => w.length > 2); 
-        return { id: g.id, words: words };
+        let norm = g.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        let words = norm.split(/[\s,]+/).filter(w => w.length > 2);
+        return { id: g.id, words: words, original: norm };
     });
 
     for(let i=0; i<nameMap.length; i++) {
         for(let j=i+1; j<nameMap.length; j++) {
-            let match = nameMap[i].words.some(w => nameMap[j].words.includes(w));
-            if(match) {
+            let w1 = nameMap[i].words; let w2 = nameMap[j].words;
+            let exactMatch = nameMap[i].original === nameMap[j].original;
+            let sharedWords = w1.filter(w => w2.includes(w));
+            let multiWordMatch = sharedWords.length >= 2;
+            let str1 = nameMap[i].original; let str2 = nameMap[j].original;
+            let isSubstr = (str1.includes(str2) && str2.length >= 5) || (str2.includes(str1) && str1.length >= 5);
+
+            if(exactMatch || multiWordMatch || isSubstr) {
                 if(!window.duplicateIds.includes(nameMap[i].id)) window.duplicateIds.push(nameMap[i].id);
                 if(!window.duplicateIds.includes(nameMap[j].id)) window.duplicateIds.push(nameMap[j].id);
             }
         }
     }
     
-    if(window.duplicateIds.length === 0) { alert("Nenalezeny žádné zjevné duplicity (podobná jména)."); } 
+    if(window.duplicateIds.length === 0) { alert("Nenalezeny žádné zjevné duplicity (algoritmus ignoruje shodu pouze v příjmení)."); } 
     else { if(btn) btn.innerHTML = "❌ Zrušit zobrazení duplicit"; }
     window.renderGuestsView();
 };
@@ -592,7 +594,7 @@ window.renderGuestsView = () => {
     filtered.sort((a, b) => {
         let aDup = window.duplicateIds.includes(a.id) ? 1 : 0;
         let bDup = window.duplicateIds.includes(b.id) ? 1 : 0;
-        if (aDup !== bDup) return bDup - aDup; // Duplicity nahoru
+        if (aDup !== bDup) return bDup - aDup;
 
         if (sortType === 'name') return a.name.localeCompare(b.name);
         let dateA = a.submittedDate ? new Date(a.submittedDate).getTime() : 0;
@@ -874,7 +876,6 @@ window.approveAcc = (guestId) => {
     if(!placeId) { alert("Musíte vybrat místo!"); return; } updateDoc(doc(db, 'hoste', guestId), { accPlace: accPlacesData.find(p => p.id === placeId).name, accRoom: room || '', accStatus: 'assigned' });
 };
 
-// --- SMAZÁNÍ ÚČTU ---
 window.deleteMyAccountAndData = async () => {
     const user = auth.currentUser; if (!user) return;
     const confirmDelete = confirm("Opravdu chcete nenávratně smazat svůj účet a VŠECHNA svá data ze svatby? Tuto akci nelze vzít zpět."); if (!confirmDelete) return;
@@ -894,7 +895,8 @@ window.deleteMyAccountAndData = async () => {
         await deleteUser(user);
         alert("Váš účet a všechna data byla úspěšně a bezpečně smazána.");
     } catch (error) {
-        if(error.code === 'auth/requires-recent-login') alert("Z bezpečnostních důvodů se prosím odhlaste, znovu přihlaste a zkuste to znovu."); else alert("Chyba při mazání dat: " + error.message);
+        if(error.code === 'auth/requires-recent-login') alert("Z bezpečnostních důvodů se prosím odhlaste, znovu přihlaste a zkuste to znovu.");
+        else alert("Chyba při mazání dat: " + error.message);
     }
 };
 
