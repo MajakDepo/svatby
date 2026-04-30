@@ -27,13 +27,15 @@
             <nav class="app-nav">
                 <ul>
                     <li><a href="#" onclick="showPage('dashboard')">🏠 Nástěnka</a></li>
+                    <li><a href="#" onclick="showPage('schedule')">⏱️ Harmonogram</a></li>
                     <li><a href="#" onclick="showPage('todo')">✅ Úkoly a Nákupy</a></li>
                     <li><a href="#" onclick="showPage('guests')">👥 Hosté</a></li>
+                    <li><a href="#" onclick="showPage('seating')">🪑 Zasedací pořádek</a></li>
                     <li><a href="#" onclick="showPage('helper-section')">💪 Pomocníci</a></li>
                     <li><a href="#" onclick="showPage('accommodation-section')">🏠 Ubytování</a></li>
                     <li><a href="#" onclick="showPage('budget')">💰 Rozpočet</a></li>
                 </ul>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button id="logoutBtn" class="btn-small">Odhlásit se</button>
                     <button class="btn-small" style="background-color: #c62828;" onclick="deleteMyAccountAndData()">Smazat účet</button>
                 </div>
@@ -62,6 +64,63 @@
                         <p>Osob: <strong id="dashTotalAcc">0</strong></p>
                         <p>K rozřazení: <strong id="dashPendingAcc" style="color: #f39c12;">0</strong></p>
                     </div>
+                </div>
+            </section>
+
+            <!-- HARMONOGRAM -->
+            <section id="schedule" class="card page-view hidden">
+                <h2>⏱️ Harmonogram svatebního dne</h2>
+                <div class="input-form-extended" style="background: #fff8f9;">
+                    <div class="row">
+                        <input type="time" id="schedTime" style="max-width: 120px;">
+                        <input type="text" id="schedTitle" placeholder="Název události (např. Krájení dortu)">
+                        <input type="text" id="schedNote" placeholder="Poznámka / Místo konání">
+                        <button onclick="addScheduleItem()">Přidat do harmonogramu</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th style="width: 80px;">Čas</th><th>Událost</th><th>Poznámka</th><th>Akce</th></tr></thead>
+                        <tbody id="scheduleTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ZASEDACÍ POŘÁDEK -->
+            <section id="seating" class="card page-view hidden">
+                <h2>🪑 Zasedací pořádek</h2>
+                <p style="margin-bottom: 15px; color: #666;">Vytvořte si stoly a řady, a následně k nim přiřaďte potvrzené hosty.</p>
+                
+                <div class="seating-grid">
+                    <!-- Tvorba stolů na hostinu -->
+                    <div class="input-form-extended">
+                        <h3 style="font-size: 1.1rem; color: #d81b60;">🍽️ Stoly na hostinu</h3>
+                        <div class="row" style="margin-bottom: 10px;">
+                            <input type="text" id="newTableName" placeholder="Název (např. Stůl 1)">
+                            <input type="number" id="newTableCap" placeholder="Kapacita" style="max-width: 100px;">
+                            <button onclick="addSeatGroup('reception')">Přidat</button>
+                        </div>
+                        <div id="receptionTablesContainer"></div>
+                    </div>
+                    
+                    <!-- Tvorba řad na obřad -->
+                    <div class="input-form-extended">
+                        <h3 style="font-size: 1.1rem; color: #d81b60;">⛪ Řady na obřad</h3>
+                        <div class="row" style="margin-bottom: 10px;">
+                            <input type="text" id="newRowName" placeholder="Název (např. 1. řada vpravo)">
+                            <input type="number" id="newRowCap" placeholder="Kapacita" style="max-width: 100px;">
+                            <button onclick="addSeatGroup('ceremony')">Přidat</button>
+                        </div>
+                        <div id="ceremonyRowsContainer"></div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px; color: #d81b60;">Rozřazení potvrzených hostů</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Jméno (a rodina)</th><th>Stůl (Hostina)</th><th>Řada (Obřad)</th></tr></thead>
+                        <tbody id="seatingGuestsBody"></tbody>
+                    </table>
                 </div>
             </section>
 
@@ -242,7 +301,6 @@
             <!-- ROZPOČET -->
             <section id="budget" class="card page-view hidden">
                 <h2>💰 Rozpočet</h2>
-                
                 <div class="input-form-extended" style="background:#fdf9f9; margin-bottom: 20px;">
                     <h3 style="font-size: 1rem; color: #666; margin-bottom: 10px;">1. Vytvořit rozpočet (Plán)</h3>
                     <div class="row">
@@ -291,6 +349,18 @@
 
     <!-- MODÁLY -->
     
+    <!-- Harmonogram Edit -->
+    <div id="editScheduleModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Upravit položku harmonogramu</h3>
+            <input type="hidden" id="editSchedId">
+            <div class="input-group"><input type="time" id="editSchedTime"></div>
+            <div class="input-group"><input type="text" id="editSchedTitle" placeholder="Událost"></div>
+            <div class="input-group"><input type="text" id="editSchedNote" placeholder="Poznámka"></div>
+            <div class="button-group" style="margin-top:15px;"><button onclick="saveScheduleEdit()">Uložit</button><button class="btn-secondary" onclick="closeScheduleModal()">Zrušit</button></div>
+        </div>
+    </div>
+
     <!-- Úprava nákupní položky -->
     <div id="editShoppingModal" class="modal hidden">
         <div class="modal-content">
